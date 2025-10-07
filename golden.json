@@ -1,0 +1,52 @@
+[
+  {
+    "q": "Where is OAuth token validated?",
+    "repo": "vivified",
+    "expect_paths": ["identity", "auth", "oauth", "token"]
+  },
+  {
+    "q": "Where do we mask PHI in events?",
+    "repo": "vivified",
+    "expect_paths": ["diagnostic", "event", "phi", "mask", "hipaa"]
+  },
+  {
+    "q": "Where is ProviderSetupWizard rendered?",
+    "repo": "vivified",
+    "expect_paths": ["ProviderSetupWizard", "admin_ui", "components"]
+  },
+  {
+    "q": "How do we handle notification providers?",
+    "repo": "vivified",
+    "expect_paths": ["provider", "notification", "pushover", "apprise"]
+  },
+  {
+    "q": "Where is the admin diagnostics handler?",
+    "repo": "vivified",
+    "expect_paths": ["admin", "diagnostic", "handler"]
+  },
+  {
+    "q": "Where do we configure routes in the Rails app?",
+    "repo": "faxbot",
+    "expect_paths": ["config/routes", "routes.rb"]
+  },
+  {
+    "q": "How do we handle inbound faxes?",
+    "repo": "faxbot",
+    "expect_paths": ["app/", "fax", "inbound", "receive"]
+  },
+  {
+    "q": "Where is the API authentication middleware?",
+    "repo": "faxbot",
+    "expect_paths": ["app/", "middleware", "auth", "api"]
+  },
+  {
+    "q": "How do we queue outbound fax jobs?",
+    "repo": "faxbot",
+    "expect_paths": ["app/", "job", "fax", "outbound", "queue"]
+  },
+  {
+    "q": "Where do we store fax metadata?",
+    "repo": "faxbot",
+    "expect_paths": ["app/models", "fax", "metadata"]
+  }
+]

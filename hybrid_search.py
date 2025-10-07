@@ -1,6 +1,7 @@
 import os, json, collections
 from typing import List, Dict
-from dotenv import load_dotenv
+from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
 from qdrant_client import QdrantClient, models
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -86,13 +87,19 @@ def _faxbot_path_boost(fp: str, repo_tag: str) -> float:
     return min(bonus, 0.18)
 from sentence_transformers import SentenceTransformer
 
-load_dotenv()
-top_env = '/Users/davidmontgomery/rag-service/.env'
-if os.path.exists(top_env):
-    try:
-        load_dotenv(dotenv_path=top_env, override=False)
-    except Exception:
-        pass
+# Load environment from repo root .env without hard-coded paths
+try:
+    load_dotenv(override=False)
+    repo_root = Path(__file__).resolve().parent
+    env_path = repo_root / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
+    else:
+        alt = find_dotenv(usecwd=True)
+        if alt:
+            load_dotenv(dotenv_path=alt, override=False)
+except Exception:
+    pass
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
 REPO = os.getenv('REPO','vivified')
 VENDOR_MODE = os.getenv('VENDOR_MODE','prefer_first_party')

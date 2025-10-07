@@ -1,6 +1,7 @@
 import os, json, hashlib
 from typing import List, Dict
-from dotenv import load_dotenv
+from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
 import time
 from ast_chunker import lang_from_path, collect_files, chunk_code
 import bm25s
@@ -13,26 +14,22 @@ from embed_cache import EmbeddingCache
 import tiktoken
 from sentence_transformers import SentenceTransformer
 
-# Load local env and also top-level repo env if present
-load_dotenv()
-top_env = '/Users/davidmontgomery/rag-service/.env'
-if os.path.exists(top_env):
-    try:
-        # load without override first
-        load_dotenv(dotenv_path=top_env, override=False)
-    except Exception:
-        pass
+# Load local env and also repo-root .env if present (no hard-coded paths)
+try:
+    load_dotenv(override=False)
+    repo_root = Path(__file__).resolve().parent
+    env_path = repo_root / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
+    else:
+        alt = find_dotenv(usecwd=True)
+        if alt:
+            load_dotenv(dotenv_path=alt, override=False)
+except Exception:
+    pass
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-if not OPENAI_API_KEY or OPENAI_API_KEY.strip().upper() in {"SK-REPLACE", "REPLACE"}:
-    # If placeholder or missing, try overriding from top-level env explicitly
-    if os.path.exists(top_env):
-        try:
-            load_dotenv(dotenv_path=top_env, override=True)
-        except Exception:
-            pass
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    if OPENAI_API_KEY and OPENAI_API_KEY.strip().upper() in {"SK-REPLACE", "REPLACE"}:
-        OPENAI_API_KEY = None
+if OPENAI_API_KEY and OPENAI_API_KEY.strip().upper() in {"SK-REPLACE", "REPLACE"}:
+    OPENAI_API_KEY = None
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
 # Repo scoping
 REPO = os.getenv('REPO', 'vivified').strip()
