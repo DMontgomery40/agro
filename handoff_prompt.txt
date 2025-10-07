@@ -1,0 +1,240 @@
+RAG Handoff (Vivified + Faxbot, Strict Per‑Repo)
+
+  - Service root: /Users/davidmontgomery/faxbot_folder/rag-service
+  - Source repos:
+      - Vivified: /Users/davidmontgomery/faxbot_folder/vivified
+      - Faxbot: /Users/davidmontgomery/faxbot_folder/faxbot
+  - Canonical doc: updated_runbook.md (also see UPDATED_RUNBOOK.md in service
+    root)
+
+  What’s Live
+
+  - Strict per‑repo routing. API supports ?repo=vivified|faxbot; answers start
+    with [repo: ...].
+      - Serve route override param: /Users/davidmontgomery/faxbot_folder/rag-
+        service/serve_rag.py:28
+      - Fallback adds header: /Users/davidmontgomery/faxbot_folder/rag-service/
+        langgraph_app.py:80
+  - Hybrid retrieval:
+      - Dense via Qdrant (slim payload), sparse BM25S, multi‑query variants,
+        cross‑encoder re‑rank, local code hydration from out/<REPO>/
+        chunks.jsonl.
+      - Strict repo routing + router: /Users/davidmontgomery/faxbot_folder/rag-
+        service/hybrid_search.py:268
+  - Scoring + gate:
+      - Layer bonuses per repo, path/provider hints, origin bias optional;
+        generate if top‑1 ≥ 0.62 or avg‑5 ≥ 0.55.
+      - Gate: /Users/davidmontgomery/faxbot_folder/rag-service/
+        langgraph_app.py:36
+  - Embedding cache:
+      - Reindexes only new/changed chunks by hash → vector, written to out/
+        <REPO>/embed_cache.jsonl.
+      - Cache class: /Users/davidmontgomery/faxbot_folder/rag-service/
+        embed_cache.py:1
+  - Cards:
+      - Vivified built; Faxbot partial with CARDS_MAX=300. Index under out/
+        <REPO>/bm25_cards.
+      - Builder: /Users/davidmontgomery/faxbot_folder/rag-service/
+        build_cards.py:1
+  - LangGraph + Redis memory:
+      - Redis checkpointer; per‑thread memory via thread_id config (CFG).
+
+  Infra Status (verified)
+
+  - Qdrant: 200 on health; collections present: code_chunks_vivified,
+    code_chunks_faxbot, code_chunks.
+  - Redis: PONG via docker exec rag-redis redis-cli ping.
+  - Counts (using venv): code_chunks_vivified 922, code_chunks_faxbot 10768.
+
+  Commands:
+
+  - curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:6333/collections
+  - docker exec rag-redis redis-cli ping
+  - cd /Users/davidmontgomery/faxbot_folder/rag-service
+    && ./.venv/bin/python -c "from qdrant_client import
+    QdrantClient;qc=QdrantClient(url='http://127.0.0.1:6333');print('viv',qc.cou
+    nt('code_chunks_vivified',exact=False).count,'fax',qc.count('code_chunks_fax
+    bot',exact=False).count)"
+
+  Run
+
+  - Activate venv: cd /Users/davidmontgomery/faxbot_folder/rag-service
+    && . .venv/bin/activate
+  - API: uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+      - Health: GET http://127.0.0.1:8012/health
+      - Answer (vivified): GET /answer?q=...&repo=vivified
+      - Answer (faxbot): GET /answer?q=...&repo=faxbot
+
+  Notes:
+
+  - Ensure you start uvicorn from the service directory (or set PYTHONPATH),
+    otherwise “Could not import module serve_rag.”
+
+  Routing, Retrieval, Rerank
+
+  - Router (never fuses repos): /Users/davidmontgomery/faxbot_folder/rag-
+    service/hybrid_search.py:268
+  - Dense: OpenAI text-embedding-3-large (3072‑d) when available; fallback BAAI/
+    bge-small-en-v1.5 (normalized).
+      - Search embedding path: /Users/davidmontgomery/faxbot_folder/rag-service/
+        hybrid_search.py:156
+  - Sparse: BM25S over chunk bodies; optional cards BM25 for intent hints.
+  - Local hydration: slim payload from Qdrant; hydrate code from out/<REPO>/
+    chunks.jsonl before cross‑encoder rerank.
+      - Hydration: /Users/davidmontgomery/faxbot_folder/rag-service/
+        hybrid_search.py:243
+  - Re‑rank: CrossEncoder BAAI/bge-reranker-v2-m3 on MPS/CUDA/CPU.
+      - Rerank: /Users/davidmontgomery/faxbot_folder/rag-service/rerank.py:1
+
+  Scoring & Gate
+
+  - Layer bonuses by repo:
+      - Vivified: kernel/plugin/ui/docs/tests/infra
+      - Faxbot: server/integration/ui/sdk/infra/docs
+      - Layer bonus tables: /Users/davidmontgomery/faxbot_folder/rag-service/
+        hybrid_search.py:20, :29
+  - Path/provider hints, origin bias, and Faxbot path boosts
+    (FAXBOT_PATH_BOOSTS, default “app/,lib/,config/,scripts/,server/,api/,api/
+    app,app/services,app/routers”).
+      - Faxbot path boost: /Users/davidmontgomery/faxbot_folder/rag-service/
+        hybrid_search.py:74
+  - Gate thresholds: /Users/davidmontgomery/faxbot_folder/rag-service/
+    langgraph_app.py:36
+  - Generation header always includes repo: /Users/davidmontgomery/
+    faxbot_folder/rag-service/langgraph_app.py:76, fallback /Users/
+    davidmontgomery/faxbot_folder/rag-service/langgraph_app.py:80
+
+  Index & Cards (cheap updates)
+
+  - Reindex Vivified:
+      - export REPO=vivified; python index_repo.py
+  - Reindex Faxbot:
+      - export REPO=faxbot; python index_repo.py
+  - Build cards:
+      - Vivified: REPO=vivified python build_cards.py
+      - Faxbot (partial): REPO=faxbot CARDS_MAX=300 python build_cards.py
+
+  Index details:
+
+  - Repo scoping, OUTDIR, Qdrant collection: /Users/davidmontgomery/
+    faxbot_folder/rag-service/index_repo.py:38
+  - Layer/origin tagging: /Users/davidmontgomery/faxbot_folder/rag-service/
+    index_repo.py:49, :95
+  - BM25 index save and mapping (chunk ids): /Users/davidmontgomery/
+    faxbot_folder/rag-service/index_repo.py:186
+  - Embedding cache (hash keyed) → out/<REPO>/embed_cache.jsonl on next run with
+    OpenAI key:
+      - /Users/davidmontgomery/faxbot_folder/rag-service/index_repo.py:205
+  - Qdrant vector size set from index embeddings; ensure consistent model across
+    reindex/search:
+      - /Users/davidmontgomery/faxbot_folder/rag-service/index_repo.py:219
+
+  API Behavior
+
+  - Health: returns { status: healthy, graph_loaded: true }.
+  - Answer:
+      - Uses repo query param if present; else the router picks repo from query.
+      - Always returns [repo: vivified] or [repo: faxbot] header.
+      - Cites 1–5 code chunks with path:line ranges when confident.
+
+  Env Vars (knobs)
+
+  - REPO: vivified|faxbot (default vivified)
+  - MQ_REWRITES: default 4 (set 1 to disable multi‑query)
+  - FAXBOT_PATH_BOOSTS: comma‑sep boosts (default shown above)
+  - OPENAI_API_KEY: for embeddings and rewrites
+  - REDIS_URL: redis://127.0.0.1:6379/0 (default)
+  - RERANKER_MODEL: BAAI/bge-reranker-v2-m3 (default)
+  - VENDOR_MODE: prefer_first_party|prefer_vendor (optional origin bonus)
+
+  Data Outputs (per repo under out/<REPO>)
+
+  - chunks.jsonl: chunks with hash, id, file_path, code, etc.
+  - bm25_index/: BM25 index (+ bm25_map.json, chunk_ids.txt, corpus.txt)
+  - embed_cache.jsonl: hash → vector (written when OpenAI embeddings are used)
+  - cards.jsonl, cards.txt, bm25_cards/: optional cards summary index
+
+  Smoke Checklist
+
+  - Qdrant: curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:6333/
+    collections → 200
+  - Redis: docker exec rag-redis redis-cli ping → PONG
+  - Counts: cd /Users/davidmontgomery/faxbot_folder/rag-service && ./.venv/
+    bin/python - <<'PY'\nfrom qdrant_client import QdrantClient as
+    C\nqc=C(url='http://127.0.0.1:6333')\nprint(qc.count('code_chunks_vivified',
+    exact=False).count,qc.count('code_chunks_faxbot',exact=False).count)\nPY
+  - API:
+      - /health → healthy
+      - /answer?q=...&repo=vivified|faxbot → starts with [repo: ...] and
+        citations when confident
+  - Quick local retrieval probe (shows top docs and scores):
+      - cd /Users/davidmontgomery/faxbot_folder/rag-service && ./.venv/
+        bin/python - <<'PY'\nimport os\nfrom hybrid_search import
+        search_routed_multi\nos.environ['REPO']='vivified'\nq='Where is
+        the AI studio UI component referenced?'\nres=search_routed_multi(q,
+        repo_override='vivified', m=4, final_k=10)\nprint(len(res));
+        \nfor d in res[:5]:\n  print(round(d.get('rerank_score',0.0),4),
+        d.get('file_path'), f\"{d.get('start_line')}:{d.get('end_line')}\")\nPY
+
+  Known Behaviors & Mitigations
+
+  - Qdrant 500s (dense search):
+      - Observed 500s when vector dims mismatch (index built with local BGE;
+        search used OpenAI 3072‑d). Retrieval still works via BM25 + hydration +
+        CE. To eliminate 500s:
+          - Reindex both repos with OPENAI_API_KEY set (ensures 3072‑d across
+            index and search), or set MQ_REWRITES=1 and keep BM25 heavy until
+            reindex completes.
+  - Low confidence:
+      - Gate uses top‑1 ≥ 0.62 or avg‑5 ≥ 0.55. Multi‑query + second generate
+        pass on low confidence already enabled.
+      - Tweak thresholds at /Users/davidmontgomery/faxbot_folder/rag-service/
+        langgraph_app.py:36.
+  - Missing code in rerank:
+      - Hydration reads out/<REPO>/chunks.jsonl. Ensure that file exists and has
+        hash and id present.
+  - Import error on API restart:
+      - Start uvicorn inside service dir: cd /Users/davidmontgomery/
+        faxbot_folder/rag-service && uvicorn serve_rag:app ...
+
+  Recent Changes (this session)
+
+  - API repo override + fallback header:
+      - serve_rag.py now accepts repo query param and passes through to
+        the graph. See /Users/davidmontgomery/faxbot_folder/rag-service/
+        serve_rag.py:28.
+      - fallback_node now prefixes [repo: ...] in low‑confidence
+        responses. See /Users/davidmontgomery/faxbot_folder/rag-service/
+        langgraph_app.py:80.
+  - Verified infra + collections; validated retrieval returns from BM25 + CE
+    with strict repo routing.
+
+  What To Do Next
+
+  - Reindex both repos with OpenAI embeddings to unify vector dims and stabilize
+    dense search:
+      - Vivified: REPO=vivified OPENAI_API_KEY=... python index_repo.py
+      - Faxbot: REPO=faxbot OPENAI_API_KEY=... python index_repo.py
+  - Build/refresh cards:
+      - Vivified: REPO=vivified python build_cards.py
+      - Faxbot (grow): REPO=faxbot CARDS_MAX=300 python build_cards.py (increase
+        overnight if desired)
+  - Start API: cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/
+    bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+  - Sanity questions:
+      - Vivified (UI): “Where is AIStudio rendered?” Expect hits in core/
+        admin_ui/src/components/AIStudio.tsx.
+      - Faxbot (security): “Where do we mask PHI in events?” Expect server/
+        integration paths boosted; citations in app/server code (avoid vendor).
+
+  Domain Notes
+
+  - Vivified has no “ProviderSetupWizard.” Prefer UI/kernel/plugin queries
+    (e.g., Admin UI components, plugin config, kernel handlers). Public site:
+    vivified.dev / docs: docs.vivified.dev.
+  - Faxbot: focus on first‑party app/, server/, api/ over vendors; docs:
+    docs.faxbot.net and faxbot.net.
+
+  If you want, I can reindex both repos now with OpenAI embeddings to unify
+  vector dims and then rerun the smoke checks and a couple of targeted
+  questions.

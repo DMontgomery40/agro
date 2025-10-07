@@ -9,6 +9,7 @@ from Stemmer import Stemmer
 from qdrant_client import QdrantClient, models
 import uuid
 from openai import OpenAI
+from embed_cache import EmbeddingCache
 import tiktoken
 from sentence_transformers import SentenceTransformer
 
@@ -115,22 +116,14 @@ def _clip_for_openai(text: str, enc, max_tokens: int = 8000) -> str:
     return enc.decode(toks[:max_tokens])
 
 def embed_texts(client: OpenAI, texts: List[str], batch: int = 64) -> List[List[float]]:
+    # Legacy non-cached embedder (kept for compatibility if needed)
     embs = []
     enc = tiktoken.get_encoding('cl100k_base')
     for i in range(0, len(texts), batch):
         sub = [_clip_for_openai(t, enc) for t in texts[i:i+batch]]
-        # basic retry to avoid transient failures / rate limits
-        attempts = 0
-        while True:
-            try:
-                r = client.embeddings.create(model='text-embedding-3-large', input=sub)
-                break
-            except Exception as e:
-                attempts += 1
-                if attempts >= 6:
-                    raise
-                time.sleep(min(30, 2 * attempts))
-        for d in r.data: embs.append(d.embedding)
+        r = client.embeddings.create(model='text-embedding-3-large', input=sub)
+        for d in r.data:
+            embs.append(d.embedding)
     return embs
 
 def embed_texts_local(texts: List[str], model_name: str = 'BAAI/bge-small-en-v1.5', batch: int = 128) -> List[List[float]]:
@@ -214,7 +207,10 @@ def main():
     embs: List[List[float]] = []
     if client is not None:
         try:
-            embs = embed_texts(client, texts, batch=64)
+            cache = EmbeddingCache(OUTDIR)
+            hashes = [c['hash'] for c in chunks]
+            embs = cache.embed_texts(client, texts, hashes, model='text-embedding-3-large', batch=64)
+            cache.save()
         except Exception as e:
             print(f'Embedding via OpenAI failed ({e}); falling back to local embeddings.')
     if not embs:
