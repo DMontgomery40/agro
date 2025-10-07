@@ -1,8 +1,9 @@
-# RAG Service - Complete Setup & Usage Guide
+# RAG Service - Complete Guide
 
 **Strict per-repo RAG for Vivified & Faxbot codebases with MCP integration for AI agents**
 
-📂 **Additional Documentation**: See [docs/README.md](docs/README.md) for complete documentation index
+👉 **New here?** See [START_HERE.md](START_HERE.md) for quick navigation
+📂 **Extended docs**: See [docs/](docs/) for specialized guides (MCP, models, chat CLI)
 
 ---
 
@@ -1309,3 +1310,35 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | .venv/bin/py
 # === Test Retrieval ===
 python -c "from hybrid_search import search_routed_multi; print(search_routed_multi('oauth', repo_override='vivified', final_k=5))"
 ```
+
+---
+
+## CLI Chat Interface
+
+For interactive terminal chat with conversation memory:
+
+```bash
+. .venv/bin/activate
+
+# Install rich library for terminal UI
+pip install rich
+
+# Start chat (vivified repo)
+export REPO=vivified
+export THREAD_ID=my-session
+python chat_cli.py
+```
+
+**Commands:**
+- Type your question directly
+- `/repo faxbot` - Switch repository
+- `/clear` - Clear conversation history
+- `/help` - Show commands
+- `/exit` - Exit chat
+
+**Features:**
+- Redis-backed conversation memory
+- Rich terminal UI with markdown rendering
+- Citation display with file paths and scores
+- Per-repo conversation threads
+
