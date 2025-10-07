@@ -12,9 +12,10 @@
 
 ## MCP Integration (Codex/Agents)
 - **MCP Server**: `mcp_server.py` exposes two tools via stdio:
-  - `rag.answer(repo, question)` → full LangGraph answer + citations
-  - `rag.search(repo, question, top_k=10)` → retrieval-only for debugging
+  - `rag_answer(repo, question)` → full LangGraph answer + citations
+  - `rag_search(repo, question, top_k=10)` → retrieval-only for debugging
 - **Codex Setup**: Registered via `codex mcp add faxbot-rag -- python mcp_server.py`
+  - Note: Tool names use underscores to satisfy OpenAI tool-name constraints.
 - **Agent Rules** (for Codex/assistants):
   1. **Never assume the user is wrong** about file paths, function names, or code locations.
   2. **Always call RAG tools first** before claiming something doesn't exist or suggesting changes.
@@ -47,4 +48,3 @@
 ## Security & Config
 - Required: `OPENAI_API_KEY`. Useful: `REPO`, `QDRANT_URL`, `REDIS_URL`, `MQ_REWRITES`, `FAXBOT_PATH_BOOSTS`.
 - Verify deps: `docker compose -f infra/docker-compose.yml ps`; Qdrant: `curl -s http://127.0.0.1:6333/collections`; Redis: `docker exec rag-redis redis-cli ping`.
-

@@ -3,9 +3,10 @@
 MCP server exposing RAG tools for Codex/Claude integration.
 Implements Model Context Protocol via stdio.
 
-Tools:
-  - rag.answer(repo, question) → full LangGraph answer + citations
-  - rag.search(repo, question) → retrieval-only (for debugging)
+Tools (sanitized names for OpenAI tool spec):
+  - rag_answer(repo, question) → full LangGraph answer + citations
+  - rag_search(repo, question) → retrieval-only (for debugging)
+Compatibility: accepts legacy names "rag.answer" and "rag.search" on tools/call.
 """
 import sys
 import json
@@ -163,7 +164,7 @@ class MCPServer:
                 "result": {
                     "tools": [
                         {
-                            "name": "rag.answer",
+                            "name": "rag_answer",
                             "description": "Get RAG answer with citations for a question in a specific repo (vivified|faxbot)",
                             "inputSchema": {
                                 "type": "object",
@@ -182,7 +183,7 @@ class MCPServer:
                             }
                         },
                         {
-                            "name": "rag.search",
+                            "name": "rag_search",
                             "description": "Retrieval-only search (debugging) - returns relevant code locations without generation",
                             "inputSchema": {
                                 "type": "object",
@@ -214,7 +215,8 @@ class MCPServer:
             tool_name = params.get("name")
             args = params.get("arguments", {})
 
-            if tool_name == "rag.answer":
+            # Backward-compat: accept legacy dotted names
+            if tool_name in ("rag.answer", "rag_answer"):
                 result = self.handle_rag_answer(
                     repo=args.get("repo"),
                     question=args.get("question", "")
@@ -225,7 +227,7 @@ class MCPServer:
                     "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}
                 }
 
-            elif tool_name == "rag.search":
+            elif tool_name in ("rag.search", "rag_search"):
                 result = self.handle_rag_search(
                     repo=args.get("repo"),
                     question=args.get("question", ""),

@@ -242,3 +242,12 @@
 2025/10/07-02:56:29.003063 2115         Options.experimental_mempurge_threshold: 0.000000
 2025/10/07-02:56:29.003063 2115            Options.memtable_max_range_deletions: 0
 2025/10/07-02:56:29.029511 2115 DB pointer 0xff45cf14c000
+2025/10/07-21:42:58.278706 28 [ERROR] [db/version_set.cc:5184] MANIFEST verification on Close, filename ./storage/collections/code_chunks_vivified/0/segments/2911e4ee-c603-4a06-a4ef-4170a4af1ecf/payload_index/MANIFEST-000005, expected size 116 failed with status IO error: No such file or directory: while stat a file for size: ./storage/collections/code_chunks_vivified/0/segments/2911e4ee-c603-4a06-a4ef-4170a4af1ecf/payload_index/MANIFEST-000005: No such file or directory and actual size 0
+2025/10/07-21:42:58.280524 28 [ERROR] [db/version_set.cc:5771] Error in committing version edit to MANIFEST: 
+VersionEdit {
+  PrevLogNumber: 0
+  NextFileNumber: 9
+  LastSeq: 0
+  ColumnFamily: 0
+}
+2025/10/07-21:42:58.281237 28 [ERROR] [db/db_impl/db_impl.cc:693] Unable to close MANIFEST with error -- IO error: No such file or directory: While open a file for appending: ./storage/collections/code_chunks_vivified/0/segments/2911e4ee-c603-4a06-a4ef-4170a4af1ecf/payload_index/MANIFEST-000008: No such file or directory

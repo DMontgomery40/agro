@@ -34,8 +34,9 @@ server = MCPServer()
 resp = server.handle_request(req)
 tools = resp['result']['tools']
 assert len(tools) == 2
-assert tools[0]['name'] == 'rag.answer'
-assert tools[1]['name'] == 'rag.search'
+names = [t['name'] for t in tools]
+assert 'rag_answer' in names
+assert 'rag_search' in names
 print(f'✓ Found {len(tools)} tools: {[t[\"name\"] for t in tools]}')
 "
 
@@ -50,7 +51,7 @@ req = {
     'id': 3,
     'method': 'tools/call',
     'params': {
-        'name': 'rag.search',
+        'name': 'rag_search',
         'arguments': {
             'repo': 'vivified',
             'question': 'Where is OAuth token validated?',
@@ -59,7 +60,7 @@ req = {
     }
 }
 
-print('Calling rag.search for vivified...', file=sys.stderr)
+print('Calling rag_search for vivified...', file=sys.stderr)
 server = MCPServer()
 resp = server.handle_request(req)
 
@@ -83,7 +84,7 @@ req = {
     'id': 4,
     'method': 'tools/call',
     'params': {
-        'name': 'rag.search',
+        'name': 'rag_search',
         'arguments': {
             'repo': 'faxbot',
             'question': 'How do we handle inbound faxes?',
@@ -92,7 +93,7 @@ req = {
     }
 }
 
-print('Calling rag.search for faxbot...', file=sys.stderr)
+print('Calling rag_search for faxbot...', file=sys.stderr)
 server = MCPServer()
 resp = server.handle_request(req)
 
@@ -112,5 +113,5 @@ echo ""
 echo "Next steps:"
 echo "  1. Codex should already have the server registered"
 echo "  2. Try: codex mcp list"
-echo "  3. In a Codex chat, try calling rag.answer or rag.search"
+echo "  3. In a Codex chat, try calling rag_answer or rag_search"
 echo ""

@@ -6,7 +6,7 @@ This implementation provides **complete MCP integration** for the RAG service, e
 
 ### 1. MCP Server (`mcp_server.py`) - 11KB ✓
 - Full Model Context Protocol implementation over stdio
-- Two tools: `rag.answer` (full pipeline) and `rag.search` (retrieval-only)
+- Two tools: `rag_answer` (full pipeline) and `rag_search` (retrieval-only)
 - Lazy graph initialization with error handling
 - Proper JSON-RPC 2.0 format compliance
 
@@ -60,7 +60,7 @@ This implementation provides **complete MCP integration** for the RAG service, e
 
 ### MCP Tools
 
-**`rag.answer(repo, question)`**
+**`rag_answer(repo, question)`**
 ```json
 {
   "answer": "[repo: vivified]\nOAuth tokens are validated in...",
@@ -70,7 +70,7 @@ This implementation provides **complete MCP integration** for the RAG service, e
 }
 ```
 
-**`rag.search(repo, question, top_k)`**
+**`rag_search(repo, question, top_k)`**
 ```json
 {
   "results": [
@@ -187,8 +187,8 @@ python eval_loop.py
 ┌──────────────────────┐
 │   mcp_server.py      │
 │  ┌────────────────┐  │
-│  │ rag.answer     │──┼──> langgraph_app.py ──> OpenAI
-│  │ rag.search     │──┼──> hybrid_search.py
+│  │ rag_answer     │──┼──> langgraph_app.py ──> OpenAI
+│  │ rag_search     │──┼──> hybrid_search.py
 │  └────────────────┘  │
 └──────────┬───────────┘
            │

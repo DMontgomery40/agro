@@ -69,8 +69,8 @@ curl "http://localhost:8012/answer?q=Where%20is%20OAuth%20validated&repo=vivifie
 ┌───────────────────────────────────────────────────────────┐
 │                    mcp_server.py                          │
 │  ┌─────────────────────────────────────────────────────┐  │
-│  │  rag.answer(repo, question) → answer + citations    │  │
-│  │  rag.search(repo, question, top_k) → retrieval only │  │
+│  │  rag_answer(repo, question) → answer + citations    │  │
+│  │  rag_search(repo, question, top_k) → retrieval only │  │
 │  └─────────────────────────────────────────────────────┘  │
 └───────────────────────┬───────────────────────────────────┘
                         │
@@ -251,12 +251,12 @@ The MCP (Model Context Protocol) server exposes RAG tools that AI agents can cal
 
 ### Tools Available
 
-1. **`rag.answer(repo, question)`**
+1. **`rag_answer(repo, question)`**
    - Full LangGraph pipeline (retrieval → generation)
    - Returns: `{answer, citations, repo, confidence}`
    - Use when you want a complete answer with sources
 
-2. **`rag.search(repo, question, top_k=10)`**
+2. **`rag_search(repo, question, top_k=10)`**
    - Retrieval-only (no generation)
    - Returns: `{results: [{file_path, start_line, end_line, rerank_score}], repo, count}`
    - Use for debugging retrieval or when you just need locations
@@ -304,7 +304,7 @@ Edit the config file (create if it doesn't exist):
 3. Look for the MCP indicator (usually in the UI or when listing available tools)
 4. Test by asking:
    ```
-   Use rag.search to find code related to "OAuth validation" in vivified
+   Use rag_search to find code related to "OAuth validation" in vivified
    ```
 
 Claude Code should call the tool and display results.
@@ -634,7 +634,7 @@ req = {
     'id': 1,
     'method': 'tools/call',
     'params': {
-        'name': 'rag.search',
+        'name': 'rag_search',
         'arguments': {
             'repo': 'vivified',
             'question': 'your question here',
@@ -682,7 +682,7 @@ req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
 print(json.dumps(MCPServer().handle_request(req), indent=2))
 "
 
-# Call rag.search
+# Call rag_search
 python -c "
 from mcp_server import MCPServer
 import json
@@ -691,7 +691,7 @@ req = {
     'id': 2,
     'method': 'tools/call',
     'params': {
-        'name': 'rag.search',
+        'name': 'rag_search',
         'arguments': {'repo': 'vivified', 'question': 'OAuth', 'top_k': 3}
     }
 }
@@ -1341,4 +1341,3 @@ python chat_cli.py
 - Rich terminal UI with markdown rendering
 - Citation display with file paths and scores
 - Per-repo conversation threads
-
