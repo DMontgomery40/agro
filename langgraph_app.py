@@ -1,18 +1,26 @@
 import os, operator
 from typing import List, Dict, TypedDict, Annotated
-from dotenv import load_dotenv
+from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.redis import RedisSaver
 from hybrid_search import search_routed_multi as hybrid_search_routed_multi
 from openai import OpenAI
 
-load_dotenv()
-top_env = '/Users/davidmontgomery/rag-service/.env'
-if os.path.exists(top_env):
-    try:
-        load_dotenv(dotenv_path=top_env, override=False)
-    except Exception:
-        pass
+# Load environment from repo root .env without hard-coded paths
+try:
+    # Load any existing env first
+    load_dotenv(override=False)
+    repo_root = Path(__file__).resolve().parent
+    env_path = repo_root / ".env"
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=False)
+    else:
+        alt = find_dotenv(usecwd=True)
+        if alt:
+            load_dotenv(dotenv_path=alt, override=False)
+except Exception:
+    pass
 
 class RAGState(TypedDict):
     question: str
@@ -29,7 +37,9 @@ def retrieve_node(state: RAGState) -> Dict:
     repo = state.get('repo') if isinstance(state, dict) else None
     docs = hybrid_search_routed_multi(q, repo_override=repo, m=int(os.getenv('MQ_REWRITES','4')), final_k=20)
     conf = float(sum(d.get('rerank_score',0.0) for d in docs)/max(1,len(docs)))
-    return {'documents': docs, 'confidence': conf, 'iteration': state.get('iteration',0)+1}
+    # Propagate the routed repo into state so downstream nodes build correct headers
+    repo_used = (repo or (docs[0].get('repo') if docs else os.getenv('REPO','vivified')))
+    return {'documents': docs, 'confidence': conf, 'iteration': state.get('iteration',0)+1, 'repo': repo_used}
 
 
 
@@ -73,13 +83,13 @@ def generate_node(state: RAGState) -> Dict:
             user2 = f"Question:\n{q}\n\nContext:\n{context_text2}\n\nCitations (paths and line ranges):\n{citations2}\n\nAnswer:"
             r2 = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'system','content':sys},{'role':'user','content':user2}], temperature=0.2)
             content = r2.choices[0].message.content
-    repo = state.get('repo') or os.getenv('REPO','vivified')
-    header = f"[repo: {repo}]"
+    repo_hdr = state.get('repo') or (ctx[0].get('repo') if ctx else None) or os.getenv('REPO','vivified')
+    header = f"[repo: {repo_hdr}]"
     return {'generation': header + "\n" + content}
 
 def fallback_node(state: RAGState) -> Dict:
-    repo = state.get('repo') or os.getenv('REPO','vivified')
-    header = f"[repo: {repo}]"
+    repo_hdr = state.get('repo') or (state.get('documents')[0].get('repo') if state.get('documents') else None) or os.getenv('REPO','vivified')
+    header = f"[repo: {repo_hdr}]"
     msg = "I don't have high confidence from local code. Try refining the question or expanding the context."
     return {'generation': header + "\n" + msg}
 
