@@ -26,8 +26,16 @@ def health():
         return {"status": "error", "detail": str(e)}
 
 @app.get("/answer", response_model=Answer)
-def answer(q: str = Query(..., description="Question")):
+def answer(
+    q: str = Query(..., description="Question"),
+    repo: Optional[str] = Query(None, description="Repository override: vivified|faxbot")
+):
+    """Answer a question using strict per-repo routing.
+
+    If `repo` is provided, retrieval and the answer header will use that repo.
+    Otherwise, a lightweight router selects the repo from the query content.
+    """
     g = get_graph()
-    state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0}
+    state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0, "repo": (repo.strip() if repo else None)}
     res = g.invoke(state, CFG)
     return {"answer": res["generation"]}

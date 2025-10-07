@@ -3,7 +3,7 @@ from typing import List, Dict, TypedDict, Annotated
 from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.redis import RedisSaver
-from hybrid_search import search_routed as hybrid_search_routed
+from hybrid_search import search_routed_multi as hybrid_search_routed_multi
 from openai import OpenAI
 
 load_dotenv()
@@ -27,7 +27,7 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 def retrieve_node(state: RAGState) -> Dict:
     q = state['question']
     repo = state.get('repo') if isinstance(state, dict) else None
-    docs = hybrid_search_routed(q, repo_override=repo, final_k=20)
+    docs = hybrid_search_routed_multi(q, repo_override=repo, m=int(os.getenv('MQ_REWRITES','4')), final_k=20)
     conf = float(sum(d.get('rerank_score',0.0) for d in docs)/max(1,len(docs)))
     return {'documents': docs, 'confidence': conf, 'iteration': state.get('iteration',0)+1}
 
@@ -61,12 +61,27 @@ def generate_node(state: RAGState) -> Dict:
     user = f"Question:\n{q}\n\nContext:\n{context_text}\n\nCitations (paths and line ranges):\n{citations}\n\nAnswer:"
     r = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'system','content':sys},{'role':'user','content':user}], temperature=0.2)
     content = r.choices[0].message.content
+    # Lightweight verifier: if confidence low, try multi-query retrieval and regenerate once
+    conf = float(state.get('confidence', 0.0) or 0.0)
+    if conf < 0.55:
+        repo = state.get('repo') or os.getenv('REPO','vivified')
+        alt_docs = hybrid_search_routed_multi(q, repo_override=repo, m=4, final_k=10)
+        if alt_docs:
+            ctx2 = alt_docs[:5]
+            citations2 = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" for d in ctx2])
+            context_text2 = "\n\n".join([d.get('code','') for d in ctx2])
+            user2 = f"Question:\n{q}\n\nContext:\n{context_text2}\n\nCitations (paths and line ranges):\n{citations2}\n\nAnswer:"
+            r2 = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'system','content':sys},{'role':'user','content':user2}], temperature=0.2)
+            content = r2.choices[0].message.content
     repo = state.get('repo') or os.getenv('REPO','vivified')
     header = f"[repo: {repo}]"
     return {'generation': header + "\n" + content}
 
 def fallback_node(state: RAGState) -> Dict:
-    return {'generation': "I don't have high confidence from local code. Try refining the question or expanding the context."}
+    repo = state.get('repo') or os.getenv('REPO','vivified')
+    header = f"[repo: {repo}]"
+    msg = "I don't have high confidence from local code. Try refining the question or expanding the context."
+    return {'generation': header + "\n" + msg}
 
 def build_graph():
     builder = StateGraph(RAGState)
