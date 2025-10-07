@@ -4,8 +4,8 @@
 
 1. **MCP Server** (`mcp_server.py`) - stdio-based tool server
 2. **Two RAG Tools**:
-   - `rag.answer(repo, question)` → full answer + citations
-   - `rag.search(repo, question, top_k)` → retrieval only
+   - `rag_answer(repo, question)` → full answer + citations
+   - `rag_search(repo, question, top_k)` → retrieval only
 3. **Codex Registration** - Already registered as `faxbot-rag`
 4. **Agent Rules** - Updated in `AGENTS.md`
 5. **Eval Loop** - `eval_loop.py` with baselines and regression tracking
@@ -54,9 +54,9 @@ python eval_loop.py --watch
 Open a new Codex session and try:
 
 ```
-User: Use rag.search to find code related to "OAuth token validation" in vivified
+User: Use rag_search to find code related to "OAuth token validation" in vivified
 
-User: Use rag.answer to explain how inbound faxes are processed in faxbot
+User: Use rag_answer to explain how inbound faxes are processed in faxbot
 ```
 
 Codex will automatically call the registered MCP tools and display results.
@@ -100,7 +100,7 @@ These are now documented in `AGENTS.md`:
 
 1. **Add more golden test cases** to `golden.json`
 2. **Run baseline**: `python eval_loop.py --baseline`
-3. **Try in Codex**: Open chat and use `rag.answer` or `rag.search`
+3. **Try in Codex**: Open chat and use `rag_answer` or `rag_search`
 4. **Monitor regressions**: `python eval_loop.py --watch` (runs on code changes)
 
 ## Troubleshooting

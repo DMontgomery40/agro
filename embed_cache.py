@@ -1,4 +1,5 @@
 import os, json
+import tiktoken
 
 class EmbeddingCache:
     def __init__(self, outdir: str):
@@ -35,8 +36,14 @@ class EmbeddingCache:
                 to_embed.append(t)
             else:
                 embs[i] = v
+        enc = tiktoken.get_encoding('cl100k_base')
+        def _clip_for_openai(text: str, max_tokens: int = 8000) -> str:
+            toks = enc.encode(text)
+            if len(toks) <= max_tokens:
+                return text
+            return enc.decode(toks[:max_tokens])
         for i in range(0, len(to_embed), batch):
-            sub = to_embed[i:i+batch]
+            sub = [_clip_for_openai(t) for t in to_embed[i:i+batch]]
             r = client.embeddings.create(model=model, input=sub)
             for j, d in enumerate(r.data):
                 orig = idx_map[i + j]

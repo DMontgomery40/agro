@@ -6,8 +6,8 @@ This document describes the Model Context Protocol (MCP) integration that allows
 
 The MCP server (`mcp_server.py`) exposes two tools:
 
-1. **`rag.answer(repo, question)`** → Full LangGraph pipeline with answer + citations
-2. **`rag.search(repo, question, top_k=10)`** → Retrieval-only (debugging)
+1. **`rag_answer(repo, question)`** → Full LangGraph pipeline with answer + citations
+2. **`rag_search(repo, question, top_k=10)`** → Retrieval-only (debugging)
 
 ## Setup
 
@@ -58,10 +58,10 @@ Once registered, Codex can natively call these tools:
 In a Codex chat session:
 
 ```
-User: Use rag.answer to find where OAuth tokens are validated in vivified
+User: Use rag_answer to find where OAuth tokens are validated in vivified
 
 Codex will call:
-  rag.answer(repo="vivified", question="Where is OAuth token validated?")
+  rag_answer(repo="vivified", question="Where is OAuth token validated?")
 
 Returns:
 {
@@ -78,10 +78,10 @@ Returns:
 ### Example 2: Debug retrieval
 
 ```
-User: Use rag.search to see what code comes up for "inbound fax handling" in faxbot
+User: Use rag_search to see what code comes up for "inbound fax handling" in faxbot
 
 Codex will call:
-  rag.search(repo="faxbot", question="How do we handle inbound faxes?", top_k=5)
+  rag_search(repo="faxbot", question="How do we handle inbound faxes?", top_k=5)
 
 Returns:
 {
@@ -166,8 +166,8 @@ The `expect_paths` uses substring matching — any result containing one of thes
 ┌─────────────────────┐
 │  mcp_server.py      │
 │  ┌───────────────┐  │
-│  │ rag.answer    │──┼──> langgraph_app.py
-│  │ rag.search    │──┼──> hybrid_search.py
+│  │ rag_answer    │──┼──> langgraph_app.py
+│  │ rag_search    │──┼──> hybrid_search.py
 │  └───────────────┘  │
 └─────────────────────┘
          │
