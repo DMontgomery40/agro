@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# Envs and local config
+.env
+.venv/
+venv/
+
+# Build / cache / data
+out/
+.dist/
+dist/
+build/
+*.egg-info/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
