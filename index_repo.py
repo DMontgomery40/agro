@@ -41,7 +41,8 @@ _BASES = {
 }
 BASES = _BASES.get(REPO, _BASES['vivified'])
 OUTDIR = f'/Users/davidmontgomery/faxbot_folder/rag-service/out/{REPO}'
-COLLECTION = f'code_chunks_{REPO}'
+# Allow explicit collection override (for versioned collections per embedding config)
+COLLECTION = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
 
 
 # Centralized file indexing gate (extensions, excludes, heuristics)
@@ -165,6 +166,16 @@ def embed_texts_local(texts: List[str], model_name: str = 'BAAI/bge-small-en-v1.
         out.extend(v.tolist())
     return out
 
+def embed_texts_voyage(texts: List[str], batch: int = 128, output_dimension: int = 512) -> List[List[float]]:
+    import voyageai
+    client = voyageai.Client(api_key=os.getenv('VOYAGE_API_KEY'))
+    out: List[List[float]] = []
+    for i in range(0, len(texts), batch):
+        sub = texts[i:i+batch]
+        r = client.embed(sub, model='voyage-code-3', input_type='document', output_dimension=output_dimension)
+        out.extend(r.embeddings)
+    return out
+
 def main() -> None:
     files = collect_files(BASES)
     print(f'Discovered {len(files)} source files.')
@@ -247,16 +258,28 @@ def main() -> None:
     client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
     texts = [c['code'] for c in chunks]
     embs: List[List[float]] = []
-    if client is not None:
+    et = (os.getenv('EMBEDDING_TYPE','openai') or 'openai').lower()
+    if et == 'voyage':
         try:
-            cache = EmbeddingCache(OUTDIR)
-            hashes = [c['hash'] for c in chunks]
-            embs = cache.embed_texts(client, texts, hashes, model='text-embedding-3-large', batch=64)
-            cache.save()
+            embs = embed_texts_voyage(texts, batch=64, output_dimension=int(os.getenv('VOYAGE_EMBED_DIM','512')))
         except Exception as e:
-            print(f'Embedding via OpenAI failed ({e}); falling back to local embeddings.')
-    if not embs:
+            print(f"Voyage embedding failed ({e}); falling back to local embeddings.")
+            embs = []
+        if not embs:
+            embs = embed_texts_local(texts)
+    elif et == 'local':
         embs = embed_texts_local(texts)
+    else:
+        if client is not None:
+            try:
+                cache = EmbeddingCache(OUTDIR)
+                hashes = [c['hash'] for c in chunks]
+                embs = cache.embed_texts(client, texts, hashes, model='text-embedding-3-large', batch=64)
+                cache.save()
+            except Exception as e:
+                print(f'Embedding via OpenAI failed ({e}); falling back to local embeddings.')
+        if not embs:
+            embs = embed_texts_local(texts)
     q = QdrantClient(url=QDRANT_URL)
     q.recreate_collection(
         collection_name=COLLECTION,

@@ -32,10 +32,20 @@ class RAGState(TypedDict):
 
 # Responses API shim used via generate_text()
 
+def should_use_multi_query(question: str) -> bool:
+    q = (question or '').lower().strip()
+    if len(q.split()) <= 3:
+        return False
+    for w in ("how", "why", "explain", "compare", "tradeoff"):
+        if w in q:
+            return True
+    return False
+
 def retrieve_node(state: RAGState) -> Dict:
     q = state['question']
     repo = state.get('repo') if isinstance(state, dict) else None
-    docs = hybrid_search_routed_multi(q, repo_override=repo, m=int(os.getenv('MQ_REWRITES','4')), final_k=20)
+    mq = int(os.getenv('MQ_REWRITES','2')) if should_use_multi_query(q) else 1
+    docs = hybrid_search_routed_multi(q, repo_override=repo, m=mq, final_k=20)
     conf = float(sum(d.get('rerank_score',0.0) for d in docs)/max(1,len(docs)))
     # Propagate the routed repo into state so downstream nodes build correct headers
     repo_used = (repo or (docs[0].get('repo') if docs else os.getenv('REPO','vivified')))

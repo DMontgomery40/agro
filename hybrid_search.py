@@ -8,8 +8,7 @@ from qdrant_client import QdrantClient, models
 import bm25s
 from bm25s.tokenization import Tokenizer
 from Stemmer import Stemmer
-from rerank import rerank as ce_rerank
-from sentence_transformers import SentenceTransformer
+from rerank import rerank_results as ce_rerank
 from env_model import generate_text
 
 # Query intent → layer preferences
@@ -121,7 +120,37 @@ except Exception:
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
 REPO = os.getenv('REPO','vivified')
 VENDOR_MODE = os.getenv('VENDOR_MODE','prefer_first_party')
-COLLECTION = f'code_chunks_{REPO}'
+# Allow explicit collection override (for versioned collections per embedding config)
+COLLECTION = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
+
+# --- Embeddings provider (openai | voyage | local) ---
+def _lazy_import_openai():
+    from openai import OpenAI
+    return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def _lazy_import_voyage():
+    import voyageai
+    return voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
+
+_local_embed_model = None
+
+def _get_embedding(text: str, kind: str = "query") -> list[float]:
+    et = (os.getenv("EMBEDDING_TYPE", "openai") or "openai").lower()
+    if et == "voyage":
+        vo = _lazy_import_voyage()
+        out = vo.embed([text], model="voyage-code-3", input_type=kind, output_dimension=512)
+        return out.embeddings[0]
+    if et == "local":
+        global _local_embed_model
+        if _local_embed_model is None:
+            from sentence_transformers import SentenceTransformer
+            _local_embed_model = SentenceTransformer('BAAI/bge-small-en-v1.5')
+        # Normalize embeddings for cosine distance
+        return _local_embed_model.encode([text], normalize_embeddings=True, show_progress_bar=False)[0].tolist()
+    # default openai
+    client = _lazy_import_openai()
+    resp = client.embeddings.create(input=text, model="text-embedding-3-large")
+    return resp.data[0].embedding
 def rrf(
     dense: list,
     sparse: list,
@@ -204,19 +233,11 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
     # ---- Dense (Qdrant) ----
     dense_pairs = []
     qc = QdrantClient(url=QDRANT_URL)
-    coll = f'code_chunks_{REPO}'
-    e = None
-    if os.getenv('OPENAI_API_KEY'):
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-            e = client.embeddings.create(model='text-embedding-3-large', input=[query]).data[0].embedding
-        except Exception:
-            e = None
-    if e is None:
-        # fall back to local embedding to match index
-        model = SentenceTransformer('BAAI/bge-small-en-v1.5')
-        e = model.encode([query], normalize_embeddings=True, show_progress_bar=False)[0].tolist()
+    coll = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
+    try:
+        e = _get_embedding(query, kind="query")
+    except Exception:
+        e = []
     try:
         dres = qc.query_points(
             collection_name=coll,
@@ -336,6 +357,21 @@ def _load_code_cache(repo: str):
     _code_cache_by_repo[repo] = cache
     return cache
 
+# --- filename/path boosts applied post-rerank ---
+def _apply_filename_boosts(docs: list[dict], question: str) -> None:
+    terms = set((question or '').lower().replace('/', ' ').replace('-', ' ').split())
+    for d in docs:
+        fp = (d.get('file_path') or '').lower()
+        fn = os.path.basename(fp)
+        parts = fp.split('/')
+        score = float(d.get('rerank_score', 0.0) or 0.0)
+        if any(t and t in fn for t in terms):
+            score *= 1.5
+        if any(t and t in p for t in terms for p in parts):
+            score *= 1.2
+        d['rerank_score'] = score
+    docs.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
+
 # --- Strict per-repo routing helpers (no fusion) ---
 def route_repo(query: str, default_repo: str | None = None) -> str:
     q = (query or '').lower()
@@ -404,8 +440,9 @@ def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4
         uniq.append(d)
     # Rerank union
     try:
-        from rerank import rerank as ce_rerank
+        from rerank import rerank_results as ce_rerank
         reranked = ce_rerank(query, uniq, top_k=final_k)
+        _apply_filename_boosts(reranked, query)
         return reranked
     except Exception:
         return uniq[:final_k]

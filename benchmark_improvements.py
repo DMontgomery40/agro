@@ -1,0 +1,41 @@
+import os
+from hybrid_search import search_routed_multi
+
+TESTS = [
+    ('vivified','ai studio','easy'),
+    ('vivified','TBAC trait system','easy'),
+    ('faxbot','plugin builder','easy'),
+    ('faxbot','webhook verification','easy'),
+    ('vivified','three lane gateway','medium'),
+    ('vivified','plugin sandbox isolation','medium'),
+    ('faxbot','provider adapter traits','medium'),
+    ('faxbot','canonical event normalization','medium'),
+    ('vivified','how does TBAC prevent PHI access','hard'),
+    ('vivified','what is the general purpose of vivified','hard'),
+    ('faxbot','how do different providers interact','hard'),
+]
+
+os.environ.setdefault('EMBEDDING_TYPE', 'local')
+
+by_diff = {}
+for repo, q, d in TESTS:
+    docs = search_routed_multi(q, repo_override=repo, final_k=5)
+    s = (docs or [{}])[0].get('rerank_score', 0.0)
+    by_diff.setdefault(d, []).append(s)
+
+print('\n' + '='*80)
+print('FINAL PERFORMANCE METRICS')
+print('='*80)
+
+TARGET = {'easy':0.80, 'medium':0.70, 'hard':0.65}
+all_scores = []
+for d, arr in by_diff.items():
+    avg = sum(arr)/max(1,len(arr))
+    all_scores.extend(arr)
+    status = '✓' if avg >= TARGET[d] else '✗'
+    print(f"{status} {d.upper():7} | Avg: {avg:.3f} | Target: {TARGET[d]:.3f}")
+
+overall = sum(all_scores)/max(1,len(all_scores))
+print(f"\n{'Overall Average:':20} {overall:.3f}")
+print('='*80)
+
