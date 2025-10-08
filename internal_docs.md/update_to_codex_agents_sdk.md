@@ -93,7 +93,7 @@ if __name__ == "__main__":
     # stdio is default; works with `codex mcp add … -- python server.py`
     mcp.run()
 PY
-MCP SDK & patterns docs for reference: https://github.com/modelcontextprotocol/python-sdk (official SDK) https://modelcontextprotocol.io/docs/concepts/tools (tool shape)Model Context Protocol https://modelcontextprotocol.io/docs/develop/build-server (server quickstart)Model Context Protocol
+MCP SDK & patterns docs for reference:https://github.com/modelcontextprotocol/python-sdk (official SDK)https://modelcontextprotocol.io/docs/concepts/tools (tool shape)Model Context Protocolhttps://modelcontextprotocol.io/docs/develop/build-server (server quickstart)Model Context Protocol
 
 4) Register the MCP server with Codex
 Codex reads MCP config from ~/.codex/config.toml and also has a CLI helper codex mcp add …. Use either.
@@ -109,7 +109,7 @@ cat >> ~/.codex/config.toml <<'TOML'
 command = "python"
 args    = ["/Users/davidmontgomery/faxbot_folder/rag-mcp/server.py"]
 TOML
-Docs describing Codex MCP config & CLI: https://developers.openai.com/codex/mcp/ https://github.com/openai/codex (see “Configuration” and “Model Context Protocol (MCP)”)
+Docs describing Codex MCP config & CLI:https://developers.openai.com/codex/mcp/https://github.com/openai/codex (see “Configuration” and “Model Context Protocol (MCP)”)
 
 5) Give Codex “muscle memory” via AGENTS.md
 Codex supports per-workspace memory/instructions. Put this in the same folder where you run Codex (e.g., /Users/davidmontgomery/faxbot_folder or in each repo root). The docs list “Memory with AGENTS.md” under “Docs & FAQ” in the Codex repo readme.
@@ -142,7 +142,7 @@ cd /Users/davidmontgomery/faxbot_folder && codex
 The CLI syntax above nudges Codex to call your MCP tool. Because the server wraps your existing langgraph_app.py, you don’t need to reinvent your RAG service.
 
 7) Add guardrails (optional but recommended)
-OpenAI’s Agents SDK Guardrails can run input/output checks in parallel to reduce hallucinations or enforce “no-citation = no answer.” You can progressively adopt them where your agent code runs (or as a future step if you move from Codex CLI → Agents SDK hosted agent). Docs: https://openai.github.io/openai-agents-python/guardrails/ OpenAI GitHub and ref API: https://openai.github.io/openai-agents-python/ref/guardrail/ OpenAI GitHub
+OpenAI’s Agents SDK Guardrails can run input/output checks in parallel to reduce hallucinations or enforce “no-citation = no answer.” You can progressively adopt them where your agent code runs (or as a future step if you move from Codex CLI → Agents SDK hosted agent).Docs: https://openai.github.io/openai-agents-python/guardrails/ OpenAI GitHub and ref API: https://openai.github.io/openai-agents-python/ref/guardrail/ OpenAI GitHub
 
 8) Set up Evals to measure improvements
 OpenAI’s DevDay update added Datasets, trace grading, prompt optimizer, and 3rd-party model support so you can score retrieval and see exactly where the agent skipped a tool call. Start simple:
@@ -153,7 +153,7 @@ OpenAI’s DevDay update added Datasets, trace grading, prompt optimizer, and 3r
 Helpful starting points:
 	•	Evals guide (platform): https://platform.openai.com/docs/guides/evals OpenAI
 	•	Agent evals page (platform): https://platform.openai.com/docs/guides/agent-evals OpenAI
-	•	Cookbook examples for Evals, including tool-use evaluation: https://cookbook.openai.com/examples/evaluation/getting_started_with_openai_evals OpenAI Cookbook https://cookbook.openai.com/examples/evaluation/use-cases/tools-evaluation OpenAI Cookbook
+	•	Cookbook examples for Evals, including tool-use evaluation:https://cookbook.openai.com/examples/evaluation/getting_started_with_openai_evals OpenAI Cookbookhttps://cookbook.openai.com/examples/evaluation/use-cases/tools-evaluation OpenAI Cookbook
 You’ll get pass/fail + traces so you can see when Codex didn’t call the tool or when your RAG returned borderline scores and the agent refused to answer. Use that to tune your RAG thresholds later.
 
 9) Optional: use OpenAI’s File Search instead (or in addition)

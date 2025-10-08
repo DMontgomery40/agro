@@ -112,7 +112,7 @@ RAG Handoff (Vivified + Faxbot, Strict Per‑Repo)
       - export REPO=faxbot; python index_repo.py
   - Build cards:
       - Vivified: REPO=vivified python build_cards.py
-      - Faxbot (partial): REPO=faxbot CARDS_MAX=300 python build_cards.py
+      - Faxbot: REPO=faxbot python build_cards.py
 
   Index details:
 
@@ -123,7 +123,7 @@ RAG Handoff (Vivified + Faxbot, Strict Per‑Repo)
   - BM25 index save and mapping (chunk ids): /Users/davidmontgomery/
     faxbot_folder/rag-service/index_repo.py:186
   - Embedding cache (hash keyed) → out/<REPO>/embed_cache.jsonl on next run with
-    OpenAI key:
+    OpenAI key is in .env in this directory:
       - /Users/davidmontgomery/faxbot_folder/rag-service/index_repo.py:205
   - Qdrant vector size set from index embeddings; ensure consistent model across
     reindex/search:
