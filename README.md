@@ -428,7 +428,6 @@ python eval_loop.py
 # Top-1 accuracy:  70.0% (7/10)
 # Top-5 accuracy:  90.0% (9/10)
 # Duration:        12.4s
-# Timestamp:       2025-10-07 14:23:10
 ```
 
 ### Creating & Managing Golden Tests
@@ -878,7 +877,7 @@ python -c "from langgraph_app import build_graph; g = build_graph(); print('✓ 
 
 The RAG service currently uses:
 - **Embeddings**: OpenAI `text-embedding-3-large` (3072 dims, $0.13/1M tokens)
-- **Generation**: OpenAI `gpt-4o-mini` ($0.15/1M input, $0.60/1M output)
+- **Generation**: Responses API with GPT-5-Codex (for code) or configured model via `GEN_MODEL` env var
 
 ### Quick Alternatives
 
@@ -1085,9 +1084,7 @@ python -c "from hybrid_search import search_routed_multi; print(search_routed_mu
 
 ---
 
-**Last Updated:** 2025-10-07
 **Version:** 1.0.0
-**Status:** Production Ready ✓
 
 ---
 
@@ -1110,7 +1107,7 @@ Comprehensive guides are available in the [`docs/`](docs/) folder:
   - Common workflows
 
 ### 🤖 Model Selection
-- **[Model Recommendations 2025](docs/MODEL_RECOMMENDATIONS.md)** - Comprehensive model guide
+- **[Model Recommendations](docs/MODEL_RECOMMENDATIONS.md)** - Comprehensive model guide
   - 20+ embedding models (cloud + local)
   - 15+ inference models (cloud + local)
   - Hardware-specific recommendations (Mac M1-M4, NVIDIA, CPU)
@@ -1163,7 +1160,7 @@ Comprehensive guides are available in the [`docs/`](docs/) folder:
 | `README.md` | **This file - complete setup guide** |
 | `docs/MCP_README.md` | MCP technical documentation |
 | `docs/QUICKSTART_MCP.md` | Quick MCP reference |
-| `docs/MODEL_RECOMMENDATIONS.md` | Model selection guide (2025) |
+| `docs/MODEL_RECOMMENDATIONS.md` | Model selection guide |
 | `docs/IMPLEMENTATION_COMPLETE.md` | Implementation summary |
 | `docs/SUMMARY.md` | Quick overview |
 
@@ -1221,7 +1218,7 @@ Comprehensive guides are available in the [`docs/`](docs/) folder:
   - Common workflows
 
 ### 🤖 Model Selection
-- **[Model Recommendations 2025](docs/MODEL_RECOMMENDATIONS.md)** - Comprehensive model guide
+- **[Model Recommendations](docs/MODEL_RECOMMENDATIONS.md)** - Comprehensive model guide
   - 20+ embedding models (cloud + local)
   - 15+ inference models (cloud + local)
   - Hardware-specific recommendations (Mac M1-M4, NVIDIA, CPU)
@@ -1274,7 +1271,7 @@ Comprehensive guides are available in the [`docs/`](docs/) folder:
 | `README.md` | **This file - complete setup guide** |
 | `docs/MCP_README.md` | MCP technical documentation |
 | `docs/QUICKSTART_MCP.md` | Quick MCP reference |
-| `docs/MODEL_RECOMMENDATIONS.md` | Model selection guide (2025) |
+| `docs/MODEL_RECOMMENDATIONS.md` | Model selection guide |
 | `docs/IMPLEMENTATION_COMPLETE.md` | Implementation summary |
 | `docs/SUMMARY.md` | Quick overview |
 

@@ -19,7 +19,7 @@ This folder contains comprehensive implementation guides and reference documenta
   - Architecture diagram
 
 ### Model Selection
-- **[MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md)** - 2025 Model Guide (520+ lines)
+- **[MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md)** - Model Guide (520+ lines)
   - **20+ embedding models** comparison (OpenAI, Google, Voyage, Ollama, BGE, NVIDIA)
   - **15+ inference models** for code generation (GPT-4o, Gemini, Claude, Qwen, DeepSeek)
   - Hardware-specific recommendations (Mac M1-M4, NVIDIA GPUs, CPU-only)
@@ -59,4 +59,4 @@ This folder contains comprehensive implementation guides and reference documenta
 
 ---
 
-**Note:** All documentation is up-to-date as of 2025-10-07 and includes the latest model recommendations based on 2025 benchmarks.
+**Note:** All documentation includes current model recommendations based on latest benchmarks.

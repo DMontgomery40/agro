@@ -5,7 +5,7 @@ from dotenv import load_dotenv, find_dotenv
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.redis import RedisSaver
 from hybrid_search import search_routed_multi as hybrid_search_routed_multi
-from openai import OpenAI
+from env_model import generate_text
 
 # Load environment from repo root .env without hard-coded paths
 try:
@@ -30,7 +30,7 @@ class RAGState(TypedDict):
     confidence: float
     repo: str
 
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Responses API shim used via generate_text()
 
 def retrieve_node(state: RAGState) -> Dict:
     q = state['question']
@@ -58,9 +58,10 @@ def route_after_retrieval(state:RAGState)->str:
 
 def rewrite_query(state: RAGState) -> Dict:
     q = state['question']
-    prompt = f"Rewrite this developer question to be maximally searchable against code (expand CamelCase, add likely API names) without changing meaning.\n\n{q}\n\nRewritten:"
-    r = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'user','content':prompt}], temperature=0.2)
-    newq = r.choices[0].message.content.strip()
+    sys = "You rewrite developer questions into search-optimized queries without changing meaning."
+    user = f"Rewrite this for code search (expand CamelCase, include API nouns), one line.\n\n{q}"
+    newq, _ = generate_text(user_input=user, system_instructions=sys, reasoning_effort=None)
+    newq = (newq or '').strip()
     return {'question': newq}
 
 def generate_node(state: RAGState) -> Dict:
@@ -69,8 +70,8 @@ def generate_node(state: RAGState) -> Dict:
     context_text = "\n\n".join([d.get('code','') for d in ctx])
     sys = 'You answer strictly from the provided code context. Always cite file paths and line ranges you used.'
     user = f"Question:\n{q}\n\nContext:\n{context_text}\n\nCitations (paths and line ranges):\n{citations}\n\nAnswer:"
-    r = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'system','content':sys},{'role':'user','content':user}], temperature=0.2)
-    content = r.choices[0].message.content
+    content, _ = generate_text(user_input=user, system_instructions=sys, reasoning_effort=None)
+    content = content or ''
     # Lightweight verifier: if confidence low, try multi-query retrieval and regenerate once
     conf = float(state.get('confidence', 0.0) or 0.0)
     if conf < 0.55:
@@ -81,8 +82,8 @@ def generate_node(state: RAGState) -> Dict:
             citations2 = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" for d in ctx2])
             context_text2 = "\n\n".join([d.get('code','') for d in ctx2])
             user2 = f"Question:\n{q}\n\nContext:\n{context_text2}\n\nCitations (paths and line ranges):\n{citations2}\n\nAnswer:"
-            r2 = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'system','content':sys},{'role':'user','content':user2}], temperature=0.2)
-            content = r2.choices[0].message.content
+            content2, _ = generate_text(user_input=user2, system_instructions=sys, reasoning_effort=None)
+            content = (content2 or content or '')
     repo_hdr = state.get('repo') or (ctx[0].get('repo') if ctx else None) or os.getenv('REPO','vivified')
     header = f"[repo: {repo_hdr}]"
     return {'generation': header + "\n" + content}

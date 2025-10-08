@@ -10,6 +10,7 @@ from bm25s.tokenization import Tokenizer
 from Stemmer import Stemmer
 from rerank import rerank as ce_rerank
 from sentence_transformers import SentenceTransformer
+from env_model import generate_text
 
 # Query intent → layer preferences
 def _classify_query(q:str)->str:
@@ -368,15 +369,10 @@ def search_routed(query: str, repo_override: str | None = None, final_k: int = 1
 # Multi-query expansion (cheap) and routed search
 def expand_queries(query: str, m: int = 4) -> list[str]:
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        prompt = (
-            'Rewrite the developer query into {} different phrasings that help code search. '
-            'Keep semantics identical. Output one per line.\nQuery: {}'
-        ).format(m, query)
-        r = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'user','content':prompt}], temperature=0.3)
-        content = r.choices[0].message.content or ""
-        lines = [ln.strip('- ').strip() for ln in content.splitlines() if ln.strip()]
+        sys = "Rewrite a developer query into multiple search-friendly variants without changing meaning."
+        user = f"Count: {m}\nQuery: {query}\nOutput one variant per line, no numbering."
+        text, _ = generate_text(user_input=user, system_instructions=sys, reasoning_effort=None)
+        lines = [ln.strip('- ').strip() for ln in (text or '').splitlines() if ln.strip()]
         uniq = []
         for ln in lines:
             if ln and ln not in uniq:

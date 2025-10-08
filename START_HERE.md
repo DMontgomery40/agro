@@ -49,7 +49,7 @@ rag-service/
     ├── 🔧 MCP_README.md ............... MCP technical details
     │   └─ Protocol specs, troubleshooting
     │
-    ├── 🤖 MODEL_RECOMMENDATIONS.md .... 2025 Model Guide (585 lines)
+    ├── 🤖 MODEL_RECOMMENDATIONS.md .... Model Guide (585 lines)
     │   ├─ 20+ embedding models
     │   ├─ 15+ inference models
     │   ├─ Free options (Google Gemini)
@@ -168,8 +168,6 @@ REPO=vivified python index_repo.py
 
 ---
 
-**Status**: Production Ready ✅
-**Date**: 2025-10-07
 **All Features**: Implemented & Tested
 
 **Need help?** All docs are cross-linked. Start anywhere and follow the links!

@@ -1,4 +1,4 @@
-# Implementation Summary - MCP + Codex + Evals (2025-10-07)
+# Implementation Summary - MCP + Codex + Evals
 
 ## What Was Implemented ✓
 
@@ -54,7 +54,7 @@ This implementation provides **complete MCP integration** for the RAG service, e
 | `MCP_README.md` | 179 | MCP technical docs |
 | `QUICKSTART_MCP.md` | 108 | Quick reference |
 | `test_mcp.sh` | 104 | Test script |
-| **TOTAL** | **2025** | **~80KB** |
+| **TOTAL** | **~2K** | **~80KB** |
 
 ## Key Features
 
@@ -215,13 +215,12 @@ python eval_loop.py
 4. **Monitor quality** - Use watch mode during development
 5. **Tune as needed** - Adjust bonuses/thresholds in hybrid_search.py
 
-## Status: Production Ready ✅
+## Status
 
 All features implemented, tested, and documented.
 
 ---
-**Date**: 2025-10-07  
-**Version**: 1.0.0  
-**Implementation Time**: ~2 hours  
-**Files**: 7 new + 3 updated  
+**Version**: 1.0.0
+**Implementation Time**: ~2 hours
+**Files**: 7 new + 3 updated
 **Documentation**: 1042 lines (README) + supporting docs

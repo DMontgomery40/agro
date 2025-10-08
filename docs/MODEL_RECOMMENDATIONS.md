@@ -1,4 +1,4 @@
-# Model Recommendations for RAG Service (2025)
+# Model Recommendations for RAG Service
 
 This guide helps you choose the best embedding and inference models for your RAG service based on hardware, budget, and performance requirements.
 
@@ -581,5 +581,4 @@ content = response.text
 
 ---
 
-**Last Updated**: 2025-10-07
-**Based on**: MTEB leaderboard, vendor pricing, community benchmarks as of Oct 2025
+**Based on**: Current MTEB leaderboard, vendor pricing, and community benchmarks

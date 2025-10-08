@@ -14,6 +14,7 @@ from openai import OpenAI
 from embed_cache import EmbeddingCache
 import tiktoken
 from sentence_transformers import SentenceTransformer
+import fnmatch, pathlib
 
 # Load local env and also repo-root .env if present (no hard-coded paths)
 try:
@@ -41,6 +42,48 @@ _BASES = {
 BASES = _BASES.get(REPO, _BASES['vivified'])
 OUTDIR = f'/Users/davidmontgomery/faxbot_folder/rag-service/out/{REPO}'
 COLLECTION = f'code_chunks_{REPO}'
+
+
+# Centralized file indexing gate (extensions, excludes, heuristics)
+SOURCE_EXTS = {
+    ".py", ".rb", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java",
+    ".cs", ".c", ".h", ".cpp", ".hpp", ".m", ".mm", ".kt", ".kts", ".swift",
+    ".sql", ".yml", ".yaml", ".toml", ".ini", ".json", ".md"
+}
+EXCLUDE_GLOBS_FILE = "data/exclude_globs.txt"
+
+def _load_exclude_globs() -> list[str]:
+    p = pathlib.Path(EXCLUDE_GLOBS_FILE)
+    if not p.exists():
+        return []
+    return [ln.strip() for ln in p.read_text().splitlines() if ln.strip() and not ln.startswith("#")]
+
+_EXCLUDE_GLOBS = _load_exclude_globs()
+
+def should_index_file(path: str) -> bool:
+    p = pathlib.Path(path)
+    # 1) fast deny: extension must look like source
+    if p.suffix.lower() not in SOURCE_EXTS:
+        return False
+    # 2) glob excludes (vendor, caches, images, minified, etc.)
+    as_posix = p.as_posix()
+    for pat in _EXCLUDE_GLOBS:
+        if fnmatch.fnmatch(as_posix, pat):
+            return False
+    # 3) quick heuristic to skip huge/minified one-liners
+    try:
+        text = p.read_text(errors="ignore")
+        if len(text) > 2_000_000:  # ~2MB
+            return False
+        # suspect minified if average line length is enormous
+        lines = text.splitlines()
+        if lines:
+            avg = sum(len(x) for x in lines) / max(1, len(lines))
+            if avg > 2500:
+                return False
+    except Exception:
+        return False
+    return True
 
 
 # --- Repo-aware layer tagging ---
@@ -127,6 +170,8 @@ def main() -> None:
     print(f'Discovered {len(files)} source files.')
     all_chunks: List[Dict] = []
     for fp in files:
+        if not should_index_file(fp):
+            continue
         lang = lang_from_path(fp)
         if not lang:
             continue

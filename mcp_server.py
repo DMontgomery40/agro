@@ -19,6 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
+import urllib.request, urllib.error
+import json as _json
 
 
 class MCPServer:
@@ -134,6 +136,65 @@ class MCPServer:
                 "count": 0
             }
 
+    # --- Netlify helpers ---
+    def _netlify_api(self, path: str, method: str = "GET", data: dict | None = None) -> dict:
+        api_key = os.getenv("NETLIFY_API_KEY")
+        if not api_key:
+            raise RuntimeError("NETLIFY_API_KEY not set in environment")
+        url = f"https://api.netlify.com/api/v1{path}"
+        req = urllib.request.Request(url, method=method)
+        req.add_header("Authorization", f"Bearer {api_key}")
+        req.add_header("Content-Type", "application/json")
+        body = None
+        if data is not None:
+            body = _json.dumps(data).encode("utf-8")
+        try:
+            with urllib.request.urlopen(req, data=body, timeout=30) as resp:
+                raw = resp.read().decode("utf-8")
+                return _json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as he:
+            err_body = he.read().decode("utf-8", errors="ignore")
+            raise RuntimeError(f"Netlify HTTP {he.code}: {err_body}")
+
+    def _netlify_find_site_by_domain(self, domain: str) -> dict | None:
+        sites = self._netlify_api("/sites", method="GET")
+        if isinstance(sites, list):
+            domain_low = (domain or "").strip().lower()
+            for s in sites:
+                for key in ("custom_domain", "url", "ssl_url"):
+                    val = (s.get(key) or "").lower()
+                    if val and domain_low in val:
+                        return s
+        return None
+
+    def handle_netlify_deploy(self, domain: str) -> Dict[str, Any]:
+        targets: list[str]
+        if domain == "both":
+            targets = ["faxbot.net", "vivified.dev"]
+        else:
+            targets = [domain]
+        results = []
+        for d in targets:
+            site = self._netlify_find_site_by_domain(d)
+            if not site:
+                results.append({"domain": d, "status": "not_found"})
+                continue
+            site_id = site.get("id")
+            if not site_id:
+                results.append({"domain": d, "status": "no_site_id"})
+                continue
+            try:
+                build = self._netlify_api(f"/sites/{site_id}/builds", method="POST", data={})
+                results.append({
+                    "domain": d,
+                    "status": "triggered",
+                    "site_id": site_id,
+                    "build_id": build.get("id"),
+                })
+            except Exception as e:
+                results.append({"domain": d, "status": "error", "error": str(e)})
+        return {"results": results}
+
     def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle MCP tool call request.
@@ -205,6 +266,21 @@ class MCPServer:
                                 },
                                 "required": ["repo", "question"]
                             }
+                        },
+                        {
+                            "name": "netlify_deploy",
+                            "description": "Trigger a Netlify build for faxbot.net, vivified.dev, or both (uses NETLIFY_API_KEY)",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "domain": {
+                                        "type": "string",
+                                        "description": "Target domain",
+                                        "enum": ["faxbot.net", "vivified.dev", "both"],
+                                        "default": "both"
+                                    }
+                                }
+                            }
                         }
                     ]
                 }
@@ -233,6 +309,15 @@ class MCPServer:
                     question=args.get("question", ""),
                     top_k=args.get("top_k", 10)
                 )
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}
+                }
+
+            elif tool_name in ("netlify.deploy", "netlify_deploy"):
+                domain = args.get("domain", "both")
+                result = self.handle_netlify_deploy(domain)
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,

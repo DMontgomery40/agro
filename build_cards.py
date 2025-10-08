@@ -1,7 +1,7 @@
 import os, json
 from typing import Dict
 from dotenv import load_dotenv
-from openai import OpenAI
+from env_model import generate_text
 
 load_dotenv()
 REPO = os.getenv('REPO','vivified').strip()
@@ -26,7 +26,7 @@ def iter_chunks():
 
 def main():
     os.makedirs(BASE, exist_ok=True)
-    client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+    # Responses API via env_model.generate_text
     n = 0
     with open(CARDS, 'w', encoding='utf-8') as out_json, open(CARDS_TXT, 'w', encoding='utf-8') as out_txt:
         for ch in iter_chunks():
@@ -35,9 +35,9 @@ def main():
             snippet = code[:2000]
             msg = PROMPT + snippet
             try:
-                r = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'user','content':msg}], temperature=0.2)
-                content = r.choices[0].message.content.strip()
-                card: Dict = json.loads(content)
+                text, _ = generate_text(user_input=msg, system_instructions=None, reasoning_effort=None, response_format={"type": "json_object"})
+                content = (text or '').strip()
+                card: Dict = json.loads(content) if content else {"symbols": [], "purpose": "", "routes": []}
             except Exception:
                 card = {"symbols": [], "purpose": "", "routes": []}
             card['file_path'] = fp
