@@ -7,8 +7,10 @@ try:
 except Exception as e:
     raise RuntimeError("openai>=1.x is required for Responses API") from e
 
-# Model pin (current): GPT-5-Codex (Responses-only)
-_DEFAULT_MODEL = os.getenv("GEN_MODEL", "gpt-5-codex")
+# Model pin (Responses API): default to OpenAI gpt-4o-mini-latest
+# Default to a valid, stable alias. Users may override with a dated pin
+# (e.g., gpt-4o-mini-2024-07-18) or another provider via GEN_MODEL.
+_DEFAULT_MODEL = os.getenv("GEN_MODEL", "gpt-4o-mini-latest")
 
 _client = None
 
@@ -76,4 +78,3 @@ def generate_text(
     resp = client().responses.create(**kwargs)
     text = _extract_text(resp)
     return text, resp
-

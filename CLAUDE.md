@@ -11,7 +11,7 @@
 3) **Always cite files + line ranges** from retrieval results when proposing code edits.
 4) **If confidence is borderline**, return best citations + ask a clarifying question; don't guess.
 5) **Prefer tools over memory.** Use MCP tools or the HTTP API before speculating.
-6) **Use current stack only.** Responses API (not Chat Completions), GPT-5-Codex for code, current Codex CLI.
+6) **Use current stack only.** Responses API (not Chat Completions); default `GEN_MODEL` is `gpt-4o-mini-latest`.
 
 Plain refs for agents/humans (open directly):
 - Codex CLI repo (install, config): https://github.com/openai/codex
@@ -19,7 +19,7 @@ Plain refs for agents/humans (open directly):
 - Agents SDK (guardrails, tracing): https://openai.github.io/openai-agents-python/
 - AgentKit overview (evals, tracing, workflows): https://openai.com/index/introducing-agentkit/
 - Responses API (current): https://openai.com/index/new-tools-and-features-in-the-responses-api/
-- GPT-5-Codex (current code model): https://openai.com/index/introducing-upgrades-to-codex/
+  (Choose a supported model alias like `gpt-4o-mini-latest`, or pin a dated variant.)
 
 ---
 
@@ -110,7 +110,7 @@ Hybrid Search (hybrid_search.py)
    ↓
 Local Hydration (out/{repo}/chunks.jsonl)
    ↓
-Generation (via Responses API; GPT-5-Codex for code, or configured model)
+Generation (via Responses API; default `gpt-4o-mini-latest` or `GEN_MODEL`)
    ↓
 Answer + Citations (must include file paths + line ranges)
 ```
@@ -210,7 +210,7 @@ LangGraph memory/checkpoint.
 
 ### Current stack
 
-- `GEN_MODEL` (default `gpt-5-codex`; use GPT-5-Codex for code, Responses API only)
+- `GEN_MODEL` (default `gpt-4o-mini-latest`; set a dated pin like `gpt-4o-mini-YYYY-MM-DD` if desired)
 - `RESPONSES_API=1` (flag to enforce Responses API usage)
 
 ### Optional (overrides if implemented in code)
