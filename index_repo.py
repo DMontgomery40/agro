@@ -1,8 +1,9 @@
-import os, json, hashlib
+import os
+import json
+import hashlib
 from typing import List, Dict
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
-import time
 from ast_chunker import lang_from_path, collect_files, chunk_code
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -73,17 +74,6 @@ def detect_layer(fp: str) -> str:
         if '/asterisk/' in f or '/config/' in f or '/infra/' in f:
             return 'infra'
         return 'server'
-    if '/sdks/' in f or '/python_mcp/' in f or '/node_mcp/' in f or '/plugin-dev-kit/' in f:
-        return 'sdk'
-    if '/site/' in f or '/docs-site/' in f:
-        return 'ui'
-    if '/docs/' in f or '/internal_docs/' in f:
-        return 'docs'
-    # provider/integration surfaces
-    if 'provider' in f or 'providers' in f or 'integration' in f or 'webhook' in f or 'adapter' in f:
-        return 'integration'
-    # default
-    return 'server'
 
 VENDOR_MARKERS = (
     "/vendor/","/third_party/","/external/","/deps/","/node_modules/",
@@ -132,16 +122,19 @@ def embed_texts_local(texts: List[str], model_name: str = 'BAAI/bge-small-en-v1.
         out.extend(v.tolist())
     return out
 
-def main():
+def main() -> None:
     files = collect_files(BASES)
     print(f'Discovered {len(files)} source files.')
     all_chunks: List[Dict] = []
     for fp in files:
         lang = lang_from_path(fp)
-        if not lang: continue
+        if not lang:
+            continue
         try:
-            with open(fp, 'r', encoding='utf-8', errors='ignore') as f: src = f.read()
-        except Exception: continue
+            with open(fp, 'r', encoding='utf-8', errors='ignore') as f:
+                src = f.read()
+        except Exception:
+            continue
         ch = chunk_code(src, fp, lang, target=900)
         all_chunks.extend(ch)
 
@@ -157,20 +150,26 @@ def main():
         except Exception:
             c['origin'] = 'first_party'
         h = hashlib.md5(c['code'].encode()).hexdigest()
-        if h in seen: continue
-        seen.add(h); c['hash'] = h; chunks.append(c)
+        if h in seen:
+            continue
+        seen.add(h)
+        c['hash'] = h
+        chunks.append(c)
     print(f'Prepared {len(chunks)} chunks.')
 
     # BM25S index
     corpus: List[str] = []
     for c in chunks:
         pre = []
-        if c.get('name'): pre += [c['name']]*2
-        if c.get('imports'): pre += [i[0] or i[1] for i in c['imports'] if isinstance(i, (list, tuple))]
+        if c.get('name'):
+            pre += [c['name']]*2
+        if c.get('imports'):
+            pre += [i[0] or i[1] for i in c['imports'] if isinstance(i, (list, tuple))]
         body = c['code']
         corpus.append((' '.join(pre)+'\n'+body).strip())
 
-    stemmer = Stemmer('english'); tokenizer = Tokenizer(stemmer=stemmer, stopwords='en')
+    stemmer = Stemmer('english')
+    tokenizer = Tokenizer(stemmer=stemmer, stopwords='en')
     corpus_tokens = tokenizer.tokenize(corpus)
     retriever = bm25s.BM25(method='lucene', k1=1.2, b=0.65)
     retriever.index(corpus_tokens)
@@ -196,7 +195,8 @@ def main():
     import json as _json
     _json.dump({str(i): cid for i, cid in enumerate(chunk_ids)}, open(os.path.join(OUTDIR,'bm25_index','bm25_map.json'),'w'))
     with open(os.path.join(OUTDIR,'chunks.jsonl'),'w',encoding='utf-8') as f:
-        for c in chunks: f.write(json.dumps(c, ensure_ascii=False)+'\n')
+        for c in chunks:
+            f.write(json.dumps(c, ensure_ascii=False)+'\n')
     print('BM25 index saved.')
 
     client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
@@ -223,12 +223,27 @@ def main():
         # Derive a stable UUID from the chunk id string to satisfy Qdrant (expects int or UUID)
         cid = str(c['id'])
         pid = str(uuid.uuid5(uuid.NAMESPACE_DNS, cid))
-        points.append(models.PointStruct(id=pid, vector={'dense': v}, payload=c))
+        # Create slim payload without code (code is stored locally in chunks.jsonl)
+        slim_payload = {
+            'id': c.get('id'),
+            'file_path': c.get('file_path'),
+            'start_line': c.get('start_line'),
+            'end_line': c.get('end_line'),
+            'layer': c.get('layer'),
+            'repo': c.get('repo'),
+            'origin': c.get('origin'),
+            'hash': c.get('hash'),
+            'language': c.get('language')
+        }
+        # Remove None values to keep payload minimal
+        slim_payload = {k: v for k, v in slim_payload.items() if v is not None}
+        points.append(models.PointStruct(id=pid, vector={'dense': v}, payload=slim_payload))
         point_ids.append(pid)
         if len(points) == 64:
             q.upsert(COLLECTION, points=points)
             points = []
-    if points: q.upsert(COLLECTION, points=points)
+    if points:
+        q.upsert(COLLECTION, points=points)
     # Persist point id mapping aligned to BM25 corpus order
     import json as _json
     _json.dump({str(i): pid for i, pid in enumerate(point_ids)}, open(os.path.join(OUTDIR,'bm25_index','bm25_point_ids.json'),'w'))

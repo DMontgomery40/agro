@@ -15,7 +15,8 @@ The MCP server (`mcp_server.py`) exposes two tools:
 
 - Python virtualenv activated: `. .venv/bin/activate`
 - Infrastructure running: Qdrant + Redis via Docker Compose
-- At least one repo indexed: `REPO=vivified python index_repo.py`
+- At least one repo indexed: `REPO=vivified python index_repo.py` 
+- Ideally both: 'REPO=faxbot python index_repo.py'
 - Codex CLI installed: `brew install openai/tap/codex` or `npm install -g @openai/codex`
 
 ### 2. Register MCP Server with Codex

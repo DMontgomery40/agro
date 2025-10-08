@@ -1,4 +1,6 @@
-import os, json, collections
+import os
+import json
+import collections
 from typing import List, Dict
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
@@ -7,42 +9,52 @@ import bm25s
 from bm25s.tokenization import Tokenizer
 from Stemmer import Stemmer
 from rerank import rerank as ce_rerank
+from sentence_transformers import SentenceTransformer
 
 # Query intent → layer preferences
 def _classify_query(q:str)->str:
     ql=(q or '').lower()
-    if any(k in ql for k in ['ui','react','component','tsx','page','frontend','render','css']): return 'ui'
-    if any(k in ql for k in ['notification','pushover','apprise','hubspot','provider','integration','adapter','webhook']): return 'integration'
-    if any(k in ql for k in ['diagnostic','health','event log','phi','mask','hipaa','middleware','auth','token','oauth','hmac']): return 'server'
-    if any(k in ql for k in ['sdk','client library','python sdk','node sdk']): return 'sdk'
-    if any(k in ql for k in ['infra','asterisk','sip','t.38','ami','freeswitch','egress','cloudflared']): return 'infra'
+    if any(k in ql for k in ['ui','react','component','tsx','page','frontend','render','css']):
+        return 'ui'
+    if any(k in ql for k in ['notification','pushover','apprise','hubspot','provider','integration','adapter','webhook']):
+        return 'integration'
+    if any(k in ql for k in ['diagnostic','health','event log','phi','mask','hipaa','middleware','auth','token','oauth','hmac']):
+        return 'server'
+    if any(k in ql for k in ['sdk','client library','python sdk','node sdk']):
+        return 'sdk'
+    if any(k in ql for k in ['infra','asterisk','sip','t.38','ami','freeswitch','egress','cloudflared']):
+        return 'infra'
     return 'server'
 
 def _vivified_layer_bonus(layer:str,intent:str)->float:
-    L=(layer or '').lower(); I=(intent or 'server').lower()
+    layer_lower=(layer or '').lower()
+    intent_lower=(intent or 'server').lower()
     table={'server':{'kernel':0.10,'plugin':0.04,'ui':0.00,'docs':0.00,'tests':0.00,'infra':0.02},
-           'integration':{'plugin':0.12,'kernel':0.04,'ui':0.00,'docs':0.00,'tests':0.00,'infra':0.00},
+           'integration':{'integration':0.12,'kernel':0.04,'ui':0.00,'docs':0.00,'tests':0.00,'infra':0.00},
            'ui':{'ui':0.12,'docs':0.06,'kernel':0.02,'plugin':0.02,'tests':0.00,'infra':0.00},
            'sdk':{'kernel':0.04,'docs':0.02},
            'infra':{'infra':0.12,'kernel':0.04}}
-    return table.get(I,{}).get(L,0.0)
+    return table.get(intent_lower,{}).get(layer_lower,0.0)
 
 def _faxbot_layer_bonus(layer:str,intent:str)->float:
-    L=(layer or '').lower(); I=(intent or 'server').lower()
-    table={'server':{'server':0.10,'integration':0.06,'ui':0.00,'sdk':0.00,'infra':0.02,'docs':0.00},
-           'integration':{'integration':0.12,'server':0.06,'ui':0.00,'sdk':0.00,'infra':0.02,'docs':0.00},
-           'ui':{'ui':0.12,'docs':0.06,'server':0.02},
+    layer_lower=(layer or '').lower()
+    intent_lower=(intent or 'server').lower()
+    table={'server':{'server':0.10,'integration':0.06,'fax':0.30,'admin console':0.10,'sdk':0.00,'infra':0.00,'docs':0.02},
+           'integration':{'provider':0.12,'traits':0.10,'server':0.06,'ui':0.00,'sdk':0.00,'infra':0.02,'docs':0.00},
+           'ui':{'ui':0.12,'docs':0.06,'server':0.02,'hipaa':0.20},
            'sdk':{'sdk':0.12,'server':0.04,'docs':0.02},
-           'infra':{'infra':0.12,'server':0.04,'integration':0.04}}
-    return table.get(I,{}).get(L,0.0)
+           'infra':{'infra':0.12,'server':0.04,'provider':0.04}}
+    return table.get(intent_lower,{}).get(layer_lower,0.0)
 
 def _provider_plugin_hint(fp:str, code:str)->float:
-    fp=(fp or '').lower(); code=(code or '').lower()
+    fp=(fp or '').lower()
+    code=(code or '').lower()
     keys=['provider','providers','integration','adapter','webhook','pushover','apprise','hubspot']
     return 0.06 if any(k in fp or k in code for k in keys) else 0.0
 
 def _origin_bonus(origin:str, mode:str)->float:
-    origin = (origin or '').lower(); mode=(mode or 'prefer_first_party').lower()
+    origin = (origin or '').lower()
+    mode=(mode or 'prefer_first_party').lower()
     if mode == 'prefer_first_party':
         return 0.06 if origin=='first_party' else (-0.08 if origin=='vendor' else 0.0)
     if mode == 'prefer_vendor':
@@ -50,12 +62,18 @@ def _origin_bonus(origin:str, mode:str)->float:
     return 0.0
 
 def _feature_bonus(query:str, fp:str, code:str)->float:
-    ql = (query or '').lower(); fp = (fp or '').lower(); code=(code or '').lower()
+    ql = (query or '').lower()
+    fp = (fp or '').lower()
+    code=(code or '').lower()
     bumps = 0.0
     if any(k in ql for k in ['diagnostic','health','event log','phi','hipaa']):
         if ('diagnostic' in fp) or ('diagnostic' in code) or ('event' in fp and 'log' in fp):
             bumps += 0.06
     return bumps
+
+def _card_bonus(chunk_id: str, card_chunk_ids: set) -> float:
+    """Boost chunks that matched via card-based retrieval."""
+    return 0.08 if str(chunk_id) in card_chunk_ids else 0.0
 
 # Path-aware bonus to tilt results toward likely server/auth code
 def _path_bonus(fp: str) -> float:
@@ -77,7 +95,7 @@ def _faxbot_path_boost(fp: str, repo_tag: str) -> float:
     import os as _os
     if (repo_tag or '').lower() != 'faxbot':
         return 0.0
-    cfg = _os.getenv('FAXBOT_PATH_BOOSTS', 'app/,lib/,config/,scripts/,server/,api/,api/app,app/services,app/routers')
+    cfg = _os.getenv('FAXBOT_PATH_BOOSTS', 'app/,lib/,config/,scripts/,server/,api/,api/app,app/services,app/routers,api/admin_ui,app/plugins')
     tokens = [t.strip().lower() for t in cfg.split(',') if t.strip()]
     s = (fp or '').lower()
     bonus = 0.0
@@ -85,7 +103,6 @@ def _faxbot_path_boost(fp: str, repo_tag: str) -> float:
         if tok and tok in s:
             bonus += 0.06
     return min(bonus, 0.18)
-from sentence_transformers import SentenceTransformer
 
 # Load environment from repo root .env without hard-coded paths
 try:
@@ -104,14 +121,31 @@ QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
 REPO = os.getenv('REPO','vivified')
 VENDOR_MODE = os.getenv('VENDOR_MODE','prefer_first_party')
 COLLECTION = f'code_chunks_{REPO}'
+def rrf(
+    dense: list,
+    sparse: list,
+    k: int = 10,
+    kdiv: int = 60
+) -> list:
+    """
+    Reciprocal Rank Fusion (RRF) for combining dense and sparse retrieval results.
 
-def rrf(dense: List[int], sparse: List[int], k: int = 10, kdiv: int = 60) -> List[int]:
-    score = collections.defaultdict(float)
-    for rank, pid in enumerate(dense, start=1): score[pid] += 1.0/(kdiv+rank)
-    for rank, pid in enumerate(sparse, start=1): score[pid] += 1.0/(kdiv+rank)
-    ranked = sorted(score.items(), key=lambda x:x[1], reverse=True)
-    return [pid for pid,_ in ranked[:k]]
+    Args:
+        dense (List): Ranked list of IDs from dense retrieval.
+        sparse (List): Ranked list of IDs from sparse retrieval.
+        k (int, optional): Number of top results to return. Defaults to 10.
+        kdiv (int, optional): RRF constant to dampen rank impact. Defaults to 60.
 
+    Returns:
+        List: Top-k fused IDs by RRF score.
+    """
+    score: dict = collections.defaultdict(float)
+    for rank, pid in enumerate(dense, start=1):
+        score[pid] += 1.0 / (kdiv + rank)
+    for rank, pid in enumerate(sparse, start=1):
+        score[pid] += 1.0 / (kdiv + rank)
+    ranked = sorted(score.items(), key=lambda x: x[1], reverse=True)
+    return [pid for pid, _ in ranked[:k]]
 def _load_chunks() -> List[Dict]:
     p = os.path.join(os.path.dirname(__file__), 'out', REPO, 'chunks.jsonl')
     chunks = []
@@ -144,9 +178,27 @@ def _load_cards_bm25(repo: str):
     except Exception:
         return None
 
+def _load_cards_map(repo: str) -> Dict:
+    """Load cards to get chunk ID mapping. Returns dict with card index -> chunk_id and chunk_id -> card data."""
+    cards_file = os.path.join(os.path.dirname(__file__), 'out', repo, 'cards.jsonl')
+    cards_by_idx = {}  # card corpus index -> chunk_id
+    cards_by_chunk_id = {}  # chunk_id -> card metadata
+    try:
+        with open(cards_file, 'r', encoding='utf-8') as f:
+            for idx, line in enumerate(f):
+                card = json.loads(line)
+                chunk_id = str(card.get('id', ''))
+                if chunk_id:
+                    cards_by_idx[idx] = chunk_id
+                    cards_by_chunk_id[chunk_id] = card
+        return {'by_idx': cards_by_idx, 'by_chunk_id': cards_by_chunk_id}
+    except Exception:
+        return {'by_idx': {}, 'by_chunk_id': {}}
+
 def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int = 10) -> List[Dict]:
     chunks = _load_chunks()
-    if not chunks: return []
+    if not chunks:
+        return []
 
     # ---- Dense (Qdrant) ----
     dense_pairs = []
@@ -172,7 +224,8 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
             limit=topk_dense,
             with_payload=models.PayloadSelectorInclude(include=['file_path','start_line','end_line','language','layer','repo','hash','id'])
         )
-        dense_pairs = [(str(p.id), dict(p.payload)) for p in getattr(dres, 'points', dres)]
+        points = getattr(dres, 'points', dres)
+        dense_pairs = [(str(p.id), dict(p.payload)) for p in points]  # type: ignore
     except Exception:
         dense_pairs = []
 
@@ -181,7 +234,7 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
     retriever = bm25s.BM25.load(idx_dir)
     tokenizer = Tokenizer(stemmer=Stemmer('english'), stopwords='en')
     tokens = tokenizer.tokenize([query])
-    ids, scores = retriever.retrieve(tokens, k=topk_sparse)
+    ids, _ = retriever.retrieve(tokens, k=topk_sparse)
     # ids shaped (1, k)
     ids = ids.tolist()[0] if hasattr(ids, 'tolist') else list(ids[0])
     id_map = _load_bm25_map(idx_dir)
@@ -204,15 +257,20 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
             if 0 <= i < len(chunks):
                 sparse_pairs.append((str(chunks[i]['id']), chunks[i]))
 
-    # Optional: include card-based BM25 hints
+    # Card-based BM25 boosting: retrieve cards and boost matching chunks
+    card_chunk_ids: set = set()
     cards_retr = _load_cards_bm25(REPO)
-    card_ids = []
     if cards_retr is not None:
         try:
+            cards_map = _load_cards_map(REPO)
             tokens = bm25s.tokenize(query, stopwords='en')
-            c_ids, _ = cards_retr.retrieve(tokens, k=topk_sparse)
-            # c_ids refer to card corpus; not mapped to chunks here; placeholder for future boosting
-            card_ids = []
+            c_ids, _ = cards_retr.retrieve(tokens, k=min(topk_sparse, 30))
+            # Map card indices to chunk IDs
+            c_ids_flat = c_ids[0] if hasattr(c_ids, '__getitem__') else c_ids
+            for card_idx in c_ids_flat:
+                chunk_id = cards_map['by_idx'].get(int(card_idx))
+                if chunk_id:
+                    card_chunk_ids.add(str(chunk_id))
         except Exception:
             pass
 
@@ -226,15 +284,17 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
     cache = _load_code_cache(REPO)
     for d in docs:
         if not d.get('code'):
-            h = d.get('hash'); cid = str(d.get('id',''))
+            h = d.get('hash')
+            cid = str(d.get('id',''))
             d['code'] = cache['by_hash'].get(h) or cache['by_id'].get(cid) or ''
     docs = ce_rerank(query, docs, top_k=final_k)
-    # Apply path + layer intent + provider + feature + (optional) origin bonuses, then resort
+    # Apply path + layer intent + provider + feature + card + (optional) origin bonuses, then resort
     intent = _classify_query(query)
     for d in docs:
         layer_bonus = _vivified_layer_bonus(d.get('layer',''), intent) if REPO=='vivified' else _faxbot_layer_bonus(d.get('layer',''), intent)
         origin_bonus = _origin_bonus(d.get('origin',''), VENDOR_MODE) if 'VENDOR_MODE' in os.environ else 0.0
         repo_tag = d.get('repo', REPO)
+        chunk_id = str(d.get('id', ''))
         d['rerank_score'] = float(
             d.get('rerank_score', 0.0)
             + _path_bonus(d.get('file_path', ''))
@@ -242,19 +302,20 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
             + layer_bonus
             + _provider_plugin_hint(d.get('file_path', ''), d.get('code', '')[:1000])
             + _feature_bonus(query, d.get('file_path',''), d.get('code','')[:800])
+            + _card_bonus(chunk_id, card_chunk_ids)
             + origin_bonus
         )
     docs.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
     return docs[:final_k]
 
 # Local code cache to hydrate code bodies from chunks.jsonl instead of Qdrant payloads
-_code_cache_by_repo = {}
+_code_cache_by_repo: dict[str, dict] = {}
 def _load_code_cache(repo: str):
     import json
     if repo in _code_cache_by_repo:
         return _code_cache_by_repo[repo]
     jl = os.path.join(os.path.dirname(__file__), 'out', repo, 'chunks.jsonl')
-    cache = {'by_hash': {}, 'by_id': {}}
+    cache: dict[str, dict[str, str]] = {'by_hash': {}, 'by_id': {}}
     try:
         with open(jl, 'r', encoding='utf-8') as f:
             for line in f:
@@ -262,17 +323,20 @@ def _load_code_cache(repo: str):
                     o = json.loads(line)
                 except Exception:
                     continue
-                h = o.get('hash'); cid = str(o.get('id', ''))
+                h = o.get('hash')
+                cid = str(o.get('id', ''))
                 code = o.get('code', '')
-                if h: cache['by_hash'][h] = code
-                if cid: cache['by_id'][cid] = code
+                if h:
+                    cache['by_hash'][h] = code
+                if cid:
+                    cache['by_id'][cid] = code
     except FileNotFoundError:
         pass
     _code_cache_by_repo[repo] = cache
     return cache
 
 # --- Strict per-repo routing helpers (no fusion) ---
-def route_repo(query: str, default_repo: str = None) -> str:
+def route_repo(query: str, default_repo: str | None = None) -> str:
     q = (query or '').lower()
     if q.startswith('vivified:') or ' vivified' in f' {q}':
         return 'vivified'
@@ -290,9 +354,9 @@ def route_repo(query: str, default_repo: str = None) -> str:
         return 'vivified'
     if fax_hits > viv_hits:
         return 'faxbot'
-    return (default_repo or os.getenv('REPO','vivified')).strip()
+    return (default_repo or os.getenv('REPO', 'vivified') or 'vivified').strip()
 
-def search_routed(query: str, repo_override: str = None, final_k: int = 10):
+def search_routed(query: str, repo_override: str | None = None, final_k: int = 10):
     global REPO
     prev = REPO
     REPO = (repo_override or route_repo(query, default_repo=prev) or prev).strip()
@@ -311,7 +375,8 @@ def expand_queries(query: str, m: int = 4) -> list[str]:
             'Keep semantics identical. Output one per line.\nQuery: {}'
         ).format(m, query)
         r = client.chat.completions.create(model='gpt-4o-mini', messages=[{'role':'user','content':prompt}], temperature=0.3)
-        lines = [ln.strip('- ').strip() for ln in r.choices[0].message.content.splitlines() if ln.strip()]
+        content = r.choices[0].message.content or ""
+        lines = [ln.strip('- ').strip() for ln in content.splitlines() if ln.strip()]
         uniq = []
         for ln in lines:
             if ln and ln not in uniq:
@@ -320,7 +385,7 @@ def expand_queries(query: str, m: int = 4) -> list[str]:
     except Exception:
         return [query]
 
-def search_routed_multi(query: str, repo_override: str = None, m: int = 4, final_k: int = 10):
+def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4, final_k: int = 10):
     repo = (repo_override or route_repo(query) or os.getenv('REPO','vivified')).strip()
     variants = expand_queries(query, m=m)
     all_docs = []
@@ -333,11 +398,14 @@ def search_routed_multi(query: str, repo_override: str = None, m: int = 4, final
     finally:
         globals()['REPO'] = prev
     # Deduplicate by file_path + line span
-    seen = set(); uniq = []
+    seen = set()
+    uniq = []
     for d in all_docs:
         key = (d.get('file_path'), d.get('start_line'), d.get('end_line'))
-        if key in seen: continue
-        seen.add(key); uniq.append(d)
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(d)
     # Rerank union
     try:
         from rerank import rerank as ce_rerank
