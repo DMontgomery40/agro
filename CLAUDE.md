@@ -1,3 +1,33 @@
+**MANDATORY: Use RAG (rag_search) first**
+
+- Always call `rag_search` to locate files and exact line ranges before proposing changes or answering. Do not guess; do not rely on memory or broad greps.
+- Route every query to the correct repo via the `repo` argument: `faxbot` or `vivified`. Never mix results.
+- After retrieval, you may call `rag_answer` for a synthesized answer with citations. Answers must include file paths and line ranges from retrieval.
+
+How to use RAG locally vs externally:
+- Local Python (preferred in-repo):
+  - `cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate`
+  - Run a quick search:
+    ```bash
+    python - <<'PY'
+    from hybrid_search import search_routed_multi
+    for d in search_routed_multi("Where is OAuth validated", repo_override="vivified", m=4, final_k=10):
+        print(f"{d['file_path']}:{d['start_line']}-{d['end_line']}  score={d['rerank_score']:.3f}")
+    PY
+    ```
+- MCP tools (for agents/IDE/outside this repo):
+  - One-time: `codex mcp add rag-service -- python /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py && codex mcp list`
+  - Then call `rag_search` / `rag_answer` with `repo` and `question`.
+- Quick infra checks (Qdrant/Redis):
+  - `cd /Users/davidmontgomery/faxbot_folder/rag-service/infra && docker compose up -d`
+  - `curl -s http://127.0.0.1:6333/collections`
+  - `docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redis-cli ping`
+- Index after code changes (required for fresh results):
+  - `cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
+- Optional HTTP answers (no search endpoint):
+  - `cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
+  - `curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=vivified"`
+
 
 **Audience:** Code agents (Codex CLI, Claude Code) and humans working in this repo.
 **Goal:** Always ground answers in this RAG, never mix Vivified/Faxbot, never assume the user is wrong, and call the provided tools **first**.
