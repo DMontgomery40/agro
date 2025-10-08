@@ -85,14 +85,41 @@ def greedy_fallback(src:str, fpath:str, lang:str, target:int)->List[Dict]:
         } for i,s in enumerate(rejoined)]
 
 def collect_files(roots:List[str])->List[str]:
+    import fnmatch
     out=[]
-    skip_dirs = {".git","node_modules",".venv","venv","dist","build","__pycache__",".next",".turbo",".parcel-cache",".pytest_cache"}
+    # Hardcoded skip dirs for safety
+    skip_dirs = {".git","node_modules",".venv","venv","dist","build","__pycache__",".next",".turbo",".parcel-cache",".pytest_cache","vendor","third_party",".bundle","Pods"}
+
+    # Try to load exclusion patterns from file
+    exclude_patterns = []
+    for root in roots:
+        # Check for exclude_globs.txt in data/ directory
+        parent_dir = os.path.dirname(root) if os.path.isfile(root) else root
+        exclude_file = os.path.join(parent_dir, 'data', 'exclude_globs.txt')
+        if os.path.exists(exclude_file):
+            try:
+                with open(exclude_file, 'r') as f:
+                    patterns = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+                    exclude_patterns.extend(patterns)
+            except Exception:
+                pass
+
     for root in roots:
         for dp, dns, fns in os.walk(root):
+            # Skip directories that match our exclusion rules
             dns[:] = [d for d in dns if d not in skip_dirs and not d.startswith('.venv') and not d.startswith('venv')]
+
             for fn in fns:
                 p = os.path.join(dp, fn)
-                if lang_from_path(p):
+
+                # Check if file matches any exclusion pattern
+                skip = False
+                for pattern in exclude_patterns:
+                    if fnmatch.fnmatch(p, pattern) or fnmatch.fnmatch(os.path.relpath(p, root), pattern):
+                        skip = True
+                        break
+
+                if not skip and lang_from_path(p):
                     out.append(p)
     return out
 

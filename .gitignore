@@ -9,6 +9,8 @@ __pycache__/
 
 # Envs and local config
 .env
+.env.*
+env
 .venv/
 venv/
 
