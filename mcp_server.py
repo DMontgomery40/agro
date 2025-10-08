@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
-import urllib.request, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import json as _json
 
 
@@ -195,6 +195,41 @@ class MCPServer:
                 results.append({"domain": d, "status": "error", "error": str(e)})
         return {"results": results}
 
+    # --- Web tools (allowlisted) ---
+    _WEB_ALLOWED = {"openai.com", "platform.openai.com", "github.com", "openai.github.io"}
+
+    def _is_allowed_url(self, url: str) -> bool:
+        try:
+            u = urllib.parse.urlparse(url)
+            host = (u.netloc or "").lower()
+            # allow subdomains of allowed hosts
+            return any(host == h or host.endswith("." + h) for h in self._WEB_ALLOWED)
+        except Exception:
+            return False
+
+    def handle_web_get(self, url: str, max_bytes: int = 20000) -> Dict[str, Any]:
+        if not (url or "").startswith("http"):
+            return {"error": "url must start with http(s)"}
+        if not self._is_allowed_url(url):
+            return {"error": "host not allowlisted"}
+        req = urllib.request.Request(url, method="GET", headers={"User-Agent": "faxbot-rag-mcp/1.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                raw = resp.read(max_bytes + 1)
+                clipped = raw[:max_bytes]
+                return {
+                    "url": url,
+                    "status": resp.status,
+                    "length": len(raw),
+                    "clipped": len(raw) > len(clipped),
+                    "content_preview": clipped.decode("utf-8", errors="ignore")
+                }
+        except urllib.error.HTTPError as he:
+            body = he.read().decode("utf-8", errors="ignore")
+            return {"url": url, "status": he.code, "error": body[:1000]}
+        except Exception as e:
+            return {"url": url, "error": str(e)}
+
     def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle MCP tool call request.
@@ -281,6 +316,18 @@ class MCPServer:
                                     }
                                 }
                             }
+                        },
+                        {
+                            "name": "web_get",
+                            "description": "HTTP GET (allowlisted hosts only: openai.com, platform.openai.com, github.com, openai.github.io)",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "url": {"type": "string", "description": "Absolute URL to fetch"},
+                                    "max_bytes": {"type": "integer", "description": "Max bytes to return", "default": 20000}
+                                },
+                                "required": ["url"]
+                            }
                         }
                     ]
                 }
@@ -318,6 +365,16 @@ class MCPServer:
             elif tool_name in ("netlify.deploy", "netlify_deploy"):
                 domain = args.get("domain", "both")
                 result = self.handle_netlify_deploy(domain)
+                return {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}
+                }
+
+            elif tool_name in ("web.get", "web_get"):
+                url = args.get("url", "")
+                max_bytes = args.get("max_bytes", 20000)
+                result = self.handle_web_get(url, max_bytes=max_bytes)
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,

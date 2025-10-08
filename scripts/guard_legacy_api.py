@@ -66,7 +66,7 @@ def main() -> int:
             print(f"- {p}")
             for pat in pats:
                 print(f"    \u21b3 {pat}")
-        print("\nAction: replace Chat Completions with Responses API calls; update model pins (e.g., gpt-5-codex).")
+        print("\nAction: replace Chat Completions with Responses API calls; update model pins (e.g., gpt-4o-mini-latest or a dated pin).")
         print("Docs:")
         print("  https://openai.com/index/new-tools-and-features-in-the-responses-api/")
         print("  https://openai.com/index/introducing-upgrades-to-codex/")

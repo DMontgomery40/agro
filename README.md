@@ -875,9 +875,9 @@ python -c "from langgraph_app import build_graph; g = build_graph(); print('✓ 
 
 ## Model Selection & Alternatives
 
-The RAG service currently uses:
-- **Embeddings**: OpenAI `text-embedding-3-large` (3072 dims, $0.13/1M tokens)
-- **Generation**: Responses API with GPT-5-Codex (for code) or configured model via `GEN_MODEL` env var
+ The RAG service currently uses:
+ - **Embeddings**: OpenAI `text-embedding-3-large` (3072 dims, $0.13/1M tokens)
+ - **Generation**: OpenAI Responses API with `gpt-4o-mini-latest` by default (override via `GEN_MODEL`); you may pin a dated model (e.g., `gpt-4o-mini-2024-07-18`).
 
 ### Quick Alternatives
 
