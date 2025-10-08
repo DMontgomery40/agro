@@ -520,6 +520,6 @@ REPO=faxbot   COLLECTION_SUFFIX=baseline python index_repo.py
 
 * Voyage `voyage-code-3` is specifically optimized for **code retrieval** and supports smaller output dimensions; using 512 dims is a good balance of quality/cost. If you undershoot targets, retry at 1024 dims.
 * `rerankers` returns raw scores that can be logits; we normalize with sigmoid for a consistent 0–1 scale.
-* Versioning Qdrant collections keeps migrations painless when changing models/dimensions.
+* Versioning Qdrant collections keeps imqgrations painless when changing models/dimensions.
 * Keep per‑repo Redis DBs to prevent cache cross‑talk.
 * All changes are incremental; benchmark after each phase before moving on.

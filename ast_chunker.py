@@ -9,6 +9,9 @@ LANG_MAP = {
     ".c": "c", ".h": "c", ".cpp": "cpp", ".cc": "cpp", ".hpp": "cpp",
 }
 
+# Optional overlap to provide additional local context when chunk boundaries split logical units
+OVERLAP_LINES = 20
+
 FUNC_NODES = {
     "python": {"function_definition", "class_definition"},
     "javascript": {"function_declaration", "class_declaration", "method_definition", "arrow_function"},
@@ -148,6 +151,7 @@ def chunk_code(src:str, fpath:str, lang:str, target:int=900)->List[Dict]:
         if not nodes:
             return greedy_fallback(src, fpath, lang, target)
         chunks: List[Dict] = []
+        all_lines = src.splitlines()
         for i, n in enumerate(nodes):
             text = src[n.start_byte:n.end_byte]
             if nonws_len(text) > target:
@@ -158,16 +162,21 @@ def chunk_code(src:str, fpath:str, lang:str, target:int=900)->List[Dict]:
                     chunks.append(sub)
             else:
                 name = _guess_name(lang, text)
+                start_line = n.start_point[0] + 1
+                end_line = n.end_point[0] + 1
+                actual_start = max(1, start_line - OVERLAP_LINES) if OVERLAP_LINES > 0 else start_line
+                # Slice lines with 1-based indexing
+                chunk_text = "\n".join(all_lines[actual_start-1:end_line])
                 chunks.append({
                     "id": hashlib.md5((fpath+str(i)+text[:80]).encode()).hexdigest()[:12],
                     "file_path": fpath,
                     "language": lang,
                     "type": "unit",
                     "name": name,
-                    "start_line": n.start_point[0]+1,
-                    "end_line": n.end_point[0]+1,
+                    "start_line": actual_start,
+                    "end_line": end_line,
                     "imports": extract_imports(src, lang),
-                    "code": text,
+                    "code": chunk_text,
                 })
         return chunks
     except Exception:

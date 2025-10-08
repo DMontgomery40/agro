@@ -10,7 +10,8 @@ except Exception as e:
 # Model pin (Responses API): default to OpenAI gpt-4o-mini-latest
 # Default to a valid, stable alias. Users may override with a dated pin
 # (e.g., gpt-4o-mini-2024-07-18) or another provider via GEN_MODEL.
-_DEFAULT_MODEL = os.getenv("GEN_MODEL", "gpt-4o-mini-latest")
+# Prefer a widely available small model alias
+_DEFAULT_MODEL = os.getenv("GEN_MODEL", "gpt-4o-mini")
 
 _client = None
 
