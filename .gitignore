@@ -81,6 +81,13 @@ coverage.xml
 .pytest_cache/
 cover/
 */internal_docs/
+*/.env
+*/.env.*
+*/env
+*/venv
+*/.venv
+*/.pdm-python
+*/.pdm-build/
 
 # Translations
 *.mo
