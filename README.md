@@ -1,14 +1,26 @@
+<div align="center">
+
+# 🎁
+
+## This is not another wrapper.
+
+## This is the gift inside.
+
+
+**The usual setup:** You use a pretty tool that wraps an LLM's API  
+**This setup:** A RAG engine. Claude/Codex wrap around *it*.
+
+</div>
+
+
+
+
+
 # RAG Service - Complete Guide
-
-**Multi-repository RAG system with MCP integration for AI agents**
-
-> **Note**: This guide uses two example repos (a healthcare app and a Rails service) from the original author's setup. However, **this system works with ANY multi-repo codebase**. The `scripts/` folder includes tools to auto-generate keywords and configurations for your specific projects.
-
-👉 **New here?** See [docs/README.md](docs/) for specialized guides (MCP, models, CLI chat)
 
 ---
 
-This is a RAG (Retrieval-Augmented Generation) that:
+This is a RAG (Retrieval-Augmented Generation) engine that:
 - Maintains **strict separation** between repositories (never mixes them)
 - Uses **hybrid search** (BM25 + dense embeddings + reranking)
 - Provides **MCP tools** (stdio + HTTP modes) for Codex and Claude Code
@@ -16,8 +28,11 @@ This is a RAG (Retrieval-Augmented Generation) that:
 - Supports **multi-query expansion** and **local code hydration**
 - Features **interactive CLI chat** with conversation memory
 
-Modular by design
-- Every component in this stack is swappable. Models, rerankers, vector DB, streaming transport, and even the orchestration graph are suggestions, not requirements. Treat this repo as a reference implementation you can piece apart: keep what you like, replace what you don’t. The docs show one happy path; you can rewire models and services to suit your environment.
+### Positioning (what we are — and aren’t)
+- RAG-first: this repo is the retrieval + answer engine (your runtime).
+- Codex/Claude are clients that call into this engine via MCP; they “wrap” the RAG, not the other way around.
+- We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
+- Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
 
 ---
 
@@ -39,85 +54,104 @@ Modular by design
 
 ## Quick Start
 
-**Prerequisites**: Docker Compose, Python 3.11+. For local inference, install Ollama.
+**Prerequisites**
+- Python 3.11+
+- Docker Engine + Compose
+  - macOS (no Docker Desktop): `brew install colima docker` then `colima start`
+  - macOS (Docker Desktop): install Docker Desktop and start it
+  - Linux: install Docker and Compose via your distro
+- Optional local inference: Ollama installed and running (`ollama list`)
+  - Linux without Python: `apt update && apt install -y python3 python3-venv python3-pip`
 
 ```bash
-# 1) Bring infra + MCP up (always-on helper)
-cd /path/to/rag-service && bash scripts/up.sh
+# 0) Get the code
+git clone https://github.com/DMontgomery40/rag-service.git
+cd rag-service
 
-# 2) Activate venv and verify deps
-. .venv/bin/activate
-python -c "import fastapi, qdrant_client, bm25s; print('✓ All deps OK')"
+# 1) Start Docker (macOS without Docker Desktop)
+#     Colima provides Docker on macOS: start it once
+colima start   # if you installed `colima` via Homebrew
 
-# 3) Index repos (replace with your repo names)
-REPO=repo-a python index_repo.py
-REPO=repo-b python index_repo.py
+# 2) Bring infra + MCP up (Qdrant + Redis)
+bash scripts/up.sh
+
+# 3) One-command setup (recommended)
+#     From THIS folder, pass your repo path/name. If you want to index THIS
+#     repo itself, just use "." and a name you like.
+bash scripts/setup.sh . rag-service
 
 # 4) Start CLI chat (interactive)
-export REPO=repo-a THREAD_ID=my-session
+export REPO=rag-service THREAD_ID=my-session
+python -m venv .venv && . .venv/bin/activate  # if .venv not present yet
 python chat_cli.py
 
-# Or: Run HTTP API (optional)
+# Optional: Run the HTTP API + stream
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+curl "http://127.0.0.1:8012/search?q=oauth&repo=rag-service"
+curl -N "http://127.0.0.1:8012/answer_stream?q=hello&repo=rag-service"
 
-# 5) Smoke test
-curl "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=repo-a"
-
-# MCP tools quick check (stdio mode)
+# MCP tools quick check (stdio)
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 ```
 
-Side note: not just “repos”
-- We use the word “repo” because most users are developers, but you can index any folder with plain text, docs, or code.
-- Two ways:
-  - Guided: run `bash scripts/setup.sh` (or `bash scripts/up.sh` then accept guided setup) and point it to any absolute folder path.
-  - One‑shot: `REPO=my-folder REPO_PATH=/abs/path/to/folder python index_repo.py` (adds a single ad‑hoc target without editing repos.json).
-- For plain‑text heavy corpora, consider text‑focused embeddings instead of code‑tuned ones, e.g.:
-  - sentence-transformers/all-MiniLM-L6-v2 (fast, lightweight)
-  - intfloat/e5-base-v2 or e5-large-v2 (strong general retrieval)
-  - BAAI/bge-m3 (multilingual, robust for varied queries)
-  - mixedbread-ai/mxbai-embed-large-v1 (solid general embedding)
-  - OpenAI text-embedding-3-large (hosted, high‑quality)
-  You can re‑index the same folder later with a different embedding backend.
+### Common setup hiccups (fast fixes)
+- Docker not found on macOS: install and start Colima: `brew install colima docker && colima start`.
+- “Permission denied” on scripts: run with an interpreter: `python scripts/quick_setup.py` or `bash scripts/setup.sh`.
+- `python: command not found` on Linux: `apt update && apt install -y python3 python3-venv python3-pip`.
+- “Is it frozen?”: use streaming (`python chat_cli.py --stream`) or run `bash scripts/setup.sh ...` and watch progress.
+
+### Optional (Additive) Features
+
+- SSE streaming (off by default)
+  - Endpoint: `/answer_stream?q=...&repo=...`
+  - CLI or UIs can opt-in to streaming via this endpoint; default remains blocking.
+- OAuth bearer (off by default)
+  - Enable with `OAUTH_ENABLED=true` and set `OAUTH_TOKEN=...`
+  - Applies to `/answer`, `/search`, and `/answer_stream` when enabled.
+- Node proxy (HTTP+SSE), optional
+  - `docker compose -f docker-compose.services.yml --profile api --profile node up -d`
+  - Proxies `/mcp/answer`, `/mcp/search`, `/mcp/answer_stream` to Python API.
+- Docker (opt-in)
+  - Python API image via `Dockerfile`
+  - Node proxy via `Dockerfile.node`
+  - Compose file: `docker-compose.services.yml` (profiles: `api`, `mcp-http`, `node`)
 
 ---
 
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────────────────┐
-│          AI Agents (Codex/Claude Code/Remote)             │
-└────────────┬──────────────────────────┬───────────────────┘
-             │ MCP stdio                │ MCP HTTP/HTTPS
-             ▼                          ▼
-┌─────────────────────────┐   ┌─────────────────────────┐
-│    mcp_server.py        │   │  mcp_server_http.py     │
-│    (stdio mode)         │   │  (HTTP mode)            │
-└────────────┬────────────┘   └─────────────┬───────────┘
-             │                              │
-             └──────────────┬───────────────┘
-                            ▼
-         ┌──────────────────┼──────────────────┐
-         ▼                  ▼                  ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ serve_rag.py │  │langgraph_app │  │hybrid_search │
-│  (FastAPI)   │  │  (LangGraph) │  │  (Retrieval) │
-└──────────────┘  └──────────────┘  └──────┬───────┘
-                                            │
-         ┌──────────────────────────────────┼──────────────────┐
-         ▼                                  ▼                  ▼
-┌──────────────┐                  ┌──────────────┐  ┌──────────────┐
-│   Qdrant     │                  │    BM25S     │  │ Local Chunks │
-│  (vectors)   │                  │  (sparse)    │  │    (.jsonl)  │
-└──────────────┘                  └──────────────┘  └──────────────┘
-         │                                  │                  │
-         └──────────────────────────────────┴──────────────────┘
-                             ▲
-                             │
-                     ┌───────┴────────┐
-                     │  index_repo.py │
-                     │  (indexing)    │
-                     └────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  AI Agents (Codex/Claude)   CLI Chat (local)                 CLI Chat (stream) │
+└────────────┬───────────────────────┬──────────────┬───────────────────────────┘
+             │ MCP stdio            │ MCP HTTP     │ HTTP (SSE)                
+             ▼                       ▼              ▼                           
+┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐ 
+│   mcp_server.py     │     │  mcp_server_http.py │     │     serve_rag.py    │ 
+│   (stdio mode)      │     │  (HTTP mode)        │     │  (FastAPI /answer*) │ 
+└──────────┬──────────┘     └──────────┬──────────┘     └──────────┬──────────┘ 
+           │                            │                           │            
+           └──────────────┬─────────────┴──────────────┬────────────┘            
+                          ▼                            ▼                         
+                ┌──────────────────┐          ┌──────────────────┐               
+                │  langgraph_app   │ ◄────────┤  hybrid_search   │               
+                │   (LangGraph)    │          │   (Retrieval)    │               
+                └─────────┬────────┘          └─────────┬────────┘               
+                          │                             │                          
+          ┌───────────────┴──────────────┐    ┌─────────┴────────┐               
+          ▼                              ▼    ▼                  ▼               
+   ┌──────────────┐               ┌──────────────┐       ┌──────────────┐        
+   │   Qdrant     │               │    BM25S     │       │ Local Chunks │        
+   │  (vectors)   │               │  (sparse)    │       │    (.jsonl)  │        
+   └──────────────┘               └──────────────┘       └──────────────┘        
+                          ▲                                                         
+                          │                                                         
+                  ┌───────┴────────┐                                                
+                  │  index_repo.py │                                                
+                  │  (indexing)    │                                                
+                  └────────────────┘                                                
+
+* /answer* = includes /answer (JSON) and /answer_stream (SSE)
 ```
 
 ### Key Components
@@ -132,12 +166,22 @@ Side note: not just “repos”
 | **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `index_repo.py` |
 | **CLI Chat** | Interactive terminal chat with memory | `chat_cli.py` |
 | **Eval Harness** | Golden tests with regression tracking | `eval_loop.py` |
+| **Cards Builder** | Summarizes chunks into `cards.jsonl` and builds BM25 over cards for high‑level retrieval | `build_cards.py` |
+| **Reranker** | Cross‑encoder re‑ranking (Cohere rerank‑3.5 or local), plus filename/path/card/feature bonuses | `rerank.py` |
+| **Embedding Cache** | Caches OpenAI embeddings to avoid re‑embedding unchanged chunks | `embed_cache.py` |
+| **AST Chunker** | Language‑aware code chunking across ecosystems | `ast_chunker.py` |
+| **Filtering** | Centralized file/dir pruning and source gating | `filtering.py` |
+| **Generation Shim** | OpenAI Responses/Chat or local Qwen via Ollama with resilient fallbacks | `env_model.py` |
 
 ---
 
 ## Setup from Scratch
 
 ### Phase 1: Infrastructure
+
+Note: This repo already includes `infra/docker-compose.yml` with relative volumes.
+Prefer using `bash scripts/up.sh` or `cd infra && docker compose up -d` rather than
+hand-writing a compose file.
 
 ```bash
 # Create directory structure
@@ -232,9 +276,8 @@ EMBEDDING_TYPE=openai           # openai | local | voyage | gemini
 OPENAI_API_KEY=                 # Required for OpenAI embeddings
 VOYAGE_API_KEY=                 # Required for Voyage embeddings
 
-# Optional: Path boosts (comma-separated, repo-specific)
-REPO_A_PATH_BOOSTS=src/,lib/,core/
-REPO_B_PATH_BOOSTS=app/,controllers/,models/
+# Optional: Netlify multi-site deploys for MCP tool
+NETLIFY_DOMAINS=site-a.com,site-b.com
 
 # Optional: MCP integrations
 NETLIFY_API_KEY=                # For netlify_deploy tool
@@ -330,7 +373,7 @@ curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
 ```bash
 . .venv/bin/activate
 
-# Index first repo (replace with your repo name and path)
+# Index first repo (replace with your repo name)
 REPO=repo-a python index_repo.py
 # This will:
 #   - Scan /path/to/your/repo-a (configured in index_repo.py)
@@ -489,7 +532,7 @@ Retrieval-only (no generation, faster for debugging)
 Trigger Netlify builds (requires `NETLIFY_API_KEY`)
 
 **Arguments:**
-- `domain`: Site to deploy (`"site-a.com"`, `"site-b.com"`, or `"both"`)
+- `domain`: Site to deploy (e.g., `"site-a.com"`, or `"both"` to deploy all in `NETLIFY_DOMAINS`)
 
 **Returns:**
 ```json
