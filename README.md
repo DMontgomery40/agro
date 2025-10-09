@@ -18,7 +18,35 @@ This is a RAG (Retrieval-Augmented Generation) engine that:
 - We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
 - Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
 
-Modular by design
+## RAG for Code — Comparative Matrix
+
+*Legend:* ✅ = present/native · 🟨 = partial / configurable / undocumented · ❌ = absent
+
+| Feature ↓ · Tool → | **AGRO (rag-service)** | **Sourcegraph Cody** | **GitHub Copilot Ent.** | **Cursor** | **Codeium / Windsurf** | **Tabnine** | **Continue.dev (OSS)** | **LlamaIndex – Code (OSS)** | **Claude Code** | **JetBrains AI Assistant** |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **OSS code available** | 🟨 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| **Commercial plan exists** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | 🟨 | ✅ | ✅ |
+| **Dense embeddings** | ✅ | ❌ | 🟨 | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ |
+| **Hybrid (sparse + dense)** | ✅ | ❌ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 |
+| **AST / code-graph chunking** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | 🟨 | ✅ | ❌ | ✅ |
+| **Reranker present** | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | ✅ | ✅ | 🟨 | 🟨 |
+| **Incremental / streaming re-index** | ✅ | 🟨 | 🟨 | ✅ | ✅ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 |
+| **Symbol graph / LSP integration** | ❌ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | ❌ | ✅ |
+| **Multi-language** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Cross-file reasoning** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ | ✅ |
+| **Citations include path+line** | ✅ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 |
+| **Vector DB explicitly noted** | ✅ | ❌ | 🟨 | ✅ | 🟨 | ✅ | 🟨 | ✅ | ❌ | 🟨 |
+| **IDE / CLI available** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ | ✅ |
+| **MCP / API connectors** | ✅ | ✅ | 🟨 | ✅ | ✅ | 🟨 | ✅ | ❌ | ✅ | ✅ |
+| **GitHub / CI hooks** | 🟨 | ✅ | ✅ | 🟨 | ✅ | 🟨 | ✅ | 🟨 | 🟨 | 🟨 |
+| **Local-first option** | ✅ | ✅ | ❌ | 🟨 | ✅ | ✅ | ✅ | ✅ | 🟨 | ❌ |
+| **Telemetry / data controls** | 🟨 | 🟨 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ |
+| **Auth / SSO** | 🟨 | ✅ | ✅ | 🟨 | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| **Eval harness present** | ✅ | 🟨 | 🟨 | ❌ | 🟨 | 🟨 | 🟨 | ✅ | ❌ | ❌ |
+| **Active maintenance (≤12 mo)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+
+## Modular by design
 
 Every component in this stack is swappable. Models, rerankers, vector DB, streaming transport, and even the orchestration 
 graph are suggestions, not requirements. Treat this repo as a reference implementation you can piece apart: keep what you like, 
