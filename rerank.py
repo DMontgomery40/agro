@@ -9,8 +9,8 @@ _HF_PIPE = None  # optional transformers pipeline for models that require trust_
 _RERANKER = None
 
 DEFAULT_MODEL = os.getenv('RERANKER_MODEL', 'cross-encoder/ms-marco-MiniLM-L-6-v2')
-# Default backend: cohere (can be overridden via env)
-RERANK_BACKEND = (os.getenv('RERANK_BACKEND', 'cohere') or 'cohere').lower()
+# Default backend: local (set RERANK_BACKEND=cohere + COHERE_API_KEY to use Cohere API)
+RERANK_BACKEND = (os.getenv('RERANK_BACKEND', 'local') or 'local').lower()
 # Default Cohere model (override via COHERE_RERANK_MODEL). Accepts 'rerank-3.5' or 'rerank-2.5'.
 COHERE_MODEL = os.getenv('COHERE_RERANK_MODEL', 'rerank-3.5')
 

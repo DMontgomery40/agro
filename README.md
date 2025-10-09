@@ -906,7 +906,7 @@ python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')
 The RAG service defaults to:
 - **Generation**: Local Qwen 3 via Ollama (`GEN_MODEL=qwen3-coder:30b`)
 - **Embeddings**: OpenAI `text-embedding-3-large` (auto-fallback to local BGE if unavailable)
-- **Reranking**: Cohere rerank-3.5 (fallback to local cross-encoder)
+- **Reranking**: Local cross-encoder (set `RERANK_BACKEND=cohere` + `COHERE_API_KEY` to use Cohere rerank-3.5)
 
 ### Quick Alternatives
 
