@@ -15,35 +15,6 @@ from embed_cache import EmbeddingCache
 import tiktoken
 from sentence_transformers import SentenceTransformer
 import fnmatch, pathlib
-import qdrant_recreate_fallback  # make recreate_collection 404-safe
-
-# --- global safe filters (avoid indexing junk) ---
-from filtering import _prune_dirs_in_place, _should_index_file, PRUNE_DIRS
-import os
-from pathlib import Path
-
-# Patch os.walk to prune noisy dirs and skip junk file types
-_os_walk = os.walk
-def _filtered_os_walk(top, *args, **kwargs):
-    for root, dirs, files in _os_walk(top, *args, **kwargs):
-        _prune_dirs_in_place(dirs)
-        files[:] = [f for f in files if _should_index_file(f)]
-        yield root, dirs, files
-os.walk = _filtered_os_walk
-
-# Patch Path.rglob as well (if code uses it)
-_Path_rglob = Path.rglob
-def _filtered_rglob(self, pattern):
-    for p in _Path_rglob(self, pattern):
-        # skip if any pruned dir appears in the path
-        if any(part in PRUNE_DIRS for part in p.parts):
-            continue
-        if not _should_index_file(p.name):
-            continue
-        yield p
-Path.rglob = _filtered_rglob
-# --- end filters ---
-
 
 # Load local env and also repo-root .env if present (no hard-coded paths)
 try:

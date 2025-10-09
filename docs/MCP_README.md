@@ -4,10 +4,12 @@ This document describes the Model Context Protocol (MCP) integration that allows
 
 ## Overview
 
-The MCP server (`mcp_server.py`) exposes two tools:
+The MCP server (`mcp_server.py`) exposes four tools:
 
-1. **`rag_answer(repo, question)`** → Full LangGraph pipeline with answer + citations
-2. **`rag_search(repo, question, top_k=10)`** → Retrieval-only (debugging)
+1. `rag_answer(repo, question)` → Full LangGraph pipeline with answer + citations
+2. `rag_search(repo, question, top_k=10)` → Retrieval-only (debugging)
+3. `netlify_deploy(domain)` → Trigger a Netlify build for `faxbot.net`, `vivified.dev`, or `both` (requires `NETLIFY_API_KEY`)
+4. `web_get(url, max_bytes=20000)` → HTTP GET for allowlisted hosts only (`openai.com`, `platform.openai.com`, `github.com`, `openai.github.io`)
 
 ## Setup
 
@@ -74,6 +76,27 @@ Returns:
   "repo": "vivified",
   "confidence": 0.78
 }
+```
+
+### Example 3: Trigger a Netlify Deploy
+
+```
+User: Use netlify_deploy to rebuild faxbot.net
+
+Returns:
+{
+  "results": [
+    {"domain": "faxbot.net", "status": "triggered", "site_id": "...", "build_id": "..."}
+  ]
+}
+```
+
+### Example 4: Fetch Allowlisted Docs
+
+```
+User: Use web_get to fetch https://github.com/openai/codex
+
+Returns: {"url": "...", "status": 200, "length": 12345, "clipped": true, "content_preview": "..."}
 ```
 
 ### Example 2: Debug retrieval
@@ -205,3 +228,11 @@ The `expect_paths` uses substring matching — any result containing one of thes
 - [MCP specification](https://modelcontextprotocol.io/)
 - [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
 - [AgentKit announcement](https://openai.com/index/introducing-agentkit/)
+### Netlify deploy errors
+
+- Ensure `NETLIFY_API_KEY` is set in the environment running the MCP server
+- Verify the target site domain exists in your Netlify account
+
+### web_get blocked
+
+- Only these hosts are allowed: `openai.com`, `platform.openai.com`, `github.com`, `openai.github.io`

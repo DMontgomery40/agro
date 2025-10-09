@@ -16,6 +16,7 @@ PyStemmer==3.0.0
 tree_sitter_languages==1.10.2
 
 # Reranking & Torch (MPS on Apple Silicon)
+rerankers>=0.4.1
 sentence-transformers==5.1.1
 transformers==4.57.0
 accelerate==1.10.1

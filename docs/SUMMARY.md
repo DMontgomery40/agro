@@ -6,7 +6,7 @@ This implementation provides **complete MCP integration** for the RAG service, e
 
 ### 1. MCP Server (`mcp_server.py`) - 11KB ✓
 - Full Model Context Protocol implementation over stdio
-- Two tools: `rag_answer` (full pipeline) and `rag_search` (retrieval-only)
+- Tools: `rag_answer`, `rag_search`, `netlify_deploy`, `web_get`
 - Lazy graph initialization with error handling
 - Proper JSON-RPC 2.0 format compliance
 
@@ -82,6 +82,26 @@ This implementation provides **complete MCP integration** for the RAG service, e
     }
   ],
   "count": 5
+}
+```
+
+**`netlify_deploy(domain)`**
+```json
+{
+  "results": [
+    {"domain": "vivified.dev", "status": "triggered", "site_id": "...", "build_id": "..."}
+  ]
+}
+```
+
+**`web_get(url, max_bytes)`**
+```json
+{
+  "url": "https://github.com/openai/codex",
+  "status": 200,
+  "length": 24567,
+  "clipped": true,
+  "content_preview": "..."
 }
 ```
 

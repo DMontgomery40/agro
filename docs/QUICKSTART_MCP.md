@@ -3,9 +3,11 @@
 ## What Got Implemented ✓
 
 1. **MCP Server** (`mcp_server.py`) - stdio-based tool server
-2. **Two RAG Tools**:
+2. **MCP Tools**:
    - `rag_answer(repo, question)` → full answer + citations
    - `rag_search(repo, question, top_k)` → retrieval only
+   - `netlify_deploy(domain)` → trigger Netlify build (`faxbot.net`, `vivified.dev`, or `both`) – requires `NETLIFY_API_KEY`
+   - `web_get(url, max_bytes)` → HTTP GET for allowlisted hosts (openai.com, platform.openai.com, github.com, openai.github.io)
 3. **Codex Registration** - Already registered as `faxbot-rag`
 4. **Agent Rules** - Updated in `AGENTS.md`
 5. **Eval Loop** - `eval_loop.py` with baselines and regression tracking
@@ -30,6 +32,16 @@ import json
 req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
 print(json.dumps(MCPServer().handle_request(req)['result']['tools'], indent=2))
 "
+```
+
+### New Tools: Quick Examples
+
+```bash
+# Netlify deploy (from Codex chat)
+# User: Use netlify_deploy to rebuild vivified.dev
+
+# Web GET (allowlisted)
+# User: Use web_get to fetch https://github.com/openai/codex
 ```
 
 ### Run Evals
