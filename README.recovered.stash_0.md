@@ -1,6 +1,6 @@
 # AGRO
 
-## Another Good Rag Option
+## another good rag option
 
 ---
 
@@ -18,13 +18,33 @@ This is a RAG (Retrieval-Augmented Generation) engine that:
 - We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
 - Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
 
-Modular by design
-
-Every component in this stack is swappable. Models, rerankers, vector DB, streaming transport, and even the orchestration 
-graph are suggestions, not requirements. Treat this repo as a reference implementation you can piece apart: keep what you like, 
-replace what you don’t. The docs show one happy path; you can rewire models and services to suit your environment.
-
 ---
+
+| Feature ↓ · Tool →                   | **AGRO** | **Sourcegraph Cody** | **GitHub Copilot Ent.** | **Cursor** | **Codeium / Windsurf** | **Tabnine** | **Continue.dev (OSS)** | **LlamaIndex – Code (OSS)** | **Claude Code** | **JetBrains AI Assistant** |
+| ------------------------------------ | --------------: | -------------------: | ----------------------: | ---------: | ---------------------: | ----------: | ---------------------: | --------------------------: | --------------: | -------------------------: |
+| **OSS code available**               |              ✅|                    ❌ |                       ❌ |          ❌ |                      ❌ |           ❌ |                      ✅ |                           ✅ |               ❌ |                          ❌ |
+| **Commercial plan exists**           |               ❌ |                    ✅ |                       ✅ |          ✅ |                      ✅ |           ✅ |                     🟨 |                          🟨 |               ✅ |                          ✅ |
+| **Dense embeddings**                 |               ✅ |                    ❌ |                      🟨 |          ✅ |                      ✅ |           ✅ |                      ✅ |                           ✅ |              🟨 |                          ✅ |
+| **Hybrid (sparse + dense)**          |               ✅ |                    ❌ |                      🟨 |         🟨 |                     🟨 |          🟨 |                     🟨 |                          🟨 |              🟨 |                         🟨 |
+| **AST / code-graph chunking**        |               ✅ |                    ✅ |                       ❌ |          ❌ |                      ❌ |           ❌ |                     🟨 |                           ✅ |               ❌ |                          ✅ |
+| **Reranker present**                 |               ✅ |                   🟨 |                      🟨 |         🟨 |                     🟨 |          🟨 |                      ✅ |                           ✅ |              🟨 |                         🟨 |
+| **Incremental / streaming re-index** |               ✅ |                   🟨 |                      🟨 |          ✅ |                      ✅ |           ✅ |                     🟨 |                          🟨 |              🟨 |                         🟨 |
+| **Symbol graph / LSP integration**   |               ❌ |                    ✅ |                      🟨 |         🟨 |                     🟨 |          🟨 |                     🟨 |                          🟨 |               ❌ |                          ✅ |
+| **Multi-language**                   |               ✅ |                    ✅ |                       ✅ |          ✅ |                      ✅ |           ✅ |                      ✅ |                           ✅ |               ✅ |                          ✅ |
+| **Cross-file reasoning**             |               ✅ |                    ✅ |                       ✅ |          ✅ |                      ✅ |           ✅ |                      ✅ |                          🟨 |               ✅ |                          ✅ |
+| **Citations include path+line**      |              ✅ |                   🟨 |                      🟨 |         🟨 |                     🟨 |          🟨 |                     🟨 |                          🟨 |              🟨 |                         🟨 |
+| **Vector DB explicitly noted**       |               ✅ |                    ❌ |                      🟨 |          ✅ |                     🟨 |           ✅ |                     🟨 |                           ✅ |               ❌ |                         🟨 |
+| **IDE / CLI available**              |               ✅ |                    ✅ |                       ✅ |          ✅ |                      ✅ |           ✅ |                      ✅ |                          🟨 |               ✅ |                          ✅ |
+| **MCP / API connectors**             |               ✅ |                    ✅ |                      🟨 |          ✅ |                      ✅ |          🟨 |                      ✅ |                           ❌ |               ✅ |                          ✅ |
+| **GitHub / CI hooks**                |              ❌ |                    ✅ |                       ✅ |         🟨 |                      ✅ |          🟨 |                      ✅ |                          🟨 |              🟨 |                         🟨 |
+| **Local-first option**               |               ✅ |                    ✅ |                       ❌ |         🟨 |                      ✅ |           ✅ |                      ✅ |                           ✅ |              🟨 |                          ❌ |
+| **Telemetry / data controls**        |              ❌ |                   🟨 |                       ✅ |          ✅ |                      ✅ |           ✅ |                      ✅ |                           ✅ |              🟨 |                          ✅ |
+| **Auth / SSO**                       |              ✅ |                    ✅ |                       ✅ |         🟨 |                      ✅ |           ✅ |                      ❌ |                           ❌ |               ✅ |                          ✅ |
+| **Eval harness present**             |               ✅ |                   🟨 |                      🟨 |          ❌ |                     🟨 |          🟨 |                     🟨 |                           ✅ |               ❌ |                          ❌ |
+| **Active maintenance (≤12 mo)**      |               ✅ |                    ✅ |                       ✅ |          ✅ |                      ✅ |           ✅ |                      ✅ |                           ✅ |               ✅ |                          ✅ |
+
+
+----
 
 ## Table of Contents
 
@@ -52,6 +72,14 @@ replace what you don’t. The docs show one happy path; you can rewire models an
   - Linux: install Docker and Compose via your distro
 - Optional local inference: Ollama installed and running (`ollama list`)
   - Linux without Python: `apt update && apt install -y python3 python3-venv python3-pip`
+
+Warning on storage size
+- Expect roughly ~4 GB used out‑of‑the‑box for: the Python virtualenv, BM25 index, embeddings cache, and Docker volumes (Qdrant + Redis). This grows with the size/number of repos you index.
+- Local inference models (e.g., Qwen or other LLM weights) are additional and typically range from 7–20+ GB.
+- You can skip indexing during setup to defer most of the storage usage and run it later.
+
+No CUDA installed by default
+- This project does not install CUDA. The Python stack installs CPU builds of PyTorch by default. GPU acceleration is optional and requires manual installation of CUDA-enabled wheels/drivers.
 
 ```bash
 # 0) Get the code
@@ -1016,6 +1044,10 @@ See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 | `RERANK_BACKEND` | `cohere` | `cohere` \| `hf` \| `local` |
 | `COHERE_API_KEY` | — | For Cohere reranking |
 | `EMBEDDING_TYPE` | `openai` | `openai` \| `voyage` \| `local` \| `gemini` |
+| `EMBEDDING_DEVICE` | — | Force device for local embeddings: `cuda` \| `mps` \| `xpu` (aliases: `intel`, `oneapi`) \| `cpu` |
+| `EMBED_BATCH` | `128` | Batch size for SentenceTransformer encode |
+| `BM25_ONLY` | — | If truthy, build BM25 and skip embeddings/Qdrant upsert |
+| `EMBED_SAMPLE` | — | If set to integer N, embed only first N chunks (rest rely on BM25) |
 | `NETLIFY_API_KEY` | — | For netlify_deploy tool |
 
 ### Tuning Retrieval
@@ -1100,6 +1132,28 @@ bash scripts/down.sh                    # Stop everything
 . .venv/bin/activate
 REPO=repo-a python index_repo.py
 REPO=repo-b python index_repo.py
+
+## GPU Acceleration (optional)
+
+By default, embeddings run on CPU. You can enable GPU acceleration if your stack supports it. We do not install any GPU drivers or CUDA/oneAPI for you.
+
+- NVIDIA (CUDA): install CUDA-enabled PyTorch from the official index-url, then set `EMBEDDING_DEVICE=cuda`.
+- Apple Silicon (MPS): supported by default in recent PyTorch; set `EMBEDDING_DEVICE=mps` (macOS 12.3+).
+- Intel GPU (oneAPI/XPU): requires Intel Extension for PyTorch (IPEX) and XPU-enabled PyTorch. After installing, set `EMBEDDING_DEVICE=xpu` (aliases: `intel`, `oneapi`).
+
+Example:
+```bash
+# Choose local embedding backend (no API key) and direct it to GPU
+export EMBEDDING_TYPE=local
+export EMBEDDING_DEVICE=cuda     # or mps (Apple), xpu (Intel), cpu
+export EMBED_BATCH=256           # tune per GPU memory
+REPO=my-repo python index_repo.py
+```
+
+Notes:
+- We do not install CUDA or vendor-specific GPU stacks. Install them yourself if desired.
+- If `EMBEDDING_DEVICE` is unset, we auto-detect in this order: CUDA → MPS → XPU → CPU.
+- Intel/XPU requires Intel’s PyTorch wheels and IPEX. If `torch.xpu.is_available()` returns false, it will fall back to CPU.
 
 # === CLI Chat (Recommended) ===
 export REPO=repo-a THREAD_ID=work-session
