@@ -14,6 +14,7 @@ Usage:
 
 Commands:
     /repo <name>    - Switch repository (must be in repos.json)
+    /setup          - Guided setup (add repo, deps, infra, agent registration)
     /save           - Save conversation checkpoint
     /clear          - Clear conversation history
     /help           - Show commands
@@ -35,6 +36,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
 from rich.prompt import Prompt
+from rich.prompt import Confirm
 
 console = Console()
 
@@ -180,6 +182,7 @@ class ChatCLI:
 ## Commands
 
 - `/repo <name>` - Switch repository (configured repos: {allowed})
+- `/setup` - Guided setup (add repo, deps, infra, MCP registration)
 - `/save` - Save conversation checkpoint
 - `/clear` - Clear conversation history
 - `/help` - Show this help
@@ -243,6 +246,27 @@ Switch repo:
                             self.switch_repo(parts[1].strip())
                         else:
                             console.print(f"[red]Usage:[/red] /repo <one of: {', '.join(list_repos())}>")
+                        continue
+
+                    elif cmd == '/setup':
+                        try:
+                            repo_path = Prompt.ask("Path to your code repo (absolute)", default=os.getcwd())
+                            if not repo_path:
+                                console.print("[yellow]Skipped setup.[/yellow]")
+                                continue
+                            repo_name = Prompt.ask("Repo name (optional)", default="")
+                            args = [sys.executable, os.path.join(os.path.dirname(__file__), 'scripts', 'quick_setup.py')]
+                            if repo_path:
+                                args += ['--path', repo_path]
+                            if repo_name:
+                                args += ['--name', repo_name]
+                            console.print("[dim]Running guided setup...[/dim]")
+                            import subprocess
+                            subprocess.check_call(args, cwd=os.path.dirname(__file__))
+                        except subprocess.CalledProcessError as e:
+                            console.print(f"[red]Setup failed:[/red] {e}")
+                        except Exception as e:
+                            console.print(f"[red]Error:[/red] {e}")
                         continue
 
                     elif cmd == '/save':
