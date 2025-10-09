@@ -8,7 +8,7 @@ The MCP server (`mcp_server.py`) exposes four tools:
 
 1. `rag_answer(repo, question)` → Full LangGraph pipeline with answer + citations
 2. `rag_search(repo, question, top_k=10)` → Retrieval-only (debugging)
-3. `netlify_deploy(domain)` → Trigger a Netlify build for `faxbot.net`, `vivified.dev`, or `both` (requires `NETLIFY_API_KEY`)
+3. `netlify_deploy(domain)` → Trigger a Netlify build for `repo-b.net`, `repo-a.dev`, or `both` (requires `NETLIFY_API_KEY`)
 4. `web_get(url, max_bytes=20000)` → HTTP GET for allowlisted hosts only (`openai.com`, `platform.openai.com`, `github.com`, `openai.github.io`)
 
 ## Setup
@@ -17,21 +17,21 @@ The MCP server (`mcp_server.py`) exposes four tools:
 
 - Bring infra + MCP up: `bash scripts/up.sh`
 - Activate virtualenv: `. .venv/bin/activate`
-- Index repos: `REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
+- Index repos: `REPO=repo-a python index_repo.py && REPO=repo-b python index_repo.py`
 - Codex CLI installed: `brew install openai/tap/codex` or `npm install -g @openai/codex`
 
 ### 2. Register MCP Server with Codex
 
 ```bash
-codex mcp add faxbot-rag -- \
-  /Users/davidmontgomery/faxbot_folder/rag-service/.venv/bin/python \
-  /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py
+codex mcp add repo-b-rag -- \
+  /Users/path/to/repo-b_folder/rag-service/.venv/bin/python \
+  /Users/path/to/repo-b_folder/rag-service/mcp_server.py
 ```
 
 Verify registration:
 ```bash
 codex mcp list
-# Should show: faxbot-rag
+# Should show: repo-b-rag
 ```
 
 ### 3. Test MCP Server (Manual)
@@ -60,19 +60,19 @@ Once registered, Codex can natively call these tools:
 In a Codex chat session:
 
 ```
-User: Use rag_answer to find where OAuth tokens are validated in vivified
+User: Use rag_answer to find where OAuth tokens are validated in repo-a
 
 Codex will call:
-  rag_answer(repo="vivified", question="Where is OAuth token validated?")
+  rag_answer(repo="repo-a", question="Where is OAuth token validated?")
 
 Returns:
 {
-  "answer": "[repo: vivified]\nOAuth tokens are validated in...",
+  "answer": "[repo: repo-a]\nOAuth tokens are validated in...",
   "citations": [
     "identity/auth/oauth.py:42-67",
     "identity/middleware/token.py:89-120"
   ],
-  "repo": "vivified",
+  "repo": "repo-a",
   "confidence": 0.78
 }
 ```
@@ -80,12 +80,12 @@ Returns:
 ### Example 3: Trigger a Netlify Deploy
 
 ```
-User: Use netlify_deploy to rebuild faxbot.net
+User: Use netlify_deploy to rebuild repo-b.net
 
 Returns:
 {
   "results": [
-    {"domain": "faxbot.net", "status": "triggered", "site_id": "...", "build_id": "..."}
+    {"domain": "repo-b.net", "status": "triggered", "site_id": "...", "build_id": "..."}
   ]
 }
 ```
@@ -101,10 +101,10 @@ Returns: {"url": "...", "status": 200, "length": 12345, "clipped": true, "conten
 ### Example 2: Debug retrieval
 
 ```
-User: Use rag_search to see what code comes up for "inbound fax handling" in faxbot
+User: Use rag_search to see what code comes up for "inbound fax handling" in repo-b
 
 Codex will call:
-  rag_search(repo="faxbot", question="How do we handle inbound faxes?", top_k=5)
+  rag_search(repo="repo-b", question="How do we handle inbound faxes?", top_k=5)
 
 Returns:
 {
@@ -115,11 +115,11 @@ Returns:
       "end_line": 89,
       "language": "ruby",
       "rerank_score": 0.82,
-      "repo": "faxbot"
+      "repo": "repo-b"
     },
     ...
   ],
-  "repo": "faxbot",
+  "repo": "repo-b",
   "count": 5
 }
 ```
@@ -137,7 +137,7 @@ These rules are documented in [`AGENTS.md`](AGENTS.md) and should be enforced:
 1. **Never assume the user is wrong** about file paths, function names, or code locations
 2. **Always call RAG tools first** before claiming something doesn't exist
 3. **Never hallucinate file paths** — use retrieval results as ground truth
-4. **Respect repo boundaries** — vivified and faxbot are separate; never fuse them
+4. **Respect repo boundaries** — repo-a and repo-b are separate; never fuse them
 5. **Trust RAG citations** — file paths and line ranges from retrieval are authoritative
 
 ## Eval Loop
@@ -171,12 +171,12 @@ Edit `golden.json`:
 [
   {
     "q": "Where is ProviderSetupWizard rendered?",
-    "repo": "vivified",
+    "repo": "repo-a",
     "expect_paths": ["ProviderSetupWizard", "admin_ui", "components"]
   },
   {
     "q": "How do we queue outbound fax jobs?",
-    "repo": "faxbot",
+    "repo": "repo-b",
     "expect_paths": ["app/", "job", "fax", "outbound"]
   }
 ]
@@ -217,14 +217,14 @@ The `expect_paths` uses substring matching — any result containing one of thes
 
 ### "No results returned"
 
-- Ensure repo is indexed: `REPO=vivified python index_repo.py`
+- Ensure repo is indexed: `REPO=repo-a python index_repo.py`
 - Check collections exist: `curl -s http://127.0.0.1:6333/collections | jq`
-- Try search directly: `python -c "from hybrid_search import search_routed; print(search_routed('test', repo_override='vivified'))"`
+- Try search directly: `python -c "from hybrid_search import search_routed; print(search_routed('test', repo_override='repo-a'))"`
 
 ### "Codex can't find the tools"
 
 - Verify registration: `codex mcp list`
-- Re-register if needed: `codex mcp remove faxbot-rag && codex mcp add faxbot-rag -- ...`
+- Re-register if needed: `codex mcp remove repo-b-rag && codex mcp add repo-b-rag -- ...`
 - Check Codex config: `cat ~/.codex/config.toml | grep mcp`
 
 ## References
