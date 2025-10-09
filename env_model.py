@@ -83,19 +83,44 @@ def generate_text(
     prefer_ollama = bool(OLLAMA_URL) and ("qwen" in (mdl or "").lower())
     if prefer_ollama:
         try:
-            import requests
+            import requests, json as _json
             sys_text = (system_instructions or "").strip()
             prompt = (f"<system>{sys_text}</system>\n" if sys_text else "") + user_input
-            resp = requests.post(
-                OLLAMA_URL.rstrip("/") + "/generate",
-                json={
-                    "model": mdl,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.2, "num_ctx": 8192},
-                },
-                timeout=120,
-            )
+            url = OLLAMA_URL.rstrip("/") + "/generate"
+            # Prefer streaming to avoid long blocking on large models
+            with requests.post(url, json={
+                "model": mdl,
+                "prompt": prompt,
+                "stream": True,
+                "options": {"temperature": 0.2, "num_ctx": 8192},
+            }, timeout=600, stream=True) as r:
+                r.raise_for_status()
+                buf = []
+                last = None
+                for line in r.iter_lines(decode_unicode=True):
+                    if not line:
+                        continue
+                    try:
+                        obj = _json.loads(line)
+                    except Exception:
+                        continue
+                    if isinstance(obj, dict):
+                        seg = (obj.get("response") or "")
+                        if seg:
+                            buf.append(seg)
+                        last = obj
+                        if obj.get("done") is True:
+                            break
+                text = ("".join(buf) or "").strip()
+                if text:
+                    return text, (last or {"response": text})
+            # Fallback to non-stream if needed
+            resp = requests.post(url, json={
+                "model": mdl,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"temperature": 0.2, "num_ctx": 8192},
+            }, timeout=600)
             resp.raise_for_status()
             data = resp.json()
             text = (data.get("response") or "").strip()
