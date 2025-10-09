@@ -40,6 +40,12 @@ This folder contains comprehensive implementation guides and reference documenta
   - Quick decision matrix
   - Command reference
 
+### Indexing Controls
+- **RAG Ignore / Exclusions**
+  - Built-in pruning and file gating: see `filtering.py`
+  - Project-specific globs: edit `data/exclude_globs.txt`
+  - Re-index after changes (`REPO=vivified python index_repo.py`)
+
 ## 🚀 Quick Navigation
 
 **Just getting started?**  

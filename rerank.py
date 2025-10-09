@@ -9,6 +9,8 @@ _HF_PIPE = None  # optional transformers pipeline for models that require trust_
 _RERANKER = None
 
 DEFAULT_MODEL = os.getenv('RERANKER_MODEL', 'cross-encoder/ms-marco-MiniLM-L-6-v2')
+RERANK_BACKEND = (os.getenv('RERANK_BACKEND', 'local') or 'local').lower()
+COHERE_MODEL = os.getenv('COHERE_RERANK_MODEL', 'rerank-v3.5')
 
 
 def _sigmoid(x: float) -> float:
@@ -63,6 +65,32 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
     if not results:
         return []
     model_name = DEFAULT_MODEL
+    # Optional Cohere backend (remote API)
+    if RERANK_BACKEND == 'cohere':
+        try:
+            import cohere  # type: ignore
+            api_key = os.getenv('COHERE_API_KEY')
+            if not api_key:
+                raise RuntimeError('COHERE_API_KEY not set')
+            client = cohere.Client(api_key=api_key)
+            docs = []
+            for r in results:
+                file_ctx = r.get('file_path', '')
+                code_snip = (r.get('code') or r.get('text') or '')[:700]
+                docs.append(f"{file_ctx}\n\n{code_snip}")
+            rr = client.rerank(model=COHERE_MODEL, query=query, documents=docs, top_n=len(docs))
+            # Normalize scores into 0..1
+            scores = [getattr(x, 'relevance_score', 0.0) for x in rr.results]
+            max_s = max(scores) if scores else 1.0
+            for item in rr.results:
+                idx = int(getattr(item, 'index', 0))
+                score = float(getattr(item, 'relevance_score', 0.0))
+                results[idx]['rerank_score'] = (score / max_s) if max_s else 0.0
+            results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
+            return results[:top_k]
+        except Exception:
+            # Fall back to local reranker paths below
+            pass
     # HF pipeline path (e.g., Jina reranker)
     pipe = _maybe_init_hf_pipeline(model_name)
     if pipe is not None:

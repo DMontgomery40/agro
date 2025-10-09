@@ -37,7 +37,7 @@ This is a production RAG (Retrieval-Augmented Generation) service that:
 
 ```bash
 # 1. Start infrastructure (Qdrant + Redis)
-cd /Users/davidmontgomery/faxbot_folder/infra
+cd /Users/davidmontgomery/faxbot_folder/rag-service/infra
 docker compose up -d
 
 # 2. Activate venv and verify deps
@@ -165,7 +165,9 @@ cd /Users/davidmontgomery/faxbot_folder/rag-service
 python3 -m venv .venv
 . .venv/bin/activate
 
-# Install dependencies (already in requirements.txt)
+# Install dependencies
+# Core RAG deps are in requirements-rag.txt; rich is optional for CLI chat
+pip install -r requirements-rag.txt
 pip install -r requirements.txt
 
 # Verify critical imports
@@ -190,8 +192,26 @@ REPO=vivified
 MQ_REWRITES=4
 RERANKER_MODEL=BAAI/bge-reranker-v2-m3
 
+# Generation (Responses API)
+GEN_MODEL=gpt-4o-mini
+
 # Optional: Faxbot path boosts (comma-separated)
 FAXBOT_PATH_BOOSTS=app/,lib/,config/,scripts/,server/,api/
+
+# Optional: Embeddings + rerank backends
+EMBEDDING_TYPE=openai   # openai | local | voyage | mxbai
+VOYAGE_API_KEY=
+EMBEDDING_DIM=512       # when using mxbai
+RERANK_BACKEND=local    # local | cohere
+COHERE_API_KEY=
+COHERE_RERANK_MODEL=rerank-v3.5
+
+# Optional: Indexing/routing
+COLLECTION_NAME=code_chunks_${REPO}
+VENDOR_MODE=prefer_first_party  # prefer_first_party | prefer_vendor
+
+# Optional: MCP integrations
+NETLIFY_API_KEY=
 
 # LangChain (optional)
 LANGCHAIN_TRACING_V2=false
@@ -251,15 +271,20 @@ The MCP (Model Context Protocol) server exposes RAG tools that AI agents can cal
 
 ### Tools Available
 
-1. **`rag_answer(repo, question)`**
+1. `rag_answer(repo, question)`
    - Full LangGraph pipeline (retrieval → generation)
    - Returns: `{answer, citations, repo, confidence}`
-   - Use when you want a complete answer with sources
 
-2. **`rag_search(repo, question, top_k=10)`**
+2. `rag_search(repo, question, top_k=10)`
    - Retrieval-only (no generation)
-   - Returns: `{results: [{file_path, start_line, end_line, rerank_score}], repo, count}`
-   - Use for debugging retrieval or when you just need locations
+   - Returns: `{results:[{file_path,start_line,end_line,rerank_score}], repo, count}`
+
+3. `netlify_deploy(domain)`
+   - Trigger a Netlify build for `faxbot.net`, `vivified.dev`, or `both`
+   - Requires `NETLIFY_API_KEY` in environment
+
+4. `web_get(url, max_bytes=20000)`
+   - HTTP GET for allowlisted hosts: `openai.com`, `platform.openai.com`, `github.com`, `openai.github.io`
 
 ### Connecting to Claude Code
 
@@ -329,6 +354,16 @@ User: Use rag.search to see what code comes up for "inbound fax processing" in f
 Claude Code will:
   1. Call: rag.search(repo="faxbot", question="inbound fax processing", top_k=5)
   2. Show you the 5 most relevant code locations with scores
+
+**Example 3: Trigger a Netlify deploy**
+```
+User: Use netlify_deploy to rebuild vivified.dev
+```
+
+**Example 4: Fetch allowlisted docs**
+```
+User: Use web_get to fetch https://github.com/openai/codex
+```
 ```
 
 ### Connecting to Codex
@@ -565,10 +600,10 @@ python eval_loop.py --json > results.json
 
 ```bash
 # 1. Check infra is up
-docker compose -f /Users/davidmontgomery/faxbot_folder/infra/docker-compose.yml ps
+docker compose -f /Users/davidmontgomery/faxbot_folder/rag-service/infra/docker-compose.yml ps
 
 # 2. If not running, start it
-docker compose -f /Users/davidmontgomery/faxbot_folder/infra/docker-compose.yml up -d
+docker compose -f /Users/davidmontgomery/faxbot_folder/rag-service/infra/docker-compose.yml up -d
 
 # 3. Activate venv
 cd /Users/davidmontgomery/faxbot_folder/rag-service
@@ -748,13 +783,20 @@ REPO=vivified python index_repo.py
 REPO=faxbot python index_repo.py
 ```
 
+If the collection is corrupted or recreate fails via client, try the fallback helper:
+
+```bash
+. .venv/bin/activate
+python qdrant_recreate_fallback.py  # re-creates current COLLECTION_NAME safely
+```
+
 ### Indexing Issues
 
 **Problem:** "ModuleNotFoundError" during indexing
 
 ```bash
 . .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-rag.txt
 ```
 
 **Problem:** OpenAI rate limits or 429 errors
@@ -922,17 +964,39 @@ ollama pull qwen2.5-coder:32b
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | *required* | OpenAI API key for embeddings + generation |
+| `OPENAI_API_KEY` | — | OpenAI API key (needed if `EMBEDDING_TYPE=openai`) |
 | `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant server URL |
 | `REDIS_URL` | `redis://127.0.0.1:6379/0` | Redis connection string |
 | `REPO` | `vivified` | Active repo for indexing/retrieval |
-| `MQ_REWRITES` | `4` | Number of multi-query expansions |
-| `RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | Cross-encoder model |
+| `COLLECTION_NAME` | `code_chunks_${REPO}` | Qdrant collection override |
+| `MQ_REWRITES` | `4` | Multi-query expansion count |
+| `RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | Cross-encoder model name |
+| `RERANK_BACKEND` | `local` | `local` or `cohere` rerank backend |
+| `COHERE_API_KEY` | — | Required if `RERANK_BACKEND=cohere` |
+| `COHERE_RERANK_MODEL` | `rerank-v3.5` | Cohere rerank model id |
+| `GEN_MODEL` | `gpt-4o-mini` | Responses API generation model |
+| `EMBEDDING_TYPE` | `openai` | `openai` | `local` | `voyage` | `mxbai` |
+| `VOYAGE_API_KEY` | — | Required if `EMBEDDING_TYPE=voyage` |
+| `VOYAGE_EMBED_DIM` | `512` | Voyage output dimension (indexing) |
+| `EMBEDDING_DIM` | `512` | Local embedding output dimension (mxbai) |
+| `VENDOR_MODE` | `prefer_first_party` | Origin bonus mode |
 | `FAXBOT_PATH_BOOSTS` | `app/,lib/,config/,...` | Faxbot-specific path boosts |
 | `EVAL_MULTI` | `1` | Use multi-query in eval (0/1) |
 | `EVAL_FINAL_K` | `5` | Top-K for eval metrics |
 | `GOLDEN_PATH` | `golden.json` | Path to golden test file |
 | `BASELINE_PATH` | `eval_baseline.json` | Path to eval baseline |
+| `NETLIFY_API_KEY` | — | Enables `netlify_deploy` MCP tool |
+
+### RAG Ignore / Exclusions
+
+- Centralized file gating avoids indexing noise and large/minified artifacts.
+- Built-in directory pruning and file extension checks live in `filtering.py` (PRUNE_DIRS, VALID_EXTS).
+- Additional project-specific excludes can be added via `data/exclude_globs.txt` (glob patterns).
+
+Common actions:
+- Add a path: edit `data/exclude_globs.txt` and append a glob (e.g., `**/dist/**`).
+- Re-index the affected repo: `REPO=vivified python index_repo.py` (or `REPO=faxbot`).
+- Verify: `curl -s http://127.0.0.1:6333/collections | jq` and run `python eval_loop.py`.
 
 ### Tuning Retrieval
 
@@ -1026,6 +1090,7 @@ Cards are automatically used by `hybrid_search.py` if present.
 | `hybrid_search.py` | Hybrid search (BM25 + dense + rerank) |
 | `index_repo.py` | Indexing script (chunks → BM25 → Qdrant) |
 | `mcp_server.py` | MCP tool server for agents |
+| `mcp_server_http.py` | Optional HTTP MCP server (FastMCP) |
 | `eval_rag.py` | Basic eval runner |
 | `eval_loop.py` | Advanced eval with baselines/regressions |
 | `build_cards.py` | Code card summaries |
@@ -1078,13 +1143,19 @@ codex mcp list
 codex mcp add faxbot-rag -- .venv/bin/python mcp_server.py
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | .venv/bin/python mcp_server.py
 
+# Netlify deploy via MCP (from Codex chat)
+# User: Use netlify_deploy to rebuild both sites
+
+# HTTP GET tool (allowlisted hosts)
+# User: Use web_get to fetch https://github.com/openai/codex
+
 # Test retrieval
 python -c "from hybrid_search import search_routed_multi; print(search_routed_multi('oauth', repo_override='vivified', final_k=5))"
 ```
 
 ---
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 
 ---
 

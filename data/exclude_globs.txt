@@ -1,41 +1,50 @@
-**/.git/** 
-**/.hg/** 
-**/.svn/** 
-**/.DS_Store
-**/.venv/**
-**/venv/**
+# RAG ignore patterns (glob)
+# Lines starting with # are comments.
+# These patterns are applied in addition to built-in directory pruning in filtering.py.
+
+# Build artifacts / vendor / caches
+**/node_modules/**
+**/vendor/**
+**/dist/**
+**/build/**
+**/.next/**
+**/.turbo/**
+**/.svelte-kit/**
+**/coverage/**
 **/__pycache__/**
 **/.pytest_cache/**
 **/.mypy_cache/**
-**/.idea/**
-**/.vscode/**
-**/dist/** 
-**/build/** 
-**/out/** 
-**/coverage/** 
-**/.next/** 
-**/.nuxt/**
-**/node_modules/** 
-**/Pods/** 
+**/.cache/**
+**/Pods/**
+**/Godeps/**
+**/.bundle/**
+**/bundle/**
+
+# Docs build outputs
+**/_site/**
+**/site/**
+
+# Minified or large static
+**/*.min.js
+**/*.min.css
+**/*.map
+
+# Lockfiles (rarely helpful for RAG)
 **/pnpm-lock.yaml
 **/package-lock.json
 **/yarn.lock
-**/Gemfile.lock
-**/vendor/** 
-**/third_party/** 
-**/ThirdParty/** 
-**/site-packages/**
-**/*.min.js
-**/*.bundle.js
-**/*.map
-**/*.wasm
+**/poetry.lock
+**/Pipfile.lock
+
+# Binary or image formats
 **/*.png
 **/*.jpg
 **/*.jpeg
 **/*.gif
 **/*.svg
+**/*.ico
 **/*.pdf
 **/*.zip
 **/*.tar
-**/*.tar.gz
-**/*.tgz
+**/*.gz
+**/*.7z
