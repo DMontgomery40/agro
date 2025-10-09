@@ -176,8 +176,8 @@ def rrf(
         score[pid] += 1.0 / (kdiv + rank)
     ranked = sorted(score.items(), key=lambda x: x[1], reverse=True)
     return [pid for pid, _ in ranked[:k]]
-def _load_chunks() -> List[Dict]:
-    p = os.path.join(os.path.dirname(__file__), 'out', REPO, 'chunks.jsonl')
+def _load_chunks(repo: str) -> List[Dict]:
+    p = os.path.join(os.path.dirname(__file__), 'out', repo, 'chunks.jsonl')
     chunks = []
     if os.path.exists(p):
         with open(p, 'r', encoding='utf-8') as f:
@@ -225,15 +225,15 @@ def _load_cards_map(repo: str) -> Dict:
     except Exception:
         return {'by_idx': {}, 'by_chunk_id': {}}
 
-def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int = 10) -> List[Dict]:
-    chunks = _load_chunks()
+def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int = 10) -> List[Dict]:
+    chunks = _load_chunks(repo)
     if not chunks:
         return []
 
     # ---- Dense (Qdrant) ----
     dense_pairs = []
     qc = QdrantClient(url=QDRANT_URL)
-    coll = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
+    coll = os.getenv('COLLECTION_NAME', f'code_chunks_{repo}')
     try:
         e = _get_embedding(query, kind="query")
     except Exception:
@@ -252,7 +252,7 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
         dense_pairs = []
 
     # ---- Sparse (BM25S) ----
-    idx_dir = os.path.join(os.path.dirname(__file__), 'out', REPO, 'bm25_index')
+    idx_dir = os.path.join(os.path.dirname(__file__), 'out', repo, 'bm25_index')
     retriever = bm25s.BM25.load(idx_dir)
     tokenizer = Tokenizer(stemmer=Stemmer('english'), stopwords='en')
     tokens = tokenizer.tokenize([query])
@@ -281,10 +281,10 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
 
     # Card-based BM25 boosting: retrieve cards and boost matching chunks
     card_chunk_ids: set = set()
-    cards_retr = _load_cards_bm25(REPO)
+    cards_retr = _load_cards_bm25(repo)
     if cards_retr is not None:
         try:
-            cards_map = _load_cards_map(REPO)
+            cards_map = _load_cards_map(repo)
             tokens = tokenizer.tokenize([query])
             c_ids, _ = cards_retr.retrieve(tokens, k=min(topk_sparse, 30))
             # Map card indices to chunk IDs
@@ -303,7 +303,7 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
     by_id = {pid: p for pid,p in (dense_pairs + sparse_pairs)}
     docs = [by_id[pid] for pid in fused if pid in by_id]
     # Hydrate code bodies from local cache before CE rerank
-    cache = _load_code_cache(REPO)
+    cache = _load_code_cache(repo)
     for d in docs:
         if not d.get('code'):
             h = d.get('hash')
@@ -313,9 +313,9 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
     # Apply path + layer intent + provider + feature + card + (optional) origin bonuses, then resort
     intent = _classify_query(query)
     for d in docs:
-        layer_bonus = _vivified_layer_bonus(d.get('layer',''), intent) if REPO=='vivified' else _faxbot_layer_bonus(d.get('layer',''), intent)
+        layer_bonus = _vivified_layer_bonus(d.get('layer',''), intent) if repo=='vivified' else _faxbot_layer_bonus(d.get('layer',''), intent)
         origin_bonus = _origin_bonus(d.get('origin',''), VENDOR_MODE) if 'VENDOR_MODE' in os.environ else 0.0
-        repo_tag = d.get('repo', REPO)
+        repo_tag = d.get('repo', repo)
         chunk_id = str(d.get('id', ''))
         d['rerank_score'] = float(
             d.get('rerank_score', 0.0)
@@ -394,13 +394,8 @@ def route_repo(query: str, default_repo: str | None = None) -> str:
     return (default_repo or os.getenv('REPO', 'vivified') or 'vivified').strip()
 
 def search_routed(query: str, repo_override: str | None = None, final_k: int = 10):
-    global REPO
-    prev = REPO
-    REPO = (repo_override or route_repo(query, default_repo=prev) or prev).strip()
-    try:
-        return search(query, final_k=final_k)
-    finally:
-        REPO = prev
+    repo = (repo_override or route_repo(query, default_repo=os.getenv('REPO', 'vivified')) or os.getenv('REPO', 'vivified')).strip()
+    return search(query, repo=repo, final_k=final_k)
 
 # Multi-query expansion (cheap) and routed search
 def expand_queries(query: str, m: int = 4) -> list[str]:
@@ -421,14 +416,9 @@ def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4
     repo = (repo_override or route_repo(query) or os.getenv('REPO','vivified')).strip()
     variants = expand_queries(query, m=m)
     all_docs = []
-    prev = globals().get('REPO')
-    globals()['REPO'] = repo
-    try:
-        for qv in variants:
-            docs = search(qv, final_k=final_k)
-            all_docs.extend(docs)
-    finally:
-        globals()['REPO'] = prev
+    for qv in variants:
+        docs = search(qv, repo=repo, final_k=final_k)
+        all_docs.extend(docs)
     # Deduplicate by file_path + line span
     seen = set()
     uniq = []
