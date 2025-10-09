@@ -22,7 +22,7 @@
   - Watch mode (auto re-run on file changes)
   - Per-question regression analysis
   - JSON output for CI/CD integration
-- **`golden.json`** - 10 starter test cases (5 vivified, 5 faxbot)
+- **`golden.json`** - 10 starter test cases (5 project, 5 faxbot)
 - **`eval_rag.py`** - Simple runner (kept for compatibility)
 
 ### 3. ✓ Comprehensive Documentation (1042+ lines)
@@ -81,7 +81,7 @@
 codex mcp list  # Verify faxbot-rag is listed
 
 # In Codex chat:
-# "Use rag.search to find OAuth code in vivified"
+# "Use rag.search to find OAuth code in project"
 # "Use rag.answer to explain how inbound faxes work in faxbot"
 ```
 
@@ -91,8 +91,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "faxbot-rag": {
-      "command": "/Users/davidmontgomery/faxbot_folder/rag-service/.venv/bin/python",
-      "args": ["/Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py"],
+      "command": "/opt/app/faxbot_folder/rag-service/.venv/bin/python",
+      "args": ["/opt/app/faxbot_folder/rag-service/mcp_server.py"],
       "env": {"OPENAI_API_KEY": "sk-proj-..."}
     }
   }
@@ -177,7 +177,7 @@ rag-redis: Up 18 hours
 $ curl -s http://127.0.0.1:6333/collections | jq -r '.result.collections[].name'
 code_chunks
 code_chunks_faxbot
-code_chunks_vivified
+code_chunks_project
 ```
 
 ### Python Imports
@@ -188,7 +188,7 @@ $ . .venv/bin/activate && python -c "import langgraph_app, hybrid_search, mcp_se
 
 ### Retrieval
 ```bash
-$ python -c "from hybrid_search import search_routed_multi; docs = search_routed_multi('OAuth', repo_override='vivified', final_k=5); print(f'✓ Retrieved {len(docs)} results')"
+$ python -c "from hybrid_search import search_routed_multi; docs = search_routed_multi('OAuth', repo_override='project', final_k=5); print(f'✓ Retrieved {len(docs)} results')"
 ✓ Retrieved 5 results
 ```
 
@@ -208,7 +208,7 @@ $ python -c "from mcp_server import MCPServer; resp = MCPServer().handle_request
 1. ✗ Never assume user is wrong about file paths
 2. ✓ Always call RAG tools first before claiming something doesn't exist
 3. ✗ Never hallucinate file paths
-4. ✓ Respect repo boundaries (vivified ≠ faxbot)
+4. ✓ Respect repo boundaries (project ≠ faxbot)
 5. ✓ Trust RAG citations as authoritative
 
 ### Eval Features

@@ -16,6 +16,9 @@ This is a RAG (Retrieval-Augmented Generation) that:
 - Supports **multi-query expansion** and **local code hydration**
 - Features **interactive CLI chat** with conversation memory
 
+Modular by design
+- Every component in this stack is swappable. Models, rerankers, vector DB, streaming transport, and even the orchestration graph are suggestions, not requirements. Treat this repo as a reference implementation you can piece apart: keep what you like, replace what you don’t. The docs show one happy path; you can rewire models and services to suit your environment.
+
 ---
 
 ## Table of Contents
@@ -63,6 +66,19 @@ curl "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=repo-a"
 # MCP tools quick check (stdio mode)
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 ```
+
+Side note: not just “repos”
+- We use the word “repo” because most users are developers, but you can index any folder with plain text, docs, or code.
+- Two ways:
+  - Guided: run `bash scripts/setup.sh` (or `bash scripts/up.sh` then accept guided setup) and point it to any absolute folder path.
+  - One‑shot: `REPO=my-folder REPO_PATH=/abs/path/to/folder python index_repo.py` (adds a single ad‑hoc target without editing repos.json).
+- For plain‑text heavy corpora, consider text‑focused embeddings instead of code‑tuned ones, e.g.:
+  - sentence-transformers/all-MiniLM-L6-v2 (fast, lightweight)
+  - intfloat/e5-base-v2 or e5-large-v2 (strong general retrieval)
+  - BAAI/bge-m3 (multilingual, robust for varied queries)
+  - mixedbread-ai/mxbai-embed-large-v1 (solid general embedding)
+  - OpenAI text-embedding-3-large (hosted, high‑quality)
+  You can re‑index the same folder later with a different embedding backend.
 
 ---
 

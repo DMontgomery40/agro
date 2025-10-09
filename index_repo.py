@@ -63,13 +63,13 @@ if OPENAI_API_KEY and OPENAI_API_KEY.strip().upper() in {"SK-REPLACE", "REPLACE"
     OPENAI_API_KEY = None
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
 # Repo scoping
-REPO = os.getenv('REPO', 'vivified').strip()
+REPO = os.getenv('REPO', 'project').strip()
 _BASES = {
-    'vivified': ['/Users/davidmontgomery/faxbot_folder/vivified'],
-    'faxbot': ['/Users/davidmontgomery/faxbot_folder/faxbot'],
+    'project': ['/opt/app/faxbot_folder/project'],
+    'faxbot': ['/opt/app/faxbot_folder/faxbot'],
 }
-BASES = _BASES.get(REPO, _BASES['vivified'])
-OUTDIR = f'/Users/davidmontgomery/faxbot_folder/rag-service/out/{REPO}'
+BASES = _BASES.get(REPO, _BASES['project'])
+OUTDIR = f'/opt/app/faxbot_folder/rag-service/out/{REPO}'
 # Allow explicit collection override (for versioned collections per embedding config)
 COLLECTION = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
 
@@ -119,7 +119,7 @@ def should_index_file(path: str) -> bool:
 # --- Repo-aware layer tagging ---
 def detect_layer(fp: str) -> str:
     f = (fp or '').lower()
-    if REPO == 'vivified':
+    if REPO == 'project':
         if '/core/admin_ui/' in f or '/site/' in f or '/docs-site/' in f:
             return 'ui'
         if '/plugins/' in f or '/core/plugins/' in f or 'notification' in f or 'pushover' in f or 'apprise' in f:

@@ -22,43 +22,43 @@ codex
 2) Make sure rag-service is present and runnable from CLI
 You already have this repo, but here’s a clean setup path on macOS using the same directory style you’ve used:
 
-mkdir -p /Users/davidmontgomery/faxbot_folder && \
-cd /Users/davidmontgomery/faxbot_folder && \
-[ -d rag-service ] || git clone https://github.com/DMontgomery40/rag-service && \
+mkdir -p /opt/app/faxbot_folder && \
+cd /opt/app/faxbot_folder && \
+[ -d rag-service ] || git clone https://github.com/project-author/rag-service && \
 cd rag-service && \
 /usr/bin/python3 -m venv .venv && \
 . .venv/bin/activate && \
 pip install -r requirements-rag.txt || true
 Sanity-check your CLI entrypoint (you’ve run this before; this confirms it’s callable from a script):
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
-python langgraph_app.py "vivified: smoke test: where is ProviderSetupWizard rendered?"
+python langgraph_app.py "project: smoke test: where is ProviderSetupWizard rendered?"
 (We’re intentionally using the CLI so the MCP bridge can wrap it reliably. Your earlier terminal log showed this invocation is the contract.)
 
 3) Create a tiny MCP server that wraps rag-service
 MCP is the “USB-C for tools”. Codex can call any MCP server you register. We’ll expose two tools and run with stdio (the simplest, most reliable transport) using the official Python SDK (mcp).
 
-mkdir -p /Users/davidmontgomery/faxbot_folder/rag-mcp && \
-cd /Users/davidmontgomery/faxbot_folder/rag-mcp && \
+mkdir -p /opt/app/faxbot_folder/rag-mcp && \
+cd /opt/app/faxbot_folder/rag-mcp && \
 /usr/bin/python3 -m venv .venv && \
 . .venv/bin/activate && \
 pip install "mcp[cli]" httpx && \
-cat > /Users/davidmontgomery/faxbot_folder/rag-mcp/server.py <<'PY'
+cat > /opt/app/faxbot_folder/rag-mcp/server.py <<'PY'
 from __future__ import annotations
 import subprocess, json, shlex, sys, os
 from typing import Literal
 from mcp.server.fastmcp import FastMCP
 
 # Hard-wire the repo root so there are no placeholders.
-RAG_ROOT = "/Users/davidmontgomery/faxbot_folder/rag-service"
+RAG_ROOT = "/opt/app/faxbot_folder/rag-service"
 VENV_BIN = os.path.join(RAG_ROOT, ".venv", "bin")
 PYTHON   = os.path.join(VENV_BIN, "python")
 ENTRY    = os.path.join(RAG_ROOT, "langgraph_app.py")
 
 mcp = FastMCP("rag-mcp")
 
-def _run_cli(repo: Literal["vivified","faxbot","rag-service"], question: str, mode: str="answer") -> dict:
+def _run_cli(repo: Literal["project","faxbot","rag-service"], question: str, mode: str="answer") -> dict:
     """
     Calls your existing CLI:
       python langgraph_app.py "repo: question"
@@ -80,12 +80,12 @@ def _run_cli(repo: Literal["vivified","faxbot","rag-service"], question: str, mo
     return {"mode": mode, "repo": repo, "question": question, "raw_text": stdout, "json": parsed, "returncode": out.returncode}
 
 @mcp.tool()
-def answer(repo: Literal["vivified","faxbot","rag-service"], question: str) -> dict:
+def answer(repo: Literal["project","faxbot","rag-service"], question: str) -> dict:
     """Answer a codebase question using rag-service CLI. Returns text + any JSON your CLI printed."""
     return _run_cli(repo, question, mode="answer")
 
 @mcp.tool()
-def search(repo: Literal["vivified","faxbot","rag-service"], question: str) -> dict:
+def search(repo: Literal["project","faxbot","rag-service"], question: str) -> dict:
     """Retrieve context without forcing a final answer (same backend, useful for debugging)."""
     return _run_cli(repo, f"[search-mode] {question}", mode="search")
 
@@ -99,7 +99,7 @@ MCP SDK & patterns docs for reference:https://github.com/modelcontextprotocol/py
 Codex reads MCP config from ~/.codex/config.toml and also has a CLI helper codex mcp add …. Use either.
 Option A — CLI (easiest):
 
-codex mcp add rag-service -- python /Users/davidmontgomery/faxbot_folder/rag-mcp/server.py
+codex mcp add rag-service -- python /opt/app/faxbot_folder/rag-mcp/server.py
 Option B — edit config file:
 
 mkdir -p ~/.codex && \
@@ -107,14 +107,14 @@ cat >> ~/.codex/config.toml <<'TOML'
 # Register David's rag-service bridge for Codex (stdio)
 [mcp_servers.rag-service]
 command = "python"
-args    = ["/Users/davidmontgomery/faxbot_folder/rag-mcp/server.py"]
+args    = ["/opt/app/faxbot_folder/rag-mcp/server.py"]
 TOML
 Docs describing Codex MCP config & CLI:https://developers.openai.com/codex/mcp/https://github.com/openai/codex (see “Configuration” and “Model Context Protocol (MCP)”)
 
 5) Give Codex “muscle memory” via AGENTS.md
-Codex supports per-workspace memory/instructions. Put this in the same folder where you run Codex (e.g., /Users/davidmontgomery/faxbot_folder or in each repo root). The docs list “Memory with AGENTS.md” under “Docs & FAQ” in the Codex repo readme.
+Codex supports per-workspace memory/instructions. Put this in the same folder where you run Codex (e.g., /opt/app/faxbot_folder or in each repo root). The docs list “Memory with AGENTS.md” under “Docs & FAQ” in the Codex repo readme.
 
-cat > /Users/davidmontgomery/faxbot_folder/AGENTS.md <<'MD'
+cat > /opt/app/faxbot_folder/AGENTS.md <<'MD'
 # Workspace rules for Codex (David Montgomery)
 - Never assume the user is wrong or that files "don't exist."
 - Before answering, call the MCP tool `rag-service.answer` to ground responses in the repo’s code.
@@ -122,8 +122,8 @@ cat > /Users/davidmontgomery/faxbot_folder/AGENTS.md <<'MD'
 - Always include file paths + line refs when suggesting code edits.
 - For discovery-only requests, prefer `rag-service.search`.
 - Repo routing:
-  - Use repo="vivified" for questions about the Vivified codebase.
-  - Use repo="faxbot" for Faxbot.
+  - Use repo="project" for questions about the PROJECT codebase.
+  - Use repo="faxbot" for PROJECT.
   - Use repo="rag-service" for RAG internals.
 - If the tool output has no good match, say so explicitly and suggest a narrower query; do not fabricate APIs, functions, or files.
 MD
@@ -132,11 +132,11 @@ Why this file? It makes the “don’t assume I’m wrong; use the tool” instr
 6) Quick smoke tests (non-interactive or interactive)
 	•	Non-interactive (Codex supports codex exec for a one-shot prompt; see Codex docs “Non-interactive mode (codex exec)”): https://github.com/openai/codex/blob/main/docs/exec.md GitHub
 
-cd /Users/davidmontgomery/faxbot_folder && \
-codex exec -p "Use the MCP tool rag-service.answer(repo='vivified', question='Where is ProviderSetupWizard rendered?'). Return the file path(s) + line ranges from the tool output. If nothing is found, call rag-service.search first and try again."
+cd /opt/app/faxbot_folder && \
+codex exec -p "Use the MCP tool rag-service.answer(repo='project', question='Where is ProviderSetupWizard rendered?'). Return the file path(s) + line ranges from the tool output. If nothing is found, call rag-service.search first and try again."
 	•	Interactive:
 
-cd /Users/davidmontgomery/faxbot_folder && codex
+cd /opt/app/faxbot_folder && codex
 # Then ask: 
 # “Use rag-service.answer with repo='faxbot' to find where PHI (phone numbers) are masked in events; cite files/lines.”
 The CLI syntax above nudges Codex to call your MCP tool. Because the server wraps your existing langgraph_app.py, you don’t need to reinvent your RAG service.
@@ -170,9 +170,9 @@ codex mcp --help
 Make sure rag-service is listed, or re-add with codex mcp add … (see: https://developers.openai.com/codex/mcp/ )
 	2	Tool runs but returns empty → run your CLI directly:
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
-python langgraph_app.py "vivified: <your question>"
+python langgraph_app.py "project: <your question>"
 If the CLI is empty too, the issue is retrieval, not MCP.
 	3	Codex assumes instead of calling the tool → tighten AGENTS.md (make “always call rag-service.answer” the first rule). The “Docs & FAQ” in Codex repo shows AGENTS.md support: https://github.com/openai/codex (see “Memory with AGENTS.md”).
 

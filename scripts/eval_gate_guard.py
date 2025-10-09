@@ -6,11 +6,11 @@ Usage:
   python scripts/eval_gate_guard.py <answers.jsonl>
 
 Where each line is a JSON object containing:
-  {"q": "...", "repo": "vivified", "answer": "..."}
+  {"q": "...", "repo": "project", "answer": "..."}
 This fails if the answer lacks a [repo: ...] header or no file path-like citation.
 """
 
-HEADER_RE = re.compile(r"^\[repo:\s*(vivified|faxbot)\]", re.I | re.M)
+HEADER_RE = re.compile(r"^\[repo:\s*(project|faxbot)\]", re.I | re.M)
 PATH_RE = re.compile(r"[A-Za-z0-9_\-./]+?\.[A-Za-z0-9_]+:\d+-\d+")
 
 

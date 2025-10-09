@@ -12,7 +12,7 @@ FINAL_K = int(os.getenv('EVAL_FINAL_K','5'))
 """
 Golden file format (golden.json):
 [
-  {"q": "Where is ProviderSetupWizard rendered?", "repo": "vivified", "expect_paths": ["core/admin_ui/src/components/ProviderSetupWizard.tsx"]},
+  {"q": "Where is ProviderSetupWizard rendered?", "repo": "project", "expect_paths": ["core/admin_ui/src/components/ProviderSetupWizard.tsx"]},
   {"q": "Where do we mask PHI in events?", "repo": "faxbot", "expect_paths": ["app/..."]}
 ]
 """
@@ -28,7 +28,7 @@ def main():
     total = len(gold); hits_top1 = 0; hits_topk = 0
     t0 = time.time()
     for i, row in enumerate(gold, 1):
-        q = row['q']; repo = row.get('repo') or os.getenv('REPO','vivified')
+        q = row['q']; repo = row.get('repo') or os.getenv('REPO','project')
         expect = row.get('expect_paths') or []
         if USE_MULTI:
             docs = search_routed_multi(q, repo_override=repo, m=4, final_k=FINAL_K)

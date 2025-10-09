@@ -3,7 +3,7 @@
 
 set -e
 
-RAG_ROOT="/Users/davidmontgomery/faxbot_folder/rag-service"
+RAG_ROOT="/opt/app/faxbot_folder/rag-service"
 VENV_PYTHON="${RAG_ROOT}/.venv/bin/python"
 MCP_SERVER="${RAG_ROOT}/mcp_server.py"
 
@@ -48,7 +48,7 @@ if command -v codex &> /dev/null; then
     echo ""
     echo "   To use in Codex:"
     echo "   $ codex"
-    echo "   > Use rag_search to find OAuth code in vivified"
+    echo "   > Use rag_search to find OAuth code in project"
 else
     echo "   ⚠️  Codex CLI not found. Install with:"
     echo "      brew install codex"
@@ -134,7 +134,7 @@ echo ""
 echo "✅ Setup complete!"
 echo ""
 echo "Next steps:"
-echo "  • Codex: Run 'codex' and try: Use rag_search to find OAuth in vivified"
+echo "  • Codex: Run 'codex' and try: Use rag_search to find OAuth in project"
 echo "  • Claude Code: Restart app, then use rag_answer or rag_search tools"
 echo ""
 echo "Docs:"

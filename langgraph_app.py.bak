@@ -7,7 +7,7 @@ from hybrid_search import search as hybrid_search
 from openai import OpenAI
 
 load_dotenv()
-top_env = '/Users/davidmontgomery/rag-service/.env'
+top_env = '/opt/app/rag-service/.env'
 if os.path.exists(top_env):
     try:
         load_dotenv(dotenv_path=top_env, override=False)

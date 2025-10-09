@@ -78,8 +78,8 @@ def find_discriminative_keywords(repo_path, top_n=50):
 
 if __name__ == '__main__':
     repos = {
-        'vivified': '/Users/davidmontgomery/faxbot_folder/vivified',
-        'faxbot': '/Users/davidmontgomery/faxbot_folder/faxbot'
+        'project': '/opt/app/faxbot_folder/project',
+        'faxbot': '/opt/app/faxbot_folder/faxbot'
     }
     
     all_results = {}
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     print('CROSS-CONTAMINATION ANALYSIS')
     print(f'{"="*80}')
     
-    viv_keywords = {k['keyword'] for k in all_results['vivified'][:30]}
+    viv_keywords = {k['keyword'] for k in all_results['project'][:30]}
     fax_keywords = {k['keyword'] for k in all_results['faxbot'][:30]}
     
     overlap = viv_keywords & fax_keywords
@@ -109,10 +109,10 @@ if __name__ == '__main__':
     if overlap:
         print(f'  {", ".join(sorted(overlap))}')
     
-    print(f'\nVivified-only keywords (use these!): {len(viv_keywords - fax_keywords)}')
+    print(f'\nPROJECT-only keywords (use these!): {len(viv_keywords - fax_keywords)}')
     print(f'  {", ".join(sorted(list(viv_keywords - fax_keywords)[:10]))}')
     
-    print(f'\nFaxbot-only keywords (use these!): {len(fax_keywords - viv_keywords)}')
+    print(f'\nPROJECT-only keywords (use these!): {len(fax_keywords - viv_keywords)}')
     print(f'  {", ".join(sorted(list(fax_keywords - viv_keywords)[:10]))}')
     
     # Save to file

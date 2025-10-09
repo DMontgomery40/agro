@@ -11,7 +11,7 @@ services:
       - QDRANT__STORAGE__USE_MMAP=false
       - QDRANT__STORAGE__ON_DISK_PERSISTENCE=true
     volumes:
-      - /Users/davidmontgomery/faxbot_folder/data/qdrant:/qdrant/storage
+      - /opt/app/faxbot_folder/data/qdrant:/qdrant/storage
   redis:
     image: redis/redis-stack:7.2.0-v10
     container_name: rag-redis
@@ -21,4 +21,4 @@ services:
     environment:
       - REDIS_ARGS=--appendonly yes
     volumes:
-      - /Users/davidmontgomery/faxbot_folder/data/redis:/data
+      - /opt/app/faxbot_folder/data/redis:/data

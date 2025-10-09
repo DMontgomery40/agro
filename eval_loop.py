@@ -41,7 +41,7 @@ def run_eval_with_results() -> Dict[str, Any]:
     t0 = time.time()
     for i, row in enumerate(gold, 1):
         q = row['q']
-        repo = row.get('repo') or os.getenv('REPO', 'vivified')
+        repo = row.get('repo') or os.getenv('REPO', 'project')
         expect = row.get('expect_paths') or []
 
         if USE_MULTI:

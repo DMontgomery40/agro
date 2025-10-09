@@ -3,17 +3,17 @@ RUNBOOK (UPDATED): Production RAG on macOS — Apple Silicon (non‑CUDA)
 Mac mini M4 Pro • 48 GB unified memory • 16‑core ANE • 10‑core GPU
 Preference: Docker Compose > docker run / Docker Desktop
 Paths:
-faxbot:    /Users/davidmontgomery/faxbot_folder/faxbot
-vivified:  /Users/davidmontgomery/faxbot_folder/vivified
-rag svc:   /Users/davidmontgomery/faxbot_folder/rag-service
+faxbot:    /opt/app/faxbot_folder/faxbot
+project:  /opt/app/faxbot_folder/project
+rag svc:   /opt/app/faxbot_folder/rag-service
 ===========================================================
 
 ## WHAT CHANGED (at a glance)
 
 • Replaced `docker run` with **Docker Compose** for Qdrant + Redis.
 • **Removed Xcode/CLT steps** (brew and uv already installed).
-• **Externalized RAG** to /Users/davidmontgomery/faxbot_folder/rag-service.
-• Fixed path typos (vivified path) and updated all references.
+• **Externalized RAG** to /opt/app/faxbot_folder/rag-service.
+• Fixed path typos (project path) and updated all references.
 • Kept PyTorch **MPS** acceleration for Apple Silicon (no CUDA).
 
 Prereqs (expected present): Homebrew, uv. This runbook avoids Xcode.
@@ -26,8 +26,8 @@ Prereqs (expected present): Homebrew, uv. This runbook avoids Xcode.
 
 ## PHASE 1 — Infra via Docker Compose (Qdrant + Redis Stack)
 
-mkdir -p /Users/davidmontgomery/faxbot_folder/{infra,data/qdrant,data/redis} && \
-cat > /Users/davidmontgomery/faxbot_folder/infra/docker-compose.yml <<'YAML'
+mkdir -p /opt/app/faxbot_folder/{infra,data/qdrant,data/redis} && \
+cat > /opt/app/faxbot_folder/infra/docker-compose.yml <<'YAML'
 version: "3.8"
 services:
   qdrant:
@@ -41,7 +41,7 @@ services:
       - QDRANT__STORAGE__USE_MMAP=false
       - QDRANT__STORAGE__ON_DISK_PERSISTENCE=true
     volumes:
-      - /Users/davidmontgomery/faxbot_folder/data/qdrant:/qdrant/storage
+      - /opt/app/faxbot_folder/data/qdrant:/qdrant/storage
   redis:
     image: redis/redis-stack:7.2.0-v10
     container_name: rag-redis
@@ -51,25 +51,25 @@ services:
     environment:
       - REDIS_ARGS=--appendonly yes
     volumes:
-      - /Users/davidmontgomery/faxbot_folder/data/redis:/data
+      - /opt/app/faxbot_folder/data/redis:/data
 YAML
-&& cd /Users/davidmontgomery/faxbot_folder/infra && \
+&& cd /opt/app/faxbot_folder/infra && \
 docker compose up -d && sleep 3 && docker compose ps && \
 ( curl -sf http://127.0.0.1:6333/collections >/dev/null && echo "Qdrant up." ) || ( echo "Qdrant not responding" && exit 1 ) && \
 docker exec rag-redis redis-cli ping
 
 ## PHASE 2 — Directory Layout & Repos (exact paths)
 
-mkdir -p /Users/davidmontgomery/faxbot_folder && 
-cd /Users/davidmontgomery/faxbot_folder && 
-[ -d faxbot/.git ] || git clone -b auto-tunnel --single-branch [https://github.com/DMontgomery40/Faxbot.git](https://github.com/DMontgomery40/Faxbot.git) faxbot && 
-[ -d vivified/.git ] || git clone -b claude-test --single-branch [https://github.com/DMontgomery40/vivified.git](https://github.com/DMontgomery40/vivified.git) vivified && 
-echo "Repos ready at: $(pwd)/faxbot  and  $(pwd)/vivified"
+mkdir -p /opt/app/faxbot_folder && 
+cd /opt/app/faxbot_folder && 
+[ -d faxbot/.git ] || git clone -b auto-tunnel --single-branch [https://github.com/project-author/PROJECT.git](https://github.com/project-author/PROJECT.git) faxbot && 
+[ -d project/.git ] || git clone -b claude-test --single-branch [https://github.com/project-author/project.git](https://github.com/project-author/project.git) project && 
+echo "Repos ready at: $(pwd)/faxbot  and  $(pwd)/project"
 
 ## PHASE 3 — Create rag-service (outside repos) + venv
 
-mkdir -p /Users/davidmontgomery/faxbot_folder/rag-service && 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+mkdir -p /opt/app/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 uv venv && 
 . .venv/bin/activate && 
 python -V && 
@@ -77,7 +77,7 @@ echo "rag-service venv ready"
 
 ## PHASE 4 — Requirements for RAG stack (Apple Silicon / MPS)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 cat > requirements-rag.txt <<'EOF'
 
 # Orchestration (eval libs removed to avoid conflicts)
@@ -128,14 +128,14 @@ PY
 
 ## PHASE 5 — .env (local keys + service URLs)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 read -s -p "Enter OpenAI API key (will be written to .env): " OPENAI_API_KEY && echo && 
 printf "OPENAI_API_KEY=%s\nQDRANT_URL=[http://127.0.0.1:6333\nREDIS_URL=redis://127.0.0.1:6379/0\nLANGCHAIN_TRACING_V2=false\nLANGCHAIN_PROJECT=faxbot-rag\nRERANKER_MODEL=BAAI/bge-reranker-v2-m3\n](http://127.0.0.1:6333\nREDIS_URL=redis://127.0.0.1:6379/0\nLANGCHAIN_TRACING_V2=false\nLANGCHAIN_PROJECT=faxbot-rag\nRERANKER_MODEL=BAAI/bge-reranker-v2-m3\n)" "$OPENAI_API_KEY" > .env && 
 echo "Wrote $(pwd)/.env"
 
 ## PHASE 6 — Code: ast_chunker.py (syntax‑aware chunking)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 cat > ast_chunker.py <<'EOF'
 import os, re, hashlib
 from typing import Dict, List, Optional
@@ -238,7 +238,7 @@ EOF
 
 ## PHASE 7 — Code: index_repo.py (BM25S + OpenAI embeddings + Qdrant)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 cat > index_repo.py <<'EOF'
 import os, json, hashlib
 from typing import List, Dict
@@ -255,10 +255,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL","[http://127.0.0.1:6333](http://127.0.0.1:6333)")
 
 BASES = [
-"/Users/davidmontgomery/faxbot_folder/faxbot",
-"/Users/davidmontgomery/faxbot_folder/vivified"
+"/opt/app/faxbot_folder/faxbot",
+"/opt/app/faxbot_folder/project"
 ]
-OUTDIR = "/Users/davidmontgomery/faxbot_folder/rag-service/out"
+OUTDIR = "/opt/app/faxbot_folder/rag-service/out"
 COLLECTION = "code_chunks"
 
 os.makedirs(OUTDIR, exist_ok=True)
@@ -371,7 +371,7 @@ EOF
 
 ## PHASE 8 — Code: rerank.py (Cross‑Encoder with MPS if available)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 cat > rerank.py <<'EOF'
 import os
 from typing import List, Dict
@@ -401,7 +401,7 @@ EOF
 
 ## PHASE 9 — Code: hybrid_search.py (BM25S + Qdrant + RRF + rerank)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 cat > hybrid_search.py <<'EOF'
 import os, collections
 from typing import List, Dict
@@ -495,7 +495,7 @@ EOF
 
 ## PHASE 10 — Code: langgraph_app.py (iterative retrieval w/ Redis)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 cat > langgraph_app.py <<'EOF'
 from typing import TypedDict, Annotated, List, Dict
 import operator, os
@@ -586,14 +586,14 @@ EOF
 
 ## PHASE 11 — Code: serve_rag.py (FastAPI wrapper)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 cat > serve_rag.py <<'EOF'
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from typing import Optional
 from langgraph_app import build_graph
 
-app = FastAPI(title="Faxbot/Vivified RAG")
+app = FastAPI(title="PROJECT/PROJECT RAG")
 
 _graph = None
 
@@ -626,7 +626,7 @@ EOF
 
 ## PHASE 12 — Build the Index (first run)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 . .venv/bin/activate && 
 python index_repo.py
 
@@ -634,19 +634,19 @@ python index_repo.py
 
 # 1) Hybrid search JSON preview (no code bodies)
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 . .venv/bin/activate && 
 python -c 'from hybrid_search import search; import json; print(json.dumps([{k:v for k,v in search("where is oauth validated", final_k=10)[i].items() if k!="code"} for i in range(10)], indent=2))'
 
 # 2) LangGraph end-to-end
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 . .venv/bin/activate && 
 python langgraph_app.py "Explain the admin diagnostics handler flow and where auth checks occur"
 
 # 3) REST API
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 . .venv/bin/activate && 
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 
@@ -659,7 +659,7 @@ uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 
 Counts aligned (Qdrant vs BM25 corpus):
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 python - <<'PY'
 import os, json
@@ -694,13 +694,13 @@ PY
 
 # Re-index after code changes
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+cd /opt/app/faxbot_folder/rag-service && 
 . .venv/bin/activate && 
 python index_repo.py
 
 # Restart infra
 
-cd /Users/davidmontgomery/faxbot_folder/infra && 
+cd /opt/app/faxbot_folder/infra && 
 docker compose restart qdrant redis
 
 ## OPTIONAL — Migrate an existing in-repo rag/ to rag-service
@@ -709,11 +709,11 @@ docker compose restart qdrant redis
 
 # It safely copies out (including dotfiles) then removes the old rag/.
 
-[ -d /Users/davidmontgomery/faxbot_folder/faxbot/rag ] && 
-mkdir -p /Users/davidmontgomery/faxbot_folder/rag-service && 
-rsync -av --delete --exclude '**pycache**' /Users/davidmontgomery/faxbot_folder/faxbot/rag/ /Users/davidmontgomery/faxbot_folder/rag-service/ && 
-rm -rf /Users/davidmontgomery/faxbot_folder/faxbot/rag && 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && 
+[ -d /opt/app/faxbot_folder/faxbot/rag ] && 
+mkdir -p /opt/app/faxbot_folder/rag-service && 
+rsync -av --delete --exclude '**pycache**' /opt/app/faxbot_folder/faxbot/rag/ /opt/app/faxbot_folder/rag-service/ && 
+rm -rf /opt/app/faxbot_folder/faxbot/rag && 
+cd /opt/app/faxbot_folder/rag-service && 
 uv venv && 
 . .venv/bin/activate && 
 uv pip install -r requirements-rag.txt && 
@@ -735,26 +735,26 @@ python index_repo.py
 • Security: Secrets live only in rag-service/.env; never checked into repos.
 • Apple Silicon: No CUDA; MPS handles GPU acceleration. ANE is not directly targeted by PyTorch; models run on GPU via MPS.
 
-• Answer header: All generated answers include a leading header indicating the active repo, e.g. `[repo: vivified]` or `[repo: faxbot]`.
+• Answer header: All generated answers include a leading header indicating the active repo, e.g. `[repo: project]` or `[repo: faxbot]`.
 
-## Repo‑Scoped Indexing & Switching (Vivified vs Faxbot)
+## Repo‑Scoped Indexing & Switching (PROJECT vs PROJECT)
 
 This RAG can index/search each repo independently. Control which repo is active via `REPO` in `.env`:
 
-- `REPO=vivified` → BASES: `/Users/davidmontgomery/faxbot_folder/vivified`, OUTDIR: `out/vivified`, Qdrant collection: `code_chunks_vivified`.
-- `REPO=faxbot` → BASES: `/Users/davidmontgomery/faxbot_folder/faxbot`, OUTDIR: `out/faxbot`, Qdrant collection: `code_chunks_faxbot`.
+- `REPO=project` → BASES: `/opt/app/faxbot_folder/project`, OUTDIR: `out/project`, Qdrant collection: `code_chunks_project`.
+- `REPO=faxbot` → BASES: `/opt/app/faxbot_folder/faxbot`, OUTDIR: `out/faxbot`, Qdrant collection: `code_chunks_faxbot`.
 
 Switch and index:
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
-awk 'BEGIN{d=0} /^REPO=/{print "REPO=vivified"; d=1; next} {print} END{if(!d) print "REPO=vivified"}' .env > .env.tmp && mv .env.tmp .env && \
+awk 'BEGIN{d=0} /^REPO=/{print "REPO=project"; d=1; next} {print} END{if(!d) print "REPO=project"}' .env > .env.tmp && mv .env.tmp .env && \
 python index_repo.py && \
 python - <<'PY'
 import os
 from qdrant_client import QdrantClient
 q=QdrantClient(url=os.getenv('QDRANT_URL','http://127.0.0.1:6333'))
-print({'qdrant_points_vivified': q.count('code_chunks_vivified', exact=True).count})
+print({'qdrant_points_project': q.count('code_chunks_project', exact=True).count})
 PY
 
 awk 'BEGIN{d=0} /^REPO=/{print "REPO=faxbot"; d=1; next} {print} END{if(!d) print "REPO=faxbot"}' .env > .env.tmp && mv .env.tmp .env && \
@@ -766,7 +766,7 @@ q=QdrantClient(url=os.getenv('QDRANT_URL','http://127.0.0.1:6333'))
 print({'qdrant_points_faxbot': q.count('code_chunks_faxbot', exact=True).count})
 PY
 
-Note: To keep the Faxbot index clean, consider excluding large vendor directories (e.g., `vendor/`, `vendor/bundle/`, `.bundle/`, `tmp/`, `log/`). Add these to the skip list in `ast_chunker.collect_files` if needed.
+Note: To keep the PROJECT index clean, consider excluding large vendor directories (e.g., `vendor/`, `vendor/bundle/`, `.bundle/`, `tmp/`, `log/`). Add these to the skip list in `ast_chunker.collect_files` if needed.
 
 ## PHASE 17 — Embedding Cache (saves credits)
 
@@ -790,13 +790,13 @@ Purpose: Expand a query into 2–4 phrasings (4o‑mini) and re‑rank the union
 - API:
   - `search_routed_multi(q, repo_override=None, m=4, final_k=10)` (Python)
   - Generation auto‑uses this as a second pass if confidence < 0.55.
-- CLI example (Vivified):
+- CLI example (PROJECT):
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 python - <<'PY'
 from hybrid_search import search_routed_multi
-R = search_routed_multi('Where is ProviderSetupWizard rendered?', repo_override='vivified', m=4, final_k=5)
+R = search_routed_multi('Where is ProviderSetupWizard rendered?', repo_override='project', m=4, final_k=5)
 print([d['file_path'] for d in R])
 PY
 
@@ -806,11 +806,11 @@ Purpose: 1–3 line JSON per chunk (symbols, purpose, routes) to aid retrieval, 
 
 - Build (per repo):
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
-REPO=vivified python build_cards.py
+REPO=project python build_cards.py
 
-- Faxbot cards (can be large, use a cap first):
+- PROJECT cards (can be large, use a cap first):
 
 REPO=faxbot CARDS_MAX=300 python build_cards.py
 
@@ -827,23 +827,23 @@ Purpose: Track retrieval hit‑rate (top‑1/top‑k) and correctness.
 - Create `golden.json` (example):
 
 [
-  {"q": "Where is ProviderSetupWizard rendered?", "repo": "vivified", "expect_paths": ["core/admin_ui/src/components/ProviderSetupWizard.tsx"]},
+  {"q": "Where is ProviderSetupWizard rendered?", "repo": "project", "expect_paths": ["core/admin_ui/src/components/ProviderSetupWizard.tsx"]},
   {"q": "Where do we mask PHI in events?", "repo": "faxbot", "expect_paths": ["app/"]}
 ]
 
 - Run:
 
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
-REPO=vivified EVAL_MULTI=1 EVAL_FINAL_K=5 python eval_rag.py
+REPO=project EVAL_MULTI=1 EVAL_FINAL_K=5 python eval_rag.py
 
 ## PHASE 22 — Strict Per‑Repo Routing & Answer Header
 
-- Routing: `search_routed(q, repo_override=None)` always targets exactly one repo (Vivified or Faxbot). `?repo=vivified|faxbot` overrides via API.
+- Routing: `search_routed(q, repo_override=None)` always targets exactly one repo (PROJECT or PROJECT). `?repo=project|faxbot` overrides via API.
 - No fusion: router never combines repos.
-- Answer header: All generated answers include `[repo: vivified]` or `[repo: faxbot]` on the first line.
+- Answer header: All generated answers include `[repo: project]` or `[repo: faxbot]` on the first line.
 
-## PHASE 23 — Faxbot‑Only Path Boosts (env‑tunable)
+## PHASE 23 — PROJECT‑Only Path Boosts (env‑tunable)
 
 Purpose: Nudge scoring toward first‑party app code without hiding vendor content.
 

@@ -18,7 +18,7 @@
 ## Phase 0 — Preflight (5 min)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 [[ -d .venv ]] || python3 -m venv .venv && \
 . .venv/bin/activate && \
 python -V && pip -V && \
@@ -37,7 +37,7 @@ python -V && pip -V && \
 ### 1.1 Install / wire providers (Voyage + Local)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 pip install -U voyageai sentence-transformers
 ```
@@ -97,17 +97,17 @@ def _get_embedding(text: str, kind: str = "document") -> List[float]:
 Pick a suffix per embedding config. Example: `voyage-c3-d512`.
 
 ```bash
-# Vivified reindex (Voyage, 512d) to a fresh collection
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+# PROJECT reindex (Voyage, 512d) to a fresh collection
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 export EMBEDDING_TYPE=voyage && \
-export REPO=vivified && \
+export REPO=project && \
 export COLLECTION_SUFFIX=voyage-c3-d512 && \
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}" && \
 python index_repo.py
 
-# Faxbot reindex
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+# PROJECT reindex
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 export EMBEDDING_TYPE=voyage && \
 export REPO=faxbot && \
@@ -121,15 +121,15 @@ python index_repo.py
 ### 1.4 Quick sanity check
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 python - << 'PY'
 import os
 os.environ['EMBEDDING_TYPE'] = 'voyage'
 from hybrid_search import search_routed_multi
 queries = [
-    ('vivified', 'ai studio'),
-    ('vivified', 'TBAC trait system'),
+    ('project', 'ai studio'),
+    ('project', 'TBAC trait system'),
     ('faxbot', 'plugin builder'),
     ('faxbot', 'webhook verification'),
 ]
@@ -147,7 +147,7 @@ PY
 ### 2.1 Install & wire `rerankers`
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 pip install -U "rerankers[transformers]"
 ```
@@ -338,14 +338,14 @@ _apply_filename_boosts(docs, question)
 ### 6.1 Repo‑specific env files (kept **out** of root `.env`)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 mkdir -p env && \
-cat > env/vivified.env << 'ENV'
+cat > env/project.env << 'ENV'
 OPENAI_API_KEY=${OPENAI_API_KEY}
 VOYAGE_API_KEY=${VOYAGE_API_KEY}
 QDRANT_URL=${QDRANT_URL}
 REDIS_URL=redis://127.0.0.1:6379/0
-REPO=vivified
+REPO=project
 MQ_REWRITES=2
 RERANKER_MODEL=jinaai/jina-reranker-v2-base-multilingual
 EMBEDDING_TYPE=voyage
@@ -368,11 +368,11 @@ ENV
 ### 6.2 Dedicated entry points
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
-cat > vivified_rag.py << 'PY'
+cd /opt/app/faxbot_folder/rag-service && \
+cat > project_rag.py << 'PY'
 import os
 from dotenv import load_dotenv
-load_dotenv('env/vivified.env')
+load_dotenv('env/project.env')
 from serve_rag import app
 if __name__ == '__main__':
     import uvicorn
@@ -395,11 +395,11 @@ PY
 ### 6.3 Run
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
-python vivified_rag.py & disown && \
+python project_rag.py & disown && \
 python faxbot_rag.py & disown && \
-curl -s "http://127.0.0.1:8012/answer?q=TBAC%20traits&repo=vivified" | head && \
+curl -s "http://127.0.0.1:8012/answer?q=TBAC%20traits&repo=project" | head && \
 curl -s "http://127.0.0.1:8013/answer?q=webhook%20verification&repo=faxbot" | head
 ```
 
@@ -408,23 +408,23 @@ curl -s "http://127.0.0.1:8013/answer?q=webhook%20verification&repo=faxbot" | he
 ## Phase 7 — Benchmark (10 min)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 cat > benchmark_improvements.py << 'PY'
 import os
 from hybrid_search import search_routed_multi
 
 TESTS = [
-    ('vivified','ai studio','easy'),
-    ('vivified','TBAC trait system','easy'),
+    ('project','ai studio','easy'),
+    ('project','TBAC trait system','easy'),
     ('faxbot','plugin builder','easy'),
     ('faxbot','webhook verification','easy'),
-    ('vivified','three lane gateway','medium'),
-    ('vivified','plugin sandbox isolation','medium'),
+    ('project','three lane gateway','medium'),
+    ('project','plugin sandbox isolation','medium'),
     ('faxbot','provider adapter traits','medium'),
     ('faxbot','canonical event normalization','medium'),
-    ('vivified','how does TBAC prevent PHI access','hard'),
-    ('vivified','what is the general purpose of vivified','hard'),
+    ('project','how does TBAC prevent PHI access','hard'),
+    ('project','what is the general purpose of project','hard'),
     ('faxbot','how do different providers interact','hard'),
 ]
 
@@ -460,14 +460,14 @@ python benchmark_improvements.py
 ## Helper: One‑shot tuner script (optional)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 cat > rag_tuner.sh << 'SH'
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
 
-: "${REPO:=vivified}"
+: "${REPO:=project}"
 : "${EMBEDDING_TYPE:=voyage}"
 : "${COLLECTION_SUFFIX:=voyage-c3-d512}"
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}"
@@ -479,7 +479,7 @@ printf "\n[2/3] Smoke test queries...\n"
 python - << 'PY'
 import os
 from hybrid_search import search_routed_multi
-for repo, q in [(os.environ.get('REPO','vivified'), 'ai studio'), (os.environ.get('REPO','vivified'), 'plugin builder')]:
+for repo, q in [(os.environ.get('REPO','project'), 'ai studio'), (os.environ.get('REPO','project'), 'plugin builder')]:
     docs = search_routed_multi(q, repo_override=repo, final_k=3)
     s = (docs or [{}])[0].get('rerank_score', 0.0)
     print(f"{repo:9} | {q:20} => {s:.3f}")
@@ -494,7 +494,7 @@ chmod +x rag_tuner.sh
 Run it (Qwen3 + Cohere, MXBAI @512 dims):
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
 # Guards: ensure keys exist without leaking
 python - <<'PY'
 import os, sys
@@ -506,10 +506,10 @@ PY && \
 export ENRICH_CODE_CHUNKS=true ENRICH_MODEL="qwen3-coder:30b" OLLAMA_URL="http://127.0.0.1:11434/api/generate" && \
 # Best reranker default
 export RERANK_BACKEND=cohere COHERE_RERANK_MODEL=rerank-v3.5 && \
-# Index Vivified (MXBAI, 512)
-export EMBEDDING_TYPE=mxbai EMBEDDING_DIM=512 REPO=vivified COLLECTION_SUFFIX=mxbai-d512-qwen3-cohere && \
+# Index PROJECT (MXBAI, 512)
+export EMBEDDING_TYPE=mxbai EMBEDDING_DIM=512 REPO=project COLLECTION_SUFFIX=mxbai-d512-qwen3-cohere && \
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}" && python index_repo.py && \
-# Index Faxbot (MXBAI, 512)
+# Index PROJECT (MXBAI, 512)
 export REPO=faxbot COLLECTION_SUFFIX=mxbai-d512-qwen3-cohere && \
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}" && python index_repo.py && \
 # Benchmark
@@ -521,12 +521,12 @@ python benchmark_improvements.py
 ## Rollback
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 export EMBEDDING_TYPE=openai && \
 export RERANKER_MODEL=BAAI/bge-reranker-v2-m3 && \
 git checkout -- ast_chunker.py rerank.py hybrid_search.py || true && \
-REPO=vivified COLLECTION_SUFFIX=baseline python index_repo.py && \
+REPO=project COLLECTION_SUFFIX=baseline python index_repo.py && \
 REPO=faxbot   COLLECTION_SUFFIX=baseline python index_repo.py
 ```
 
@@ -549,7 +549,7 @@ REPO=faxbot   COLLECTION_SUFFIX=baseline python index_repo.py
 ## A0 — Install extras (once)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 pip install -U sentence-transformers torch requests && \
 pip install -U rerankers && \
@@ -650,11 +650,11 @@ def _get_embedding(text: str, kind: str = "document") -> List[float]:
 ### Reindex with MXBAI (512‑dim)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 export EMBEDDING_TYPE=mxbai && \
 export EMBEDDING_DIM=512 && \
-export REPO=vivified && \
+export REPO=project && \
 export COLLECTION_SUFFIX=mxbai-d512 && \
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}" && \
 python index_repo.py && \
@@ -667,11 +667,11 @@ python index_repo.py
 ### Reindex with Nomic v1.5 (512‑dim)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 export EMBEDDING_TYPE=nomic && \
 export EMBEDDING_DIM=512 && \
-export REPO=vivified && \
+export REPO=project && \
 export COLLECTION_SUFFIX=nomic-v1.5-d512 && \
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}" && \
 python index_repo.py && \
@@ -704,7 +704,7 @@ ollama run qwen2.5-coder:14b "ready"
 ### Add `metadata_enricher.py`
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 cat > metadata_enricher.py << 'PY'
 import os, json, requests
 
@@ -745,7 +745,7 @@ PY
 ### Wire the enricher into your indexer (opt‑in by env)
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 sed -n '1,160p' index_repo.py > /tmp/index_repo_head.py || true && \
 cat > /tmp/index_repo_patch.py << 'PY'
 # --- index_repo.py (snippet) ---
@@ -776,12 +776,12 @@ PY
 Reindex with enrichment on:
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 export ENRICH_CODE_CHUNKS=true && \
 export EMBEDDING_TYPE=mxbai && \
 export EMBEDDING_DIM=512 && \
-export REPO=vivified && \
+export REPO=project && \
 export COLLECTION_SUFFIX=mxbai-d512-enriched && \
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}" && \
 python index_repo.py
@@ -796,7 +796,7 @@ Use **Cohere `rerank-v3.5`** as the default (high‑accuracy cross‑encoder; mu
 ### Install & wire Cohere
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 pip install -U cohere
 ```
@@ -874,7 +874,7 @@ Switch from pure line windows to **AST‑bounded chunks** so functions/classes r
 ### Drop‑in helper `ast_semantic_chunker.py`
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 cat > ast_semantic_chunker.py << 'PY'
 from __future__ import annotations
 from typing import List, Dict, Tuple
@@ -950,7 +950,7 @@ PY
 **Wire it in** (replace your line‑based chunker call when `AST_CHUNKING=true`):
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 sed -n '1,200p' ast_chunker.py > /tmp/ast_chunker_backup.py || true && \
 cat >> ast_chunker.py << 'PY'
 # --- AST chunking toggle ---
@@ -968,12 +968,12 @@ PY
 Reindex with AST chunking on (MXBAI shown):
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 export AST_CHUNKING=true && \
 export EMBEDDING_TYPE=mxbai && \
 export EMBEDDING_DIM=512 && \
-export REPO=vivified && \
+export REPO=project && \
 export COLLECTION_SUFFIX=mxbai-d512-ast && \
 export COLLECTION_NAME="${REPO}_${COLLECTION_SUFFIX}" && \
 python index_repo.py
@@ -984,7 +984,7 @@ python index_repo.py
 ## A5 — Quick bake‑off script across embeddings (OpenAI vs Voyage vs MXBAI vs Nomic) + Qwen3 enrichment
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+cd /opt/app/faxbot_folder/rag-service && \
 . .venv/bin/activate && \
 cat > bakeoff_embeddings.py << 'PY'
 import os
@@ -997,8 +997,8 @@ EMBEDS = [
     ("nomic", 512),
 ]
 TESTS = [
-    ('vivified','ai studio'),
-    ('vivified','TBAC trait system'),
+    ('project','ai studio'),
+    ('project','TBAC trait system'),
     ('faxbot','plugin builder'),
     ('faxbot','webhook verification'),
 ]

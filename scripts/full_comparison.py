@@ -10,7 +10,7 @@ import sys
 import os
 import json
 import time
-sys.path.insert(0, '/Users/davidmontgomery/faxbot_folder/rag-service')
+sys.path.insert(0, '/opt/app/faxbot_folder/rag-service')
 
 try:
     import tiktoken

@@ -1,5 +1,5 @@
 {
-  "vivified": [
+  "project": [
     {
       "term": "common",
       "score": 16.80909090909091,
@@ -68,7 +68,7 @@
       "in_directories": true,
       "sample_files": [
         "plugins/integration-discord/impl.py",
-        "sdk/python/src/vivified_sdk/plugin.py",
+        "sdk/python/src/project_sdk/plugin.py",
         "core/ai/service.py"
       ]
     },
@@ -165,7 +165,7 @@
       "sample_files": [
         "core/identity/service.py",
         "core/gateway/service.py",
-        "tools/cli/vivified_cli/main.py"
+        "tools/cli/project_cli/main.py"
       ]
     },
     {
@@ -199,7 +199,7 @@
       "mentions": 22,
       "in_directories": false,
       "sample_files": [
-        "sdk/python/src/vivified_sdk/plugin.py",
+        "sdk/python/src/project_sdk/plugin.py",
         "core/identity/service.py",
         "core/api/automation.py"
       ]
@@ -259,7 +259,7 @@
       "mentions": 21,
       "in_directories": false,
       "sample_files": [
-        "sdk/python/src/vivified_sdk/plugin.py",
+        "sdk/python/src/project_sdk/plugin.py",
         "core/admin_ui/src/components/ChatBot.tsx",
         "core/admin_ui/src/components/PluginSetupWizard.tsx"
       ]
@@ -285,7 +285,7 @@
       "sample_files": [
         "core/messaging/event_bus.py",
         "core/api/admin.py",
-        "sdk/python/src/vivified_sdk/client.py"
+        "sdk/python/src/project_sdk/client.py"
       ]
     },
     {
@@ -313,13 +313,13 @@
       ]
     },
     {
-      "term": "vivified",
+      "term": "project",
       "score": 1.5363636363636364,
       "files": 13,
       "mentions": 13,
       "in_directories": true,
       "sample_files": [
-        "sdk/python/src/vivified_sdk/__init__.py",
+        "sdk/python/src/project_sdk/__init__.py",
         "sdk/nodejs/src/index.ts",
         "core/api/admin.py"
       ]
@@ -476,7 +476,7 @@
       "in_directories": false,
       "sample_files": [
         "core/messaging/__init__.py",
-        "sdk/python/src/vivified_sdk/__init__.py",
+        "sdk/python/src/project_sdk/__init__.py",
         "core/storage/service.py"
       ]
     },

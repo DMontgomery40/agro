@@ -6,7 +6,7 @@
 2. **MCP Tools**:
    - `rag_answer(repo, question)` → full answer + citations
    - `rag_search(repo, question, top_k)` → retrieval only
-   - `netlify_deploy(domain)` → trigger Netlify build (`faxbot.net`, `vivified.dev`, or `both`) – requires `NETLIFY_API_KEY`
+   - `netlify_deploy(domain)` → trigger Netlify build (`faxbot.net`, `project.dev`, or `both`) – requires `NETLIFY_API_KEY`
    - `web_get(url, max_bytes)` → HTTP GET for allowlisted hosts (openai.com, platform.openai.com, github.com, openai.github.io)
 3. **Codex Registration** - Already registered as `faxbot-rag`
 4. **Agent Rules** - Updated in `AGENTS.md`
@@ -18,7 +18,7 @@
 - Bring infra + MCP up (always-on helper):
   - `bash scripts/up.sh`
 - Index both repos (once per code change):
-  - `REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
+  - `REPO=project python index_repo.py && REPO=faxbot python index_repo.py`
 - Defaults:
   - Generation → Qwen 3 via Ollama (`GEN_MODEL` + `OLLAMA_URL`)
   - Rerank → Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
@@ -48,7 +48,7 @@ print(json.dumps(MCPServer().handle_request(req)['result']['tools'], indent=2))
 
 ```bash
 # Netlify deploy (from Codex chat)
-# User: Use netlify_deploy to rebuild vivified.dev
+# User: Use netlify_deploy to rebuild project.dev
 
 # Web GET (allowlisted)
 # User: Use web_get to fetch https://github.com/openai/codex
@@ -76,7 +76,7 @@ python eval_loop.py --watch
 Open a new Codex session and try:
 
 ```
-User: Use rag_search to find code related to "OAuth token validation" in vivified
+User: Use rag_search to find code related to "OAuth token validation" in project
 
 User: Use rag_answer to explain how inbound faxes are processed in faxbot
 ```
@@ -94,7 +94,7 @@ mcp_server.py
                           ↓
                   Qdrant + Redis + BM25
                           ↓
-                  out/vivified/chunks.jsonl
+                  out/project/chunks.jsonl
                   out/faxbot/chunks.jsonl
 ```
 
@@ -105,7 +105,7 @@ These are now documented in `AGENTS.md`:
 1. ✗ Never assume user is wrong about paths/functions
 2. ✓ Always call RAG tools first before claiming something doesn't exist
 3. ✗ Never hallucinate file paths
-4. ✓ Respect repo boundaries (vivified ≠ faxbot)
+4. ✓ Respect repo boundaries (project ≠ faxbot)
 5. ✓ Trust RAG citations as authoritative
 
 ## Files Created
@@ -134,7 +134,7 @@ These are now documented in `AGENTS.md`:
 - Note: Graph compiles without Redis if temporarily unavailable.
 
 **"No results"**
-- Index repos: `REPO=vivified python index_repo.py`
+- Index repos: `REPO=project python index_repo.py`
 - Verify collections: `curl -s http://127.0.0.1:6333/collections | jq`
 
 **"Codex can't find tools"**

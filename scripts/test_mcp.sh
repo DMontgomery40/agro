@@ -41,7 +41,7 @@ print(f'✓ Found {len(tools)} tools: {names}')
 "
 
 echo ""
-echo "3. Test rag.search (vivified)..."
+echo "3. Test rag.search (project)..."
 python -c "
 import json, sys
 from mcp_server import MCPServer
@@ -53,14 +53,14 @@ req = {
     'params': {
         'name': 'rag_search',
         'arguments': {
-            'repo': 'vivified',
+            'repo': 'project',
             'question': 'Where is OAuth token validated?',
             'top_k': 5
         }
     }
 }
 
-print('Calling rag_search for vivified...', file=sys.stderr)
+print('Calling rag_search for project...', file=sys.stderr)
 server = MCPServer()
 resp = server.handle_request(req)
 

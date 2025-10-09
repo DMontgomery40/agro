@@ -47,8 +47,8 @@ def approach1_claude_alone(question: str, repo: str):
     - Read 5-10 FULL files
     """
     repo_paths = {
-        'vivified': '/Users/davidmontgomery/faxbot_folder/vivified',
-        'faxbot': '/Users/davidmontgomery/faxbot_folder/faxbot'
+        'project': '/opt/app/faxbot_folder/project',
+        'faxbot': '/opt/app/faxbot_folder/faxbot'
     }
 
     repo_path = repo_paths.get(repo)
@@ -333,7 +333,7 @@ if __name__ == '__main__':
 
     # Test cases
     tests = [
-        ("Where is OAuth token validated", "vivified"),
+        ("Where is OAuth token validated", "project"),
         ("How are fax jobs created and dispatched", "faxbot"),
     ]
 

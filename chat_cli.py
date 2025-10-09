@@ -4,12 +4,12 @@ Interactive CLI chat interface for RAG service.
 Uses LangGraph with Redis checkpoints for conversation memory.
 
 Usage:
-    export REPO=vivified
+    export REPO=project
     export THREAD_ID=my-session-1
     python chat_cli.py
 
 Commands:
-    /repo <name>    - Switch repository (vivified or faxbot)
+    /repo <name>    - Switch repository (project or faxbot)
     /save           - Save conversation checkpoint
     /clear          - Clear conversation history
     /help           - Show commands
@@ -32,14 +32,14 @@ from rich.prompt import Prompt
 console = Console()
 
 # Configuration
-REPO = os.getenv('REPO', 'vivified')
+REPO = os.getenv('REPO', 'project')
 THREAD_ID = os.getenv('THREAD_ID', 'cli-chat')
 
 
 class ChatCLI:
     """Interactive CLI chat with RAG."""
 
-    def __init__(self, repo: str = 'vivified', thread_id: str = 'cli-chat'):
+    def __init__(self, repo: str = 'project', thread_id: str = 'cli-chat'):
         self.repo = repo
         self.thread_id = thread_id
         self.graph = None
@@ -86,8 +86,8 @@ class ChatCLI:
 
     def switch_repo(self, new_repo: str):
         """Switch to a different repository."""
-        if new_repo not in ['vivified', 'faxbot']:
-            console.print(f"[red]✗[/red] Invalid repo. Use 'vivified' or 'faxbot'")
+        if new_repo not in ['project', 'faxbot']:
+            console.print(f"[red]✗[/red] Invalid repo. Use 'project' or 'faxbot'")
             return
 
         self.repo = new_repo
@@ -98,7 +98,7 @@ class ChatCLI:
         help_text = """
 ## Commands
 
-- `/repo <name>` - Switch repository (vivified or faxbot)
+- `/repo <name>` - Switch repository (project or faxbot)
 - `/save` - Save conversation checkpoint
 - `/clear` - Clear conversation history
 - `/help` - Show this help
@@ -163,7 +163,7 @@ Type your question or use `/help` for commands.
                         if len(parts) > 1:
                             self.switch_repo(parts[1].strip())
                         else:
-                            console.print("[red]Usage:[/red] /repo <vivified|faxbot>")
+                            console.print("[red]Usage:[/red] /repo <project|faxbot>")
                         continue
 
                     elif cmd == '/save':
@@ -233,7 +233,7 @@ def main():
         sys.exit(1)
 
     # Get config from environment
-    repo = os.getenv('REPO', 'vivified')
+    repo = os.getenv('REPO', 'project')
     thread_id = os.getenv('THREAD_ID', 'cli-chat')
 
     # Create and run chat

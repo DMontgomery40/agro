@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv('env/vivified.env')
+load_dotenv('env/project.env')
 from serve_rag import app
 
 if __name__ == '__main__':

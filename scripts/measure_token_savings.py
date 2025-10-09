@@ -57,8 +57,8 @@ def measure_traditional_tokens(question: str, repo: str, max_files: int = 10):
     This is what you'd do WITHOUT RAG.
     """
     repo_paths = {
-        'vivified': '/Users/davidmontgomery/vivified',
-        'faxbot': '/Users/davidmontgomery/faxbot_folder/faxbot'
+        'project': '/opt/app/project',
+        'faxbot': '/opt/app/faxbot_folder/faxbot'
     }
 
     repo_path = repo_paths.get(repo)
@@ -154,7 +154,7 @@ def run_comparison(question: str, repo: str):
 if __name__ == '__main__':
     # Test queries
     test_cases = [
-        ("Where is OAuth token validated", "vivified"),
+        ("Where is OAuth token validated", "project"),
         ("How are fax jobs created and dispatched", "faxbot"),
         ("EventStream component event types", "faxbot"),
         ("provider health status implementation", "faxbot"),

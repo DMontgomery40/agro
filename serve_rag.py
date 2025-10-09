@@ -4,7 +4,7 @@ from typing import Optional
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
 
-app = FastAPI(title="Faxbot/Vivified RAG")
+app = FastAPI(title="PROJECT/PROJECT RAG")
 
 _graph = None
 def get_graph():
@@ -29,7 +29,7 @@ def health():
 @app.get("/answer", response_model=Answer)
 def answer(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: vivified|faxbot")
+    repo: Optional[str] = Query(None, description="Repository override: project|faxbot")
 ):
     """Answer a question using strict per-repo routing.
 
@@ -44,7 +44,7 @@ def answer(
 @app.get("/search")
 def search(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: vivified|faxbot"),
+    repo: Optional[str] = Query(None, description="Repository override: project|faxbot"),
     top_k: int = Query(10, description="Number of results to return")
 ):
     """Search for relevant code locations without generation.

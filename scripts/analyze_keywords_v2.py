@@ -143,8 +143,8 @@ def analyze_repo_semantic(repo_path, repo_name):
 
 if __name__ == '__main__':
     repos = {
-        'vivified': '/Users/davidmontgomery/faxbot_folder/vivified',
-        'faxbot': '/Users/davidmontgomery/faxbot_folder/faxbot'
+        'project': '/opt/app/faxbot_folder/project',
+        'faxbot': '/opt/app/faxbot_folder/faxbot'
     }
     
     all_results = {}
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     print('CROSS-REPO COMPARISON')
     print(f'{"="*80}')
     
-    viv_terms = {t['term'] for t in all_results['vivified'][:30]}
+    viv_terms = {t['term'] for t in all_results['project'][:30]}
     fax_terms = {t['term'] for t in all_results['faxbot'][:30]}
     
     shared = viv_terms & fax_terms
@@ -188,10 +188,10 @@ if __name__ == '__main__':
     if shared:
         print(f'   {", ".join(sorted(shared)[:10])}')
     
-    print(f'\n💊 Vivified-specific ({len(viv_only)}):')
+    print(f'\n💊 PROJECT-specific ({len(viv_only)}):')
     print(f'   {", ".join(sorted(list(viv_only)[:15]))}')
     
-    print(f'\n📠 Faxbot-specific ({len(fax_only)}):')
+    print(f'\n📠 PROJECT-specific ({len(fax_only)}):')
     print(f'   {", ".join(sorted(list(fax_only)[:15]))}')
     
     # Generate suggested queries

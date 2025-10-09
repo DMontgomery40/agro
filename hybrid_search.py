@@ -26,7 +26,7 @@ def _classify_query(q:str)->str:
         return 'infra'
     return 'server'
 
-def _vivified_layer_bonus(layer:str,intent:str)->float:
+def _project_layer_bonus(layer:str,intent:str)->float:
     layer_lower=(layer or '').lower()
     intent_lower=(intent or 'server').lower()
     table={'server':{'kernel':0.10,'plugin':0.04,'ui':0.00,'docs':0.00,'tests':0.00,'infra':0.02},
@@ -90,7 +90,7 @@ def _path_bonus(fp: str) -> float:
             bonus += b
     return bonus
 
-# Additional Faxbot-only path boosts (env-tunable)
+# Additional PROJECT-only path boosts (env-tunable)
 def _faxbot_path_boost(fp: str, repo_tag: str) -> float:
     import os as _os
     if (repo_tag or '').lower() != 'faxbot':
@@ -118,7 +118,7 @@ try:
 except Exception:
     pass
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
-REPO = os.getenv('REPO','vivified')
+REPO = os.getenv('REPO','project')
 VENDOR_MODE = os.getenv('VENDOR_MODE','prefer_first_party')
 # Allow explicit collection override (for versioned collections per embedding config)
 COLLECTION = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
@@ -313,7 +313,7 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     # Apply path + layer intent + provider + feature + card + (optional) origin bonuses, then resort
     intent = _classify_query(query)
     for d in docs:
-        layer_bonus = _vivified_layer_bonus(d.get('layer',''), intent) if repo=='vivified' else _faxbot_layer_bonus(d.get('layer',''), intent)
+        layer_bonus = _project_layer_bonus(d.get('layer',''), intent) if repo=='project' else _faxbot_layer_bonus(d.get('layer',''), intent)
         origin_bonus = _origin_bonus(d.get('origin',''), VENDOR_MODE) if 'VENDOR_MODE' in os.environ else 0.0
         repo_tag = d.get('repo', repo)
         chunk_id = str(d.get('id', ''))
@@ -375,12 +375,12 @@ def _apply_filename_boosts(docs: list[dict], question: str) -> None:
 # --- Strict per-repo routing helpers (no fusion) ---
 def route_repo(query: str, default_repo: str | None = None) -> str:
     q = (query or '').lower()
-    if q.startswith('vivified:') or ' vivified' in f' {q}':
-        return 'vivified'
+    if q.startswith('project:') or ' project' in f' {q}':
+        return 'project'
     if q.startswith('faxbot:') or ' faxbot' in f' {q}':
         return 'faxbot'
     viv_hits = 0
-    for k in ['provider setup wizard','providersetupwizard','pluginsetupwizard','admin_ui','plugin','plugins','kernel','apprise','pushover','hubspot','vivified']:
+    for k in ['provider setup wizard','providersetupwizard','pluginsetupwizard','admin_ui','plugin','plugins','kernel','apprise','pushover','hubspot','project']:
         if k in q:
             viv_hits += 1
     fax_hits = 0
@@ -388,13 +388,13 @@ def route_repo(query: str, default_repo: str | None = None) -> str:
         if k in q:
             fax_hits += 1
     if viv_hits > fax_hits:
-        return 'vivified'
+        return 'project'
     if fax_hits > viv_hits:
         return 'faxbot'
-    return (default_repo or os.getenv('REPO', 'vivified') or 'vivified').strip()
+    return (default_repo or os.getenv('REPO', 'project') or 'project').strip()
 
 def search_routed(query: str, repo_override: str | None = None, final_k: int = 10):
-    repo = (repo_override or route_repo(query, default_repo=os.getenv('REPO', 'vivified')) or os.getenv('REPO', 'vivified')).strip()
+    repo = (repo_override or route_repo(query, default_repo=os.getenv('REPO', 'project')) or os.getenv('REPO', 'project')).strip()
     return search(query, repo=repo, final_k=final_k)
 
 # Multi-query expansion (cheap) and routed search
@@ -413,7 +413,7 @@ def expand_queries(query: str, m: int = 4) -> list[str]:
         return [query]
 
 def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4, final_k: int = 10):
-    repo = (repo_override or route_repo(query) or os.getenv('REPO','vivified')).strip()
+    repo = (repo_override or route_repo(query) or os.getenv('REPO','project')).strip()
     variants = expand_queries(query, m=m)
     all_docs = []
     for qv in variants:

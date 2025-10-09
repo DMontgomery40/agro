@@ -2,7 +2,7 @@
 
 ## The Problem
 
-I maintain two large codebases (a healthcare app called Vivified and a fax integration service called Faxbot - ~150K+ lines combined). I was using Claude Code and Codex CLI heavily for development, but I kept hitting walls:
+I maintain two large codebases (a healthcare app called PROJECT and a fax integration service called PROJECT - ~150K+ lines combined). I was using Claude Code and Codex CLI heavily for development, but I kept hitting walls:
 
 - **Token limit hell**: Claude would frequently hit context limits trying to read 5-10 full files just to answer simple questions like "where is OAuth validated?"
 - **Burning money**: Every time I asked "how does feature X work?", Claude would grep through files and load 10-20K tokens of code. At $2.50/1M input tokens, this adds up fast
@@ -22,7 +22,7 @@ After months of frustration, I finally bit the bullet and built a proper RAG (Re
 - **Dense vector embeddings** (OpenAI text-embedding-3-large)
 - **Cross-encoder reranking** (BAAI/bge-reranker-v2-m3)
 - **MCP tools** so Claude Code can call it directly
-- **Strict repo isolation** (Vivified and Faxbot never mix)
+- **Strict repo isolation** (PROJECT and PROJECT never mix)
 
 ### My Hardware: M4 Mac Mini
 
@@ -66,7 +66,7 @@ Dependencies: LangGraph, Qdrant client, BM25S, sentence-transformers, FastAPI
 
 ```bash
 export OPENAI_API_KEY=sk-proj-...
-REPO=vivified python index_repo.py
+REPO=project python index_repo.py
 REPO=faxbot python index_repo.py
 ```
 
@@ -199,7 +199,7 @@ I documented everything in my repo's `CLAUDE.md` so AI agents know how to use it
 **MANDATORY: Use RAG (rag_search) first**
 
 - Always call `rag_search` to locate files and exact line ranges before proposing changes
-- Route every query to the correct repo: `faxbot` or `vivified`
+- Route every query to the correct repo: `faxbot` or `project`
 - After retrieval, you may call `rag_answer` for a synthesized answer with citations
 ```
 

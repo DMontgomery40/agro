@@ -21,7 +21,7 @@ def _get_graph():
 
 
 @mcp.tool()
-def answer(repo: Literal["vivified", "faxbot"], question: str) -> Dict[str, Any]:
+def answer(repo: Literal["project", "faxbot"], question: str) -> Dict[str, Any]:
     """Answer a codebase question using local LangGraph (retrieval+generation). Returns text + citations."""
     g = _get_graph()
     cfg = {"configurable": {"thread_id": f"http-{repo}"}}
@@ -45,7 +45,7 @@ def answer(repo: Literal["vivified", "faxbot"], question: str) -> Dict[str, Any]
 
 
 @mcp.tool()
-def search(repo: Literal["vivified", "faxbot"], question: str, top_k: int = 10) -> Dict[str, Any]:
+def search(repo: Literal["project", "faxbot"], question: str, top_k: int = 10) -> Dict[str, Any]:
     """Retrieve relevant code locations without generation."""
     docs = search_routed_multi(question, repo_override=repo, m=4, final_k=top_k)
     results = [

@@ -2,7 +2,7 @@
 """Measure MCP tool schema overhead - the part sent on EVERY request"""
 import sys
 import json
-sys.path.insert(0, '/Users/davidmontgomery/faxbot_folder/rag-service')
+sys.path.insert(0, '/opt/app/faxbot_folder/rag-service')
 
 try:
     import tiktoken

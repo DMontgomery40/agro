@@ -2,11 +2,11 @@
 import os, sys, re
 
 SCAN_ALL = os.getenv("SCAN_ALL", "0").lower() in {"1","true","yes"}
-ROOTS = ["/Users/davidmontgomery/faxbot_folder/rag-service"]
+ROOTS = ["/opt/app/faxbot_folder/rag-service"]
 if SCAN_ALL:
     ROOTS += [
-        "/Users/davidmontgomery/faxbot_folder/vivified",
-        "/Users/davidmontgomery/faxbot_folder/faxbot",
+        "/opt/app/faxbot_folder/project",
+        "/opt/app/faxbot_folder/faxbot",
     ]
 
 BAD_PATTERNS = [

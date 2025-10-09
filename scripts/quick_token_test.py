@@ -5,7 +5,7 @@ os.environ["OLLAMA_URL"] = "http://127.0.0.1:11434/api"
 os.environ["GEN_MODEL"] = "qwen3-coder:30b"
 
 import sys
-sys.path.insert(0, '/Users/davidmontgomery/faxbot_folder/rag-service')
+sys.path.insert(0, '/opt/app/faxbot_folder/rag-service')
 
 try:
     import tiktoken
@@ -18,7 +18,7 @@ except:
 from pathlib import Path
 question = "How are fax jobs created and dispatched"
 keywords = ["fax", "jobs", "created", "dispatched"]
-repo_path = "/Users/davidmontgomery/faxbot_folder/faxbot"
+repo_path = "/opt/app/faxbot_folder/faxbot"
 
 full_content = ""
 for py_file in list(Path(repo_path).rglob('*.py'))[:10]:

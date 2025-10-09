@@ -1,0 +1,9 @@
+Vivified=>PROJECT
+vivified=>project
+FaxBot=>PROJECT
+Faxbot=>PROJECT
+FactSpot=>PROJECT
+FactBot=>PROJECT
+/Users/davidmontgomery=>/opt/app
+users/davidmontgomery=>opt/app
+DMontgomery40=>project-author

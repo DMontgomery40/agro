@@ -2,16 +2,16 @@ import os
 from hybrid_search import search_routed_multi
 
 TESTS = [
-    ('vivified','ai studio','easy'),
-    ('vivified','TBAC trait system','easy'),
+    ('project','ai studio','easy'),
+    ('project','TBAC trait system','easy'),
     ('faxbot','plugin builder','easy'),
     ('faxbot','webhook verification','easy'),
-    ('vivified','three lane gateway','medium'),
-    ('vivified','plugin sandbox isolation','medium'),
+    ('project','three lane gateway','medium'),
+    ('project','plugin sandbox isolation','medium'),
     ('faxbot','provider adapter traits','medium'),
     ('faxbot','canonical event normalization','medium'),
-    ('vivified','how does TBAC prevent PHI access','hard'),
-    ('vivified','what is the general purpose of vivified','hard'),
+    ('project','how does TBAC prevent PHI access','hard'),
+    ('project','what is the general purpose of project','hard'),
     ('faxbot','how do different providers interact','hard'),
 ]
 

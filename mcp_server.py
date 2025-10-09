@@ -170,7 +170,7 @@ class MCPServer:
     def handle_netlify_deploy(self, domain: str) -> Dict[str, Any]:
         targets: list[str]
         if domain == "both":
-            targets = ["faxbot.net", "vivified.dev"]
+            targets = ["faxbot.net", "project.dev"]
         else:
             targets = [domain]
         results = []
@@ -242,7 +242,7 @@ class MCPServer:
           "params": {
             "name": "rag.answer" | "rag.search",
             "arguments": {
-              "repo": "vivified" | "faxbot",
+              "repo": "project" | "faxbot",
               "question": "...",
               "top_k": 10  # optional, search only
             }
@@ -261,14 +261,14 @@ class MCPServer:
                     "tools": [
                         {
                             "name": "rag_answer",
-                            "description": "Get RAG answer with citations for a question in a specific repo (vivified|faxbot)",
+                            "description": "Get RAG answer with citations for a question in a specific repo (project|faxbot)",
                             "inputSchema": {
                                 "type": "object",
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'vivified' or 'faxbot'",
-                                        "enum": ["vivified", "faxbot"]
+                                        "description": "Repository name: 'project' or 'faxbot'",
+                                        "enum": ["project", "faxbot"]
                                     },
                                     "question": {
                                         "type": "string",
@@ -286,8 +286,8 @@ class MCPServer:
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'vivified' or 'faxbot'",
-                                        "enum": ["vivified", "faxbot"]
+                                        "description": "Repository name: 'project' or 'faxbot'",
+                                        "enum": ["project", "faxbot"]
                                     },
                                     "question": {
                                         "type": "string",
@@ -304,14 +304,14 @@ class MCPServer:
                         },
                         {
                             "name": "netlify_deploy",
-                            "description": "Trigger a Netlify build for faxbot.net, vivified.dev, or both (uses NETLIFY_API_KEY)",
+                            "description": "Trigger a Netlify build for faxbot.net, project.dev, or both (uses NETLIFY_API_KEY)",
                             "inputSchema": {
                                 "type": "object",
                                 "properties": {
                                     "domain": {
                                         "type": "string",
                                         "description": "Target domain",
-                                        "enum": ["faxbot.net", "vivified.dev", "both"],
+                                        "enum": ["faxbot.net", "project.dev", "both"],
                                         "default": "both"
                                     }
                                 }
