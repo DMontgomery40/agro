@@ -118,9 +118,12 @@ def build_graph():
     builder.add_edge('generate', END)
     builder.add_edge('fallback', END)
     DB_URI = os.getenv('REDIS_URL','redis://127.0.0.1:6379/0')
-    # Instantiate directly (from_conn_string returns a context manager in this langgraph version)
-    checkpointer = RedisSaver(redis_url=DB_URI)
-    graph = builder.compile(checkpointer=checkpointer)
+    # Prefer Redis checkpointer, but do not fail hard if unavailable
+    try:
+        checkpointer = RedisSaver(redis_url=DB_URI)
+        graph = builder.compile(checkpointer=checkpointer)
+    except Exception:
+        graph = builder.compile()
     return graph
 
 if __name__ == '__main__':

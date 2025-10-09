@@ -9,8 +9,10 @@ _HF_PIPE = None  # optional transformers pipeline for models that require trust_
 _RERANKER = None
 
 DEFAULT_MODEL = os.getenv('RERANKER_MODEL', 'cross-encoder/ms-marco-MiniLM-L-6-v2')
-RERANK_BACKEND = (os.getenv('RERANK_BACKEND', 'local') or 'local').lower()
-COHERE_MODEL = os.getenv('COHERE_RERANK_MODEL', 'rerank-v3.5')
+# Default backend: cohere (can be overridden via env)
+RERANK_BACKEND = (os.getenv('RERANK_BACKEND', 'cohere') or 'cohere').lower()
+# Default Cohere model (override via COHERE_RERANK_MODEL). Accepts 'rerank-3.5' or 'rerank-2.5'.
+COHERE_MODEL = os.getenv('COHERE_RERANK_MODEL', 'rerank-3.5')
 
 
 def _sigmoid(x: float) -> float:

@@ -15,10 +15,9 @@ The MCP server (`mcp_server.py`) exposes four tools:
 
 ### 1. Prerequisites
 
-- Python virtualenv activated: `. .venv/bin/activate`
-- Infrastructure running: Qdrant + Redis via Docker Compose
-- At least one repo indexed: `REPO=vivified python index_repo.py` 
-- Ideally both: 'REPO=faxbot python index_repo.py'
+- Bring infra + MCP up: `bash scripts/up.sh`
+- Activate virtualenv: `. .venv/bin/activate`
+- Index repos: `REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
 - Codex CLI installed: `brew install openai/tap/codex` or `npm install -g @openai/codex`
 
 ### 2. Register MCP Server with Codex
@@ -124,6 +123,12 @@ Returns:
   "count": 5
 }
 ```
+
+## Defaults and Behavior
+
+- Generation defaults to local Qwen 3 (Ollama). Set `GEN_MODEL` and `OLLAMA_URL` accordingly, or switch to OpenAI by setting `OPENAI_API_KEY` and `GEN_MODEL` to an OpenAI model.
+- Reranking defaults to Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`). Provide `COHERE_API_KEY`. Falls back to local cross‑encoder.
+- LangGraph compiles without Redis if unavailable; Redis is used for checkpointing when present.
 
 ## Agent Rules (Codex Behavior)
 

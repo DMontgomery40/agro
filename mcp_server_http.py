@@ -63,6 +63,8 @@ def search(repo: Literal["vivified", "faxbot"], question: str, top_k: int = 10) 
 
 
 if __name__ == "__main__":
-    # Serve over HTTP for remote MCP (platform evals). Endpoint path /mcp.
-    mcp.run(transport="http", host="127.0.0.1", port=8013, path="/mcp")
-
+    # Serve over HTTP for remote MCP (platform evals). Use env overrides for host/port/path.
+    host = os.getenv("MCP_HTTP_HOST", "0.0.0.0")
+    port = int(os.getenv("MCP_HTTP_PORT", "8013"))
+    path = os.getenv("MCP_HTTP_PATH", "/mcp")
+    mcp.run(transport="http", host=host, port=port, path=path)

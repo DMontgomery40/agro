@@ -10,7 +10,7 @@ This is your complete RAG service with MCP integration for AI agents. Everything
 
 ### Option 1: "I want to run it RIGHT NOW"
 1. Read: **[README.md](README.md)** → Jump to "Quick Start" section
-2. Run 5 commands → You're up and running
+2. Run `bash scripts/up.sh` (infra + MCP), then index both repos → You're up
 
 ### Option 2: "I need to connect AI agents (Codex/Claude Code)"
 1. Read: **[docs/QUICKSTART_MCP.md](docs/QUICKSTART_MCP.md)**
@@ -85,18 +85,21 @@ rag-service/
 ## ⚡ Super Quick Commands
 
 ```bash
-# Run eval to check quality
+# Bring infra + MCP up (always-on)
+bash scripts/up.sh
+
+# Eval to check quality
 . .venv/bin/activate && python eval_loop.py
 
-# Test MCP server manually
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | .venv/bin/python mcp_server.py
+# MCP quick check (stdio)
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 
 # Use with Codex
 codex
 # Then type: "Use rag.answer to explain how OAuth works in vivified"
 
-# Index a repo
-REPO=vivified python index_repo.py
+# Index repos
+REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py
 ```
 
 ---

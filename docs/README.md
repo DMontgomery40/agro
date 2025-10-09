@@ -38,6 +38,10 @@ This folder contains comprehensive implementation guides and reference documenta
 - **[SUMMARY.md](SUMMARY.md)** - Quick overview
   - Key features summary
   - Quick decision matrix
+
+### Benchmarks & Ops
+- **[GEN_MODEL_COMPARISON.md](GEN_MODEL_COMPARISON.md)** - Qwen 3 vs OpenAI generation comparison
+- **[REMOTE_MCP.md](REMOTE_MCP.md)** - Expose the MCP server over HTTPS for remote agents/evals
   - Command reference
 
 ### Indexing Controls
@@ -49,7 +53,11 @@ This folder contains comprehensive implementation guides and reference documenta
 ## 🚀 Quick Navigation
 
 **Just getting started?**  
-→ Start with [../README.md](../README.md) (main setup guide)
+→ Start with [../README.md](../README.md) (main setup guide). Use `bash scripts/up.sh` to keep infra + MCP always running.
+
+**Defaults in this repo**
+- Generation: Qwen 3 via Ollama (`GEN_MODEL`, `OLLAMA_URL`)
+- Rerank: Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
 
 **Need to connect MCP to agents?**  
 → See [QUICKSTART_MCP.md](QUICKSTART_MCP.md)
