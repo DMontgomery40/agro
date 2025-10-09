@@ -285,7 +285,7 @@ def search(query: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int
     if cards_retr is not None:
         try:
             cards_map = _load_cards_map(REPO)
-            tokens = bm25s.tokenize(query, stopwords='en')
+            tokens = tokenizer.tokenize([query])
             c_ids, _ = cards_retr.retrieve(tokens, k=min(topk_sparse, 30))
             # Map card indices to chunk IDs
             c_ids_flat = c_ids[0] if hasattr(c_ids, '__getitem__') else c_ids
