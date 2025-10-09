@@ -11,6 +11,18 @@ The MCP server (`mcp_server.py`) exposes four tools:
 3. `netlify_deploy(domain)` → Trigger a Netlify build for `repo-b.net`, `repo-a.dev`, or `both` (requires `NETLIFY_API_KEY`)
 4. `web_get(url, max_bytes=20000)` → HTTP GET for allowlisted hosts only (`openai.com`, `platform.openai.com`, `github.com`, `openai.github.io`)
 
+### Tool Parity: stdio vs HTTP
+
+**stdio mode** (`mcp_server.py`): 4 tools - `rag_answer`, `rag_search`, `netlify_deploy`, `web_get`
+
+**HTTP mode** (`mcp_server_http.py`): 2 tools - `answer`, `search` (RAG-only, no Netlify/web helpers)
+
+**Use stdio for:** Local agents (Codex CLI, Claude Code) with full tool access
+
+**Use HTTP for:** Remote agents/platforms that only need RAG retrieval and generation
+
+See [docs/REMOTE_MCP.md](REMOTE_MCP.md) for HTTP setup.
+
 ## Setup
 
 ### 1. Prerequisites

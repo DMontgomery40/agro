@@ -2,8 +2,11 @@
 
 This guide shows how to expose the MCP server over HTTPS for remote agents and OpenAI evals.
 
+**Note:** HTTP mode (`mcp_server_http.py`) exposes **2 tools** only: `answer`, `search` (RAG-only). The stdio mode (`mcp_server.py`) exposes 4 tools including `netlify_deploy` and `web_get`. See [MCP_README.md](MCP_README.md#tool-parity-stdio-vs-http) for full comparison.
+
 Server options
 - HTTP MCP (FastMCP): `mcp_server_http.py` exposes `/mcp` via FastMCP (HTTP transport)
+  - Tools: `answer(repo, question)`, `search(repo, question, top_k=10)` - RAG retrieval and generation only
   - Env: `MCP_HTTP_HOST` (default `0.0.0.0`), `MCP_HTTP_PORT` (default `8013`), `MCP_HTTP_PATH` (default `/mcp`)
   - Start: `. .venv/bin/activate && python mcp_server_http.py`
 - TLS: terminate with a reverse proxy (Caddy/Nginx) in front of `http://127.0.0.1:8013/mcp`
@@ -47,7 +50,7 @@ server {
 OpenAI evals integration (HTTP MCP)
 - Point the eval harness to `https://your.domain.com/mcp`
 - Ensure network egress from eval runner to your domain
-- If evals expect specific tool names, confirm `tools/list` shows `rag_answer`, `rag_search`, `netlify_deploy`, `web_get`
+- HTTP mode exposes 2 tools: `answer`, `search` (no `netlify_deploy` or `web_get` - use stdio mode for those)
 
 Operational tips
 - Keep Redis/Qdrant running (`bash scripts/up.sh`) to ensure LangGraph checkpoints and hybrid search work.
