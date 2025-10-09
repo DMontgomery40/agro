@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from typing import Optional
 from langgraph_app import build_graph
+from hybrid_search import search_routed_multi
 
 app = FastAPI(title="Faxbot/Vivified RAG")
 
@@ -39,3 +40,27 @@ def answer(
     state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0, "repo": (repo.strip() if repo else None)}
     res = g.invoke(state, CFG)
     return {"answer": res["generation"]}
+
+@app.get("/search")
+def search(
+    q: str = Query(..., description="Question"),
+    repo: Optional[str] = Query(None, description="Repository override: vivified|faxbot"),
+    top_k: int = Query(10, description="Number of results to return")
+):
+    """Search for relevant code locations without generation.
+
+    Returns file paths, line ranges, and rerank scores for the most relevant code chunks.
+    """
+    docs = search_routed_multi(q, repo_override=repo, m=4, final_k=top_k)
+    results = [
+        {
+            "file_path": d.get("file_path", ""),
+            "start_line": d.get("start_line", 0),
+            "end_line": d.get("end_line", 0),
+            "language": d.get("language", ""),
+            "rerank_score": float(d.get("rerank_score", 0.0) or 0.0),
+            "repo": d.get("repo", repo),
+        }
+        for d in docs
+    ]
+    return {"results": results, "repo": repo, "count": len(results)}

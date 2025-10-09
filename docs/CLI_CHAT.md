@@ -5,7 +5,7 @@ Interactive terminal chat for the RAG service with conversation memory.
 ## Installation
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service
+cd /Users/path/to/repo-b_folder/rag-service
 . .venv/bin/activate
 pip install rich
 ```
@@ -15,7 +15,7 @@ pip install rich
 ### Basic Usage
 
 ```bash
-export REPO=vivified
+export REPO=repo-a
 export THREAD_ID=my-session
 python chat_cli.py
 ```
@@ -24,7 +24,7 @@ python chat_cli.py
 
 | Command | Description |
 |---------|-------------|
-| `/repo <name>` | Switch repository (vivified or faxbot) |
+| `/repo <name>` | Switch repository (repo-a or repo-b) |
 | `/clear` | Clear conversation history (starts new thread) |
 | `/save` | Save checkpoint (automatic with Redis) |
 | `/help` | Show available commands |
@@ -34,19 +34,19 @@ python chat_cli.py
 
 **Ask a question:**
 ```
-vivified > Where is OAuth token validated?
+repo-a > Where is OAuth token validated?
 ```
 
 **Switch repos mid-conversation:**
 ```
-vivified > /repo faxbot
-✓ Switched to repo: faxbot
-faxbot > How do we handle inbound faxes?
+repo-a > /repo repo-b
+✓ Switched to repo: repo-b
+repo-b > How do we handle inbound faxes?
 ```
 
 **Get help:**
 ```
-vivified > /help
+repo-a > /help
 ```
 
 ## Features
@@ -62,7 +62,7 @@ vivified > /help
 - **Citation display**: Shows top 3 sources with scores
 
 ### Repo Switching
-Switch between vivified and faxbot without losing conversation context.
+Switch between repo-a and repo-b without losing conversation context.
 
 ## Configuration
 
@@ -70,7 +70,7 @@ Switch between vivified and faxbot without losing conversation context.
 
 ```bash
 # Required
-export REPO=vivified           # or faxbot
+export REPO=repo-a           # or repo-b
 export THREAD_ID=my-session    # unique ID for this conversation
 
 # Optional (set in .env)

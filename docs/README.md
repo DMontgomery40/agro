@@ -1,76 +1,341 @@
-# RAG Service Documentation
+# 📚 RAG Service Documentation
 
-This folder contains comprehensive implementation guides and reference documentation.
+**Complete documentation index for the multi-repo RAG system with MCP integration.**
 
-## 📘 Documentation Files
+> Why I did made this: 
 
-### Core Guides
-- **[MCP_README.md](MCP_README.md)** - Complete MCP server documentation
-  - MCP protocol details (JSON-RPC 2.0)
-  - Tool specifications and schemas
-  - Integration with Codex and Claude Code
-  - Troubleshooting MCP connections
-  - Agent behavior rules
+| Approach | Tokens/Query | Queries Before Rate Limit* | Latency | Quality |
+|----------|--------------|---------------------------|---------|---------|
+| **Claude/Codex Alone** | 12,700 | 100 | 5-10s | Variable |
+| **Claude/Codex + RAG** | 1,141 | **1,110** | 2.9s | Excellent* |
+| **DIFFERENCE** | **-11,559 (-91%)** | **+1,010 (+1,010%)** | **-5s** | Same |
 
-- **[QUICKSTART_MCP.md](QUICKSTART_MCP.md)** - Fast reference card
-  - Essential commands
-  - Quick setup instructions
-  - Common usage examples
-  - Architecture diagram
+> * It's not about getting a perfect answer from RAG (though you can). But more importantly, getting Claude/Codex the exact right context so IT can give you a perfect answer.
+---
 
-### Model Selection
-- **[MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md)** - Model Guide (520+ lines)
-  - **20+ embedding models** comparison (OpenAI, Google, Voyage, Ollama, BGE, NVIDIA)
-  - **15+ inference models** for code generation (GPT-4o, Gemini, Claude, Qwen, DeepSeek)
-  - Hardware-specific recommendations (Mac M1-M4, NVIDIA GPUs, CPU-only)
-  - Migration guides (OpenAI → Local, OpenAI → Gemini)
-  - Cost/performance analysis with MTEB scores and HumanEval benchmarks
-  - ROI calculations and optimization strategies
+## 📖 Table of Contents (note that everything below "install" is obviously stupid shit Claude wrote that I left in, in case a few people actually find it useful)
 
-### Implementation Details
-- **[IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)** - What was delivered
-  - Complete feature list
-  - Files created (8 new, 3 modified)
-  - Architecture diagrams
-  - Smoke test results
-  - Comparison with previous failed implementations
-
-- **[SUMMARY.md](SUMMARY.md)** - Quick overview
-  - Key features summary
-  - Quick decision matrix
-
-### Benchmarks & Ops
-- **[GEN_MODEL_COMPARISON.md](GEN_MODEL_COMPARISON.md)** - Qwen 3 vs OpenAI generation comparison
-- **[REMOTE_MCP.md](REMOTE_MCP.md)** - Expose the MCP server over HTTPS for remote agents/evals
-  - Command reference
-
-### Indexing Controls
-- **RAG Ignore / Exclusions**
-  - Built-in pruning and file gating: see `filtering.py`
-  - Project-specific globs: edit `data/exclude_globs.txt`
-  - Re-index after changes (`REPO=vivified python index_repo.py`)
-
-## 🚀 Quick Navigation
-
-**Just getting started?**  
-→ Start with [../README.md](../README.md) (main setup guide). Use `bash scripts/up.sh` to keep infra + MCP always running.
-
-**Defaults in this repo**
-- Generation: Qwen 3 via Ollama (`GEN_MODEL`, `OLLAMA_URL`)
-- Rerank: Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
-
-**Need to connect MCP to agents?**  
-→ See [QUICKSTART_MCP.md](QUICKSTART_MCP.md)
-
-**Want to save money or run locally?**  
-→ See [MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md)
-
-**Want technical MCP details?**  
-→ See [MCP_README.md](MCP_README.md)
-
-**Want to know what was implemented?**  
-→ See [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)
+- [Quick Start Guide](#-quick-start-guide)
+- [Core Documentation](#-core-documentation)
+  - [Setup & Getting Started](#setup--getting-started)
+  - [MCP Integration](#mcp-integration)
+  - [Interactive Usage](#interactive-usage)
+  - [Model Selection & Cost](#model-selection--cost)
+  - [Operations & Monitoring](#operations--monitoring)
+- [Documentation by Use Case](#-documentation-by-use-case)
+- [File Reference](#-file-reference)
 
 ---
 
-**Note:** All documentation includes current model recommendations based on latest benchmarks.
+## Quick Start Guide
+
+**Just getting started?**
+
+1. **Setup** → Read [../README.md](../README.md) for complete setup instructions
+2. **Quick Commands** → Run `bash scripts/up.sh` to start infrastructure
+3. **Index Repos** → Run `REPO=repo-a python index_repo.py`
+4. **Connect Agents** → See [QUICKSTART_MCP.md](QUICKSTART_MCP.md)
+
+---
+
+## 📘 Core Documentation
+
+### Setup & Getting Started
+
+#### [../README.md](../README.md) - Main Setup Guide (1105 lines)
+**THE complete reference for setup, configuration, and daily usage.**
+
+**Contents:**
+- ✅ Prerequisites and installation
+- ✅ Infrastructure setup (Docker Compose)
+- ✅ Environment configuration
+- ✅ `.ragignore` system (critical setup step)
+- ✅ Repository indexing
+- ✅ MCP integration (Codex + Claude Code)
+- ✅ CLI chat interface
+- ✅ Evaluation and testing
+- ✅ Daily workflows
+- ✅ Complete troubleshooting guide
+- ✅ Advanced configuration
+
+**Start here if:** You're setting up from scratch or need comprehensive reference.
+
+---
+
+### MCP Integration
+
+#### [QUICKSTART_MCP.md](QUICKSTART_MCP.md) - Fast MCP Setup (149 lines)
+**5-minute quick reference for connecting AI agents.**
+
+**Contents:**
+- ✅ Essential commands
+- ✅ Codex CLI registration
+- ✅ Claude Code configuration
+- ✅ Quick examples
+- ✅ Common troubleshooting
+
+**Start here if:** You want to connect Codex or Claude Code quickly.
+
+---
+
+#### [MCP_README.md](MCP_README.md) - Complete MCP Reference (244 lines)
+**Comprehensive technical documentation for the MCP server.**
+
+**Contents:**
+- ✅ MCP protocol details (JSON-RPC 2.0)
+- ✅ Tool specifications:
+  - `rag_answer(repo, question)` - Full pipeline with citations
+  - `rag_search(repo, question, top_k)` - Retrieval only
+  - `netlify_deploy(domain)` - Trigger Netlify builds
+  - `web_get(url, max_bytes)` - HTTP GET for allowlisted docs
+- ✅ stdio mode (for local agents)
+- ✅ Integration examples
+- ✅ Agent behavior rules
+- ✅ Complete troubleshooting
+
+**Start here if:** You need technical MCP details or are implementing custom integrations.
+
+---
+
+#### [REMOTE_MCP.md](REMOTE_MCP.md) - Remote MCP Setup (55 lines)
+**Expose MCP over HTTP/HTTPS for remote agents and platforms.**
+
+**Contents:**
+- ✅ HTTP mode setup (`mcp_server_http.py`)
+- ✅ HTTPS with reverse proxy (Caddy/Nginx)
+- ✅ Configuration examples
+- ✅ Security considerations
+- ✅ Tunneling (ngrok/Cloudflare - coming soon)
+
+**Start here if:** You need remote agent access or production HTTPS deployment.
+
+---
+
+### Interactive Usage
+
+#### [CLI_CHAT.md](CLI_CHAT.md) - CLI Chat Interface (173 lines)
+**Interactive terminal chat with conversation memory.**
+
+**Contents:**
+- ✅ Installation and setup
+- ✅ Commands reference
+- ✅ Features:
+  - Redis-backed conversation memory
+  - Rich terminal UI with markdown
+  - Citation display
+  - Repo switching mid-conversation
+- ✅ Configuration options
+- ✅ Multiple conversation management
+- ✅ Troubleshooting
+- ✅ Integration with other tools
+
+**Start here if:** You want an interactive chat interface instead of API/MCP calls.
+
+---
+
+### Model Selection & Cost
+
+#### [MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md) - Model Guide (589 lines)
+**Comprehensive guide to embeddings and generation models (updated Oct 2025).**
+
+⚠️ **Note**: Model pricing and rankings change frequently. This guide was accurate as of October 8, 2025 but may be outdated. Always check official sources and current benchmarks.
+
+**Contents:**
+- ✅ **20+ embedding models** with comparisons
+  - Cloud APIs: OpenAI, Google Gemini, Voyage AI, Cohere
+  - Self-hosted: nomic-embed-text, BGE-M3, NV-Embed-v2, Stella
+- ✅ **15+ inference/generation models**
+  - Cloud: GPT-4o, Gemini 2.5, Claude 4
+  - Self-hosted: Qwen 2.5-Coder, DeepSeek-Coder, Code Llama
+- ✅ Hardware-specific recommendations
+  - Mac M1/M2/M3/M4 (different RAM configs)
+  - NVIDIA GPU (16GB, 24GB, 40GB+ VRAM)
+  - CPU-only setups
+- ✅ Cost/performance analysis
+- ✅ Migration guides with code examples
+- ✅ ROI calculations
+- ✅ Links to current benchmarks
+
+**Benchmark Links (check for latest rankings):**
+- [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard) - Embedding models
+- [OpenLLM Leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) - Generation models
+
+**Start here if:** You want to save money, run locally, or understand model options.
+
+---
+
+#### [GEN_MODEL_COMPARISON.md](GEN_MODEL_COMPARISON.md) - Qwen vs OpenAI (48 lines)
+**Head-to-head comparison between local Qwen 3 and OpenAI models.**
+
+**Contents:**
+- ✅ Test methodology
+- ✅ How to run comparisons
+- ✅ Measuring latency and token usage
+- ✅ Configuration for both models
+
+**Start here if:** You're deciding between local (Qwen) and cloud (OpenAI) generation.
+
+---
+
+#### [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md) - Real-World Metrics (169 lines)
+**Measured performance and cost data from production usage.**
+
+**Contents:**
+- ✅ **Real measurements** (not estimates):
+  - RAG via MCP: **99% token reduction** vs Claude alone
+  - $86/month saved at 100 queries/day (OpenAI)
+  - $95/month saved with local Qwen
+- ✅ Per-query cost breakdown
+- ✅ Monthly cost projections
+- ✅ ROI calculator
+- ✅ Scaling considerations
+- ✅ When to use local vs cloud
+- ✅ Optimization tips
+- ✅ Monitoring and tracking
+
+**Start here if:** You want hard numbers on costs and performance.
+
+---
+
+### Operations & Monitoring
+
+#### [../README.md](../README.md) - Operations Section
+**Daily workflows, troubleshooting, and monitoring.**
+
+**Contents:**
+- ✅ Morning startup routine
+- ✅ Re-indexing after code changes
+- ✅ Debugging bad answers
+- ✅ Testing MCP tools manually
+- ✅ Infrastructure troubleshooting
+- ✅ Retrieval quality tuning
+
+**Start here if:** You're running this in production or need to debug issues.
+
+---
+
+## 🎯 Documentation by Use Case
+
+### "I want to get this running NOW"
+1. [../README.md](../README.md) → Quick Start section
+2. [QUICKSTART_MCP.md](QUICKSTART_MCP.md) → Connect your agent
+
+### "I want an interactive chat interface"
+1. [../README.md](../README.md) → CLI Chat Interface section
+2. [CLI_CHAT.md](CLI_CHAT.md) → Full CLI guide
+
+### "I want to save money on API costs"
+1. [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md) → See the savings
+2. [MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md) → Pick free/local models
+
+### "I want to run 100% locally (no API calls)"
+1. [MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md) → Self-Hosted section
+2. [../README.md](../README.md) → Model Selection section
+
+### "I need to connect Codex or Claude Code"
+1. [QUICKSTART_MCP.md](QUICKSTART_MCP.md) → 5-minute setup
+2. [MCP_README.md](MCP_README.md) → Detailed reference if needed
+
+### "I need remote/HTTP access for agents"
+1. [REMOTE_MCP.md](REMOTE_MCP.md) → HTTP/HTTPS setup
+2. [MCP_README.md](MCP_README.md) → Tool specifications
+
+### "Files aren't being indexed correctly"
+1. [../README.md](../README.md) → Configure RAG Ignore section
+2. Check `../data/exclude_globs.txt`
+3. Run `../scripts/analyze_keywords.py` to analyze your repo
+
+### "I want to understand what this system does"
+1. [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md) → See the benefits
+2. [../README.md](../README.md) → Architecture section
+
+### "Something's not working"
+1. [../README.md](../README.md) → Troubleshooting section
+2. [QUICKSTART_MCP.md](QUICKSTART_MCP.md) → MCP-specific issues
+
+---
+
+## 📄 File Reference
+
+### Documentation Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| **[../README.md](../README.md)** | 1105 | Main setup guide, complete reference |
+| **[MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md)** | 589 | Model selection, pricing, hardware reqs |
+| **[MCP_README.md](MCP_README.md)** | 244 | Complete MCP technical reference |
+| **[CLI_CHAT.md](CLI_CHAT.md)** | 173 | Interactive CLI chat guide |
+| **[PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md)** | 169 | Real-world metrics and ROI |
+| **[QUICKSTART_MCP.md](QUICKSTART_MCP.md)** | 149 | Fast MCP setup (5 min) |
+| **[REMOTE_MCP.md](REMOTE_MCP.md)** | 55 | HTTP/HTTPS/tunneling |
+| **[GEN_MODEL_COMPARISON.md](GEN_MODEL_COMPARISON.md)** | 48 | Qwen vs OpenAI comparison |
+| **TOTAL** | **~2500+** | **Complete documentation** |
+
+### Other Key Files
+
+| File | Purpose |
+|------|---------|
+| **[../START_HERE.md](../START_HERE.md)** | Navigation hub, quick start options |
+| **[../AGENTS.md](../AGENTS.md)** | Agent behavior rules and guidelines |
+| **[../golden.json](../golden.json)** | Eval test cases (replace with yours) |
+| **[../.env](../.env)** | Environment configuration |
+| **[../data/exclude_globs.txt](../data/exclude_globs.txt)** | `.ragignore` patterns |
+
+---
+
+## 🎓 Learning Path
+
+**Recommended reading order for new users:**
+
+1. **Understand the value** → [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md) (5 min)
+2. **Get it running** → [../README.md](../README.md) Quick Start (10 min)
+3. **Configure filtering** → [../README.md](../README.md) Configure RAG Ignore (5 min)
+4. **Try it out** → [CLI_CHAT.md](CLI_CHAT.md) or [QUICKSTART_MCP.md](QUICKSTART_MCP.md) (5 min)
+5. **Optimize costs** → [MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md) (20 min)
+
+---
+
+## 🔗 External Resources
+
+- **MCP Specification**: https://modelcontextprotocol.io/
+- **Codex CLI**: https://github.com/openai/codex
+- **LangGraph**: https://python.langchain.com/docs/langgraph
+- **Qdrant**: https://qdrant.tech/documentation/
+- **MTEB Leaderboard**: https://huggingface.co/spaces/mteb/leaderboard
+- **Ollama**: https://ollama.ai/
+
+---
+
+## 📦 System Defaults
+
+**Current configuration in this repo:**
+
+- **Generation**: Qwen 3 via Ollama (local, self-hosted)
+  - Set via `GEN_MODEL` and `OLLAMA_URL`
+  - Falls back to OpenAI if configured
+  
+- **Embeddings**: OpenAI text-embedding-3-large (cloud)
+  - Auto-falls back to local BGE-small if unavailable
+  
+- **Reranking**: Cohere rerank-3.5 (cloud)
+  - Set via `RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`
+  - Falls back to local cross-encoder if no API key
+
+See [MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md) to change any of these.
+
+---
+
+## 💡 Quick Tips
+
+- **All docs are cross-linked** - Follow the links to jump between topics
+- **Check the main README first** - It's the most comprehensive reference
+- **Model pricing changes fast** - Always verify current costs
+- **Use the scripts folder** - Auto-generate keywords for your repos
+- **Start with CLI chat** - Easiest way to test the system interactively
+
+---
+
+**Last Updated**: October 8, 2025  
+**Version**: 2.0.0
+
+**Questions?** All documentation is designed to be self-service. Start with the [main README](../README.md) or pick the doc that matches your use case above.

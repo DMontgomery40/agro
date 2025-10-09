@@ -83,49 +83,80 @@ def generate_text(
     prefer_ollama = bool(OLLAMA_URL) and ("qwen" in (mdl or "").lower())
     if prefer_ollama:
         try:
-            import requests, json as _json
+            import requests, json as _json, time
             sys_text = (system_instructions or "").strip()
             prompt = (f"<system>{sys_text}</system>\n" if sys_text else "") + user_input
             url = OLLAMA_URL.rstrip("/") + "/generate"
-            # Prefer streaming to avoid long blocking on large models
-            with requests.post(url, json={
-                "model": mdl,
-                "prompt": prompt,
-                "stream": True,
-                "options": {"temperature": 0.2, "num_ctx": 8192},
-            }, timeout=600, stream=True) as r:
-                r.raise_for_status()
-                buf = []
-                last = None
-                for line in r.iter_lines(decode_unicode=True):
-                    if not line:
+
+            # Retry configuration (production hardening)
+            max_retries = 2
+            chunk_timeout = 60  # 60s per chunk
+            total_timeout = 300  # 5min hard cap
+
+            for attempt in range(max_retries + 1):
+                start_time = time.time()
+                try:
+                    # Prefer streaming to avoid long blocking on large models
+                    with requests.post(url, json={
+                        "model": mdl,
+                        "prompt": prompt,
+                        "stream": True,
+                        "options": {"temperature": 0.2, "num_ctx": 8192},
+                    }, timeout=chunk_timeout, stream=True) as r:
+                        r.raise_for_status()
+                        buf = []
+                        last = None
+                        for line in r.iter_lines(decode_unicode=True):
+                            # Check total timeout
+                            if time.time() - start_time > total_timeout:
+                                # Return partial output on timeout
+                                partial = ("".join(buf) or "").strip()
+                                if partial:
+                                    return partial + " [TIMEOUT]", {"response": partial, "timeout": True}
+                                break
+
+                            if not line:
+                                continue
+                            try:
+                                obj = _json.loads(line)
+                            except Exception:
+                                continue
+                            if isinstance(obj, dict):
+                                seg = (obj.get("response") or "")
+                                if seg:
+                                    buf.append(seg)
+                                last = obj
+                                if obj.get("done") is True:
+                                    break
+
+                        text = ("".join(buf) or "").strip()
+                        if text:
+                            return text, (last or {"response": text})
+
+                    # Fallback to non-stream if streaming returned empty
+                    resp = requests.post(url, json={
+                        "model": mdl,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {"temperature": 0.2, "num_ctx": 8192},
+                    }, timeout=total_timeout)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    text = (data.get("response") or "").strip()
+                    if text:
+                        return text, data
+
+                except (requests.Timeout, requests.ConnectionError) as e:
+                    # Retry on network errors
+                    if attempt < max_retries:
+                        backoff = 2 ** attempt  # Exponential backoff: 1s, 2s
+                        time.sleep(backoff)
                         continue
-                    try:
-                        obj = _json.loads(line)
-                    except Exception:
-                        continue
-                    if isinstance(obj, dict):
-                        seg = (obj.get("response") or "")
-                        if seg:
-                            buf.append(seg)
-                        last = obj
-                        if obj.get("done") is True:
-                            break
-                text = ("".join(buf) or "").strip()
-                if text:
-                    return text, (last or {"response": text})
-            # Fallback to non-stream if needed
-            resp = requests.post(url, json={
-                "model": mdl,
-                "prompt": prompt,
-                "stream": False,
-                "options": {"temperature": 0.2, "num_ctx": 8192},
-            }, timeout=600)
-            resp.raise_for_status()
-            data = resp.json()
-            text = (data.get("response") or "").strip()
-            if text:
-                return text, data
+                    # Last attempt failed, fall through to OpenAI
+                    pass
+                except Exception:
+                    # Other errors, don't retry
+                    break
         except Exception:
             pass
     # Try OpenAI Responses API

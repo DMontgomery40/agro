@@ -1,18 +1,20 @@
 # RAG Service - Complete Guide
 
-**Strict per-repo RAG for Vivified & Faxbot codebases with MCP integration for AI agents**
+**Multi-repository RAG system with MCP integration for AI agents**
 
-👉 **New here?** See [START_HERE.md](START_HERE.md) for quick navigation
-📂 **Extended docs**: See [docs/](docs/) for specialized guides (MCP, models, chat CLI)
+> **Note**: This guide uses two example repos (a healthcare app and a Rails service) from the original author's setup. However, **this system works with ANY multi-repo codebase**. The `scripts/` folder includes tools to auto-generate keywords and configurations for your specific projects.
+
+👉 **New here?** See [docs/README.md](docs/) for specialized guides (MCP, models, CLI chat)
 
 ---
 
-This is a production RAG (Retrieval-Augmented Generation) service that:
-- Maintains **strict separation** between Vivified and Faxbot repos (never mixes them)
-- Uses **hybrid search** (BM25 + dense embeddings + cross-encoder reranking)
-- Provides **MCP tools** for Codex and Claude Code integration
-- Includes **eval harness** for measuring and tracking retrieval quality
-- Supports **multi-query expansion** and **local code hydration** for performance
+This is a RAG (Retrieval-Augmented Generation) that:
+- Maintains **strict separation** between repositories (never mixes them)
+- Uses **hybrid search** (BM25 + dense embeddings + reranking)
+- Provides **MCP tools** (stdio + HTTP modes) for Codex and Claude Code
+- Includes **eval harness** with regression tracking
+- Supports **multi-query expansion** and **local code hydration**
+- Features **interactive CLI chat** with conversation memory
 
 ---
 
@@ -21,39 +23,44 @@ This is a production RAG (Retrieval-Augmented Generation) service that:
 1. [Quick Start](#quick-start)
 2. [Architecture](#architecture)
 3. [Setup from Scratch](#setup-from-scratch)
-4. [MCP Integration](#mcp-integration)
-   - [Connecting to Claude Code](#connecting-to-claude-code)
-   - [Connecting to Codex](#connecting-to-codex)
-5. [Evaluation & Testing](#evaluation--testing)
-6. [Daily Workflows](#daily-workflows)
-7. [Troubleshooting](#troubleshooting)
-8. [Advanced Configuration](#advanced-configuration)
+4. [Configure RAG Ignore](#configure-rag-ignore)
+5. [MCP Integration](#mcp-integration)
+6. [CLI Chat Interface](#cli-chat-interface)
+7. [Evaluation & Testing](#evaluation--testing)
+8. [Daily Workflows](#daily-workflows)
+9. [Troubleshooting](#troubleshooting)
+10. [Model Selection](#model-selection)
+11. [Performance & Cost](#performance--cost)
 
 ---
 
 ## Quick Start
 
-**Prerequisites**: Docker Compose, Python 3.11+. For local inference, run Ollama (Qwen 3).
+**Prerequisites**: Docker Compose, Python 3.11+. For local inference, install Ollama.
 
 ```bash
 # 1) Bring infra + MCP up (always-on helper)
-cd /Users/davidmontgomery/faxbot_folder/rag-service && bash scripts/up.sh
+cd /path/to/rag-service && bash scripts/up.sh
 
 # 2) Activate venv and verify deps
 . .venv/bin/activate
 python -c "import fastapi, qdrant_client, bm25s; print('✓ All deps OK')"
 
-# 3) Index repos (run both)
-REPO=vivified python index_repo.py
-REPO=faxbot python index_repo.py
+# 3) Index repos (replace with your repo names)
+REPO=repo-a python index_repo.py
+REPO=repo-b python index_repo.py
 
-# 4) Run the HTTP API (optional)
+# 4) Start CLI chat (interactive)
+export REPO=repo-a THREAD_ID=my-session
+python chat_cli.py
+
+# Or: Run HTTP API (optional)
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 
 # 5) Smoke test
-curl "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=vivified"
+curl "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=repo-a"
 
-# MCP tools quick check (stdio)
+# MCP tools quick check (stdio mode)
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 ```
 
@@ -63,52 +70,52 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 
 ```
 ┌───────────────────────────────────────────────────────────┐
-│                    AI Agents (Codex/Claude Code)          │
-└───────────────────────┬───────────────────────────────────┘
-                        │ MCP (stdio)
-                        ▼
-┌───────────────────────────────────────────────────────────┐
-│                    mcp_server.py                          │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │  rag_answer(repo, question) → answer + citations    │  │
-│  │  rag_search(repo, question, top_k) → retrieval only │  │
-│  └─────────────────────────────────────────────────────┘  │
-└───────────────────────┬───────────────────────────────────┘
-                        │
-        ┌───────────────┼───────────────┐
-        ▼               ▼               ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│ serve_rag.py │ │langgraph_app │ │hybrid_search │
-│  (FastAPI)   │ │  (LangGraph) │ │  (Retrieval) │
-└──────────────┘ └──────────────┘ └──────┬───────┘
-                                          │
-        ┌─────────────────────────────────┼──────────────────┐
-        ▼                                 ▼                  ▼
+│          AI Agents (Codex/Claude Code/Remote)             │
+└────────────┬──────────────────────────┬───────────────────┘
+             │ MCP stdio                │ MCP HTTP/HTTPS
+             ▼                          ▼
+┌─────────────────────────┐   ┌─────────────────────────┐
+│    mcp_server.py        │   │  mcp_server_http.py     │
+│    (stdio mode)         │   │  (HTTP mode)            │
+└────────────┬────────────┘   └─────────────┬───────────┘
+             │                              │
+             └──────────────┬───────────────┘
+                            ▼
+         ┌──────────────────┼──────────────────┐
+         ▼                  ▼                  ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│ serve_rag.py │  │langgraph_app │  │hybrid_search │
+│  (FastAPI)   │  │  (LangGraph) │  │  (Retrieval) │
+└──────────────┘  └──────────────┘  └──────┬───────┘
+                                            │
+         ┌──────────────────────────────────┼──────────────────┐
+         ▼                                  ▼                  ▼
 ┌──────────────┐                  ┌──────────────┐  ┌──────────────┐
 │   Qdrant     │                  │    BM25S     │  │ Local Chunks │
 │  (vectors)   │                  │  (sparse)    │  │    (.jsonl)  │
 └──────────────┘                  └──────────────┘  └──────────────┘
-        │                                 │                  │
-        └─────────────────────────────────┴──────────────────┘
-                            ▲
-                            │
-                    ┌───────┴────────┐
-                    │  index_repo.py │
-                    │  (indexing)    │
-                    └────────────────┘
+         │                                  │                  │
+         └──────────────────────────────────┴──────────────────┘
+                             ▲
+                             │
+                     ┌───────┴────────┐
+                     │  index_repo.py │
+                     │  (indexing)    │
+                     └────────────────┘
 ```
 
 ### Key Components
 
 | Component | Purpose | File |
 |-----------|---------|------|
-| **MCP Server** | Stdio-based tool server for agents | `mcp_server.py` |
+| **MCP Server (stdio)** | Tool server for local agents | `mcp_server.py` |
+| **MCP Server (HTTP)** | Tool server for remote agents | `mcp_server_http.py` |
 | **FastAPI** | HTTP REST API (`/health`, `/answer`) | `serve_rag.py` |
 | **LangGraph** | Iterative retrieval pipeline with Redis checkpoints | `langgraph_app.py` |
 | **Hybrid Search** | BM25 + dense + rerank with repo routing | `hybrid_search.py` |
 | **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `index_repo.py` |
-| **Eval Harness** | Golden tests with regression tracking | `eval_loop.py`, `eval_rag.py` |
-| **Cards Builder** | Code summaries for better retrieval | `build_cards.py` |
+| **CLI Chat** | Interactive terminal chat with memory | `chat_cli.py` |
+| **Eval Harness** | Golden tests with regression tracking | `eval_loop.py` |
 
 ---
 
@@ -118,10 +125,10 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 
 ```bash
 # Create directory structure
-mkdir -p /Users/davidmontgomery/faxbot_folder/{infra,data/qdrant,data/redis}
+mkdir -p /path/to/rag-service/{infra,data/qdrant,data/redis}
 
 # Create docker-compose.yml
-cat > /Users/davidmontgomery/faxbot_folder/infra/docker-compose.yml <<'YAML'
+cat > /path/to/rag-service/infra/docker-compose.yml <<'YAML'
 version: "3.8"
 services:
   qdrant:
@@ -135,7 +142,7 @@ services:
       - QDRANT__STORAGE__USE_MMAP=false
       - QDRANT__STORAGE__ON_DISK_PERSISTENCE=true
     volumes:
-      - /Users/davidmontgomery/faxbot_folder/data/qdrant:/qdrant/storage
+      - /path/to/rag-service/data/qdrant:/qdrant/storage
   redis:
     image: redis/redis-stack:7.2.0-v10
     container_name: rag-redis
@@ -145,11 +152,11 @@ services:
     environment:
       - REDIS_ARGS=--appendonly yes
     volumes:
-      - /Users/davidmontgomery/faxbot_folder/data/redis:/data
+      - /path/to/rag-service/data/redis:/data
 YAML
 
 # Start services
-cd /Users/davidmontgomery/faxbot_folder/infra
+cd /path/to/rag-service/infra
 docker compose up -d
 
 # Verify
@@ -160,16 +167,18 @@ docker exec rag-redis redis-cli ping       # Should return PONG
 ### Phase 2: Python Environment
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service
+cd /path/to/rag-service
 
 # Create venv (if not exists)
 python3 -m venv .venv
 . .venv/bin/activate
 
 # Install dependencies
-# Core RAG deps are in requirements-rag.txt; rich is optional for CLI chat
 pip install -r requirements-rag.txt
 pip install -r requirements.txt
+
+# For CLI chat (optional but recommended)
+pip install rich
 
 # Verify critical imports
 python -c "import langgraph, qdrant_client, bm25s, sentence_transformers; print('✓ OK')"
@@ -186,84 +195,211 @@ QDRANT_URL=http://127.0.0.1:6333
 REDIS_URL=redis://127.0.0.1:6379/0
 
 # RAG Configuration
-REPO=vivified
-MQ_REWRITES=4
+REPO=repo-a                     # Default repo for operations
+MQ_REWRITES=4                   # Multi-query expansion count
 
-# Reranker (default: Cohere)
-RERANK_BACKEND=cohere           # cohere | local
-COHERE_API_KEY=                 # set this to enable Cohere rerank
+# Reranker (default: Cohere with local fallback)
+RERANK_BACKEND=cohere           # cohere | hf | local
+COHERE_API_KEY=                 # Set this to enable Cohere rerank
 COHERE_RERANK_MODEL=rerank-3.5  # or rerank-2.5
-# Optional local/Jina model fallback
-RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
 
 # Generation (default: local Qwen 3 via Ollama)
 OLLAMA_URL=http://127.0.0.1:11434/api
-GEN_MODEL=qwen3-coder:30b       # override if using OpenAI/others
+GEN_MODEL=qwen3-coder:30b       # or qwen2.5-coder:7b for lower RAM
 
-# Optional: Faxbot path boosts (comma-separated)
-FAXBOT_PATH_BOOSTS=app/,lib/,config/,scripts/,server/,api/
+# Optional: OpenAI for generation (alternative to Ollama)
+# OPENAI_API_KEY=sk-proj-...
+# GEN_MODEL=gpt-4o-mini
 
 # Optional: Embeddings provider
-EMBEDDING_TYPE=openai           # openai | local | voyage | mxbai
-VOYAGE_API_KEY=
-EMBEDDING_DIM=512               # when using mxbai
+EMBEDDING_TYPE=openai           # openai | local | voyage | gemini
+OPENAI_API_KEY=                 # Required for OpenAI embeddings
+VOYAGE_API_KEY=                 # Required for Voyage embeddings
 
-# Optional: Indexing/routing
-COLLECTION_NAME=code_chunks_${REPO}
-VENDOR_MODE=prefer_first_party  # prefer_first_party | prefer_vendor
+# Optional: Path boosts (comma-separated, repo-specific)
+REPO_A_PATH_BOOSTS=src/,lib/,core/
+REPO_B_PATH_BOOSTS=app/,controllers/,models/
 
 # Optional: MCP integrations
-NETLIFY_API_KEY=
+NETLIFY_API_KEY=                # For netlify_deploy tool
 
 # LangChain (optional)
 LANGCHAIN_TRACING_V2=false
-LANGCHAIN_PROJECT=faxbot-rag
+LANGCHAIN_PROJECT=rag-service
 EOF
 
 chmod 600 .env  # Protect secrets
 ```
 
-### Phase 4: Index Repositories
+### Phase 4: Configure RAG Ignore
+
+**This step is critical** - it prevents indexing noise, vendor code, and build artifacts.
+
+The system has three layers of filtering:
+
+#### 1. Built-in Filtering (`filtering.py`)
+Automatically excludes common directories and file types:
+- Directories: `node_modules/`, `vendor/`, `dist/`, `build/`, `.git/`, etc.
+- File extensions: Only indexes code files (`.py`, `.js`, `.ts`, `.rb`, `.go`, etc.)
+
+#### 2. Project-Specific Excludes (`data/exclude_globs.txt`)
+
+Edit this file to add glob patterns for your repos:
+
+```bash
+cd /path/to/rag-service
+cat data/exclude_globs.txt
+
+# Add your patterns:
+echo "**/my-vendor-dir/**" >> data/exclude_globs.txt
+echo "**/*.generated.ts" >> data/exclude_globs.txt
+echo "**/migrations/**" >> data/exclude_globs.txt
+```
+
+**Common patterns to exclude:**
+```bash
+# Build artifacts
+**/dist/**
+**/build/**
+**/.next/**
+
+# Generated code
+**/*.generated.*
+**/*.min.js
+**/*.bundle.js
+
+# Large data files
+**/*.json.gz
+**/fixtures/**
+**/test-data/**
+
+# Vendor/dependencies (if not caught by built-in)
+**/third_party/**
+**/external/**
+```
+
+#### 3. Auto-Generate Keywords (Optional)
+
+The `scripts/` folder contains tools to analyze your codebase and generate optimal configurations:
+
+```bash
+cd /path/to/rag-service/scripts
+
+# Analyze a repo to find important keywords
+python analyze_keywords.py /path/to/your/repo-a
+
+# Enhanced version with more insights
+python analyze_keywords_v2.py /path/to/your/repo-a
+
+# Output shows:
+# - Most common file types
+# - Directory structure
+# - Suggested keywords for hybrid_search.py
+# - Recommended path boosts
+```
+
+**After configuring .ragignore:**
+
+```bash
+# Re-index affected repos
+REPO=repo-a python index_repo.py
+REPO=repo-b python index_repo.py
+
+# Verify collections
+curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
+```
+
+### Phase 5: Index Repositories
 
 ```bash
 . .venv/bin/activate
 
-# Index Vivified (healthcare app)
-REPO=vivified python index_repo.py
+# Index first repo (replace with your repo name and path)
+REPO=repo-a python index_repo.py
 # This will:
-#   - Scan /Users/davidmontgomery/faxbot_folder/vivified
-#   - Chunk code files (Python, JS, TS, etc.)
+#   - Scan /path/to/your/repo-a (configured in index_repo.py)
+#   - Chunk code files (Python, JS, TS, Ruby, Go, etc.)
 #   - Build BM25 index
-#   - Generate OpenAI embeddings (text-embedding-3-large)
-#   - Upsert to Qdrant collection: code_chunks_vivified
-#   - Save chunks to: out/vivified/chunks.jsonl
+#   - Generate embeddings (OpenAI text-embedding-3-large by default)
+#   - Upsert to Qdrant collection: code_chunks_repo-a
+#   - Save chunks to: out/repo-a/chunks.jsonl
 
-# Index Faxbot (Rails fax app)
-REPO=faxbot python index_repo.py
-# Same process, separate collection: code_chunks_faxbot
+# Index second repo
+REPO=repo-b python index_repo.py
+# Same process, separate collection: code_chunks_repo-b
 
 # Verify collections exist
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
-# Should show: code_chunks_vivified, code_chunks_faxbot
+# Should show: code_chunks_repo-a, code_chunks_repo-b
 ```
 
-### Phase 5: Test the API
+**Configure repo paths:**
+
+Edit the beginning of `index_repo.py` to set your repo locations:
+
+```python
+REPOS = {
+    'repo-a': '/path/to/your/first-repo',
+    'repo-b': '/path/to/your/second-repo',
+}
+```
+
+---
+
+## CLI Chat Interface
+
+**Recommended for interactive use** - Terminal chat with conversation memory and rich formatting.
+
+### Quick Start
 
 ```bash
-# Start the API server (in one terminal)
 . .venv/bin/activate
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 
-# Test (in another terminal)
-# Health check
-curl -s http://localhost:8012/health | jq
+# Install rich library for terminal UI (if not already installed)
+pip install rich
 
-# Ask a question (Vivified)
-curl -s "http://localhost:8012/answer?q=Where%20is%20OAuth%20token%20validated&repo=vivified" | jq
-
-# Ask a question (Faxbot)
-curl -s "http://localhost:8012/answer?q=How%20do%20we%20handle%20inbound%20faxes&repo=faxbot" | jq
+# Start chat
+export REPO=repo-a
+export THREAD_ID=my-session
+python chat_cli.py
 ```
+
+### Features
+
+- **Conversation Memory**: Redis-backed, persists across sessions
+- **Rich Terminal UI**: Markdown rendering, color-coded confidence scores
+- **Citation Display**: Shows file paths and rerank scores
+- **Repo Switching**: `/repo repo-b` to switch between repos mid-conversation
+- **Multiple Sessions**: Use different `THREAD_ID` values for parallel conversations
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `your question` | Ask directly |
+| `/repo <name>` | Switch repository (e.g., `/repo repo-b`) |
+| `/clear` | Clear conversation history (new thread) |
+| `/help` | Show available commands |
+| `/exit`, `/quit` | Exit chat |
+
+### Example Session
+
+```
+repo-a > Where is OAuth token validation handled?
+
+[Claude retrieves and displays answer with citations]
+
+📄 Top Sources:
+  1. auth/oauth.py:42-67 (score: 0.85)
+  2. middleware/token.py:89-120 (score: 0.78)
+
+repo-a > /repo repo-b
+✓ Switched to repo: repo-b
+
+repo-b > How do we handle webhook retries?
+```
+
+See **[docs/CLI_CHAT.md](docs/CLI_CHAT.md)** for detailed usage.
 
 ---
 
@@ -271,46 +407,132 @@ curl -s "http://localhost:8012/answer?q=How%20do%20we%20handle%20inbound%20faxes
 
 The MCP (Model Context Protocol) server exposes RAG tools that AI agents can call directly.
 
+### Server Modes
+
+The system supports **three MCP modes**:
+
+#### 1. **stdio Mode** (Default - for local agents)
+- File: `mcp_server.py`
+- Protocol: JSON-RPC over stdin/stdout
+- Use for: Codex CLI, Claude Code (desktop app)
+
+#### 2. **HTTP Mode** (for remote agents/platforms)
+- File: `mcp_server_http.py`
+- Protocol: HTTP at `/mcp` endpoint
+- Use for: Remote evals, cloud platforms, web agents
+
+#### 3. **HTTPS Mode** (HTTP + reverse proxy)
+- Setup: Caddy/Nginx in front of HTTP mode
+- Tunneling: ngrok or Cloudflare Tunnel support (coming soon)
+- Use for: Production deployments, secure remote access
+
+See **[docs/REMOTE_MCP.md](docs/REMOTE_MCP.md)** for HTTP/HTTPS setup.
+
 ### Tools Available
 
-1. `rag_answer(repo, question)`
-   - Full LangGraph pipeline (retrieval → generation)
-   - Returns: `{answer, citations, repo, confidence}`
+The MCP server exposes 4 tools:
 
-2. `rag_search(repo, question, top_k=10)`
-   - Retrieval-only (no generation)
-   - Returns: `{results:[{file_path,start_line,end_line,rerank_score}], repo, count}`
+#### 1. `rag_answer(repo, question)`
+Full LangGraph pipeline (retrieval → generation)
 
-3. `netlify_deploy(domain)`
-   - Trigger a Netlify build for `faxbot.net`, `vivified.dev`, or `both`
-   - Requires `NETLIFY_API_KEY` in environment
+**Returns:**
+```json
+{
+  "answer": "[repo: repo-a]\nOAuth tokens are validated in...",
+  "citations": [
+    "auth/oauth.py:42-67",
+    "middleware/token.py:89-120"
+  ],
+  "repo": "repo-a",
+  "confidence": 0.78
+}
+```
 
-4. `web_get(url, max_bytes=20000)`
-   - HTTP GET for allowlisted hosts: `openai.com`, `platform.openai.com`, `github.com`, `openai.github.io`
+#### 2. `rag_search(repo, question, top_k=10)`
+Retrieval-only (no generation, faster for debugging)
+
+**Returns:**
+```json
+{
+  "results": [
+    {
+      "file_path": "controllers/api_controller.rb",
+      "start_line": 45,
+      "end_line": 89,
+      "language": "ruby",
+      "rerank_score": 0.82,
+      "repo": "repo-b"
+    }
+  ],
+  "repo": "repo-b",
+  "count": 5
+}
+```
+
+#### 3. `netlify_deploy(domain)`
+Trigger Netlify builds (requires `NETLIFY_API_KEY`)
+
+**Arguments:**
+- `domain`: Site to deploy (`"site-a.com"`, `"site-b.com"`, or `"both"`)
+
+**Returns:**
+```json
+{
+  "results": [
+    {
+      "domain": "site-a.com",
+      "status": "triggered",
+      "site_id": "abc123",
+      "build_id": "def456"
+    }
+  ]
+}
+```
+
+#### 4. `web_get(url, max_bytes=20000)`
+HTTP GET for allowlisted documentation domains
+
+**Allowlisted hosts:**
+- `openai.com`
+- `platform.openai.com`
+- `github.com`
+- `openai.github.io`
+
+**Returns:**
+```json
+{
+  "url": "https://github.com/openai/codex",
+  "status": 200,
+  "length": 12345,
+  "clipped": true,
+  "content_preview": "..."
+}
+```
 
 ### Connecting to Claude Code
 
-Claude Code supports MCP servers natively. You need to add the server to Claude Code's configuration.
+Claude Code supports MCP servers natively via JSON configuration.
 
-#### Step 1: Locate Claude Code MCP Config
+#### Step 1: Locate Config File
 
-Claude Code stores MCP configuration in:
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
-#### Step 2: Add the MCP Server
+#### Step 2: Add Server Config
 
 Edit the config file (create if it doesn't exist):
 
 ```json
 {
   "mcpServers": {
-    "faxbot-rag": {
-      "command": "/Users/davidmontgomery/faxbot_folder/rag-service/.venv/bin/python",
-      "args": ["/Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py"],
+    "rag-service": {
+      "command": "/path/to/rag-service/.venv/bin/python",
+      "args": ["/path/to/rag-service/mcp_server.py"],
       "env": {
         "OPENAI_API_KEY": "sk-proj-...",
+        "OLLAMA_URL": "http://127.0.0.1:11434/api",
+        "GEN_MODEL": "qwen3-coder:30b",
         "QDRANT_URL": "http://127.0.0.1:6333",
         "REDIS_URL": "redis://127.0.0.1:6379/0"
       }
@@ -319,54 +541,23 @@ Edit the config file (create if it doesn't exist):
 }
 ```
 
-**Important Notes:**
-- Use **absolute paths** for command and args
-- Include environment variables (OPENAI_API_KEY, etc.)
+**Important:**
+- Use **absolute paths** (no `~`)
+- Include API keys if using OpenAI embeddings
+- Include Ollama config if using local generation
 - Restart Claude Code after editing
 
-#### Step 3: Verify in Claude Code
+#### Step 3: Test in Claude Code
 
 1. Open Claude Code
 2. Start a new conversation
-3. Look for the MCP indicator (usually in the UI or when listing available tools)
+3. Look for MCP tools indicator
 4. Test by asking:
    ```
-   Use rag_search to find code related to "OAuth validation" in vivified
+   Use rag_search to find code related to "authentication" in repo-a
    ```
 
-Claude Code should call the tool and display results.
-
-#### Step 4: Example Usage in Claude Code
-
-**Example 1: Get a full answer**
-```
-User: Use rag.answer to explain how we validate OAuth tokens in the vivified repo
-
-Claude Code will:
-  1. Call: rag.answer(repo="vivified", question="How do we validate OAuth tokens?")
-  2. Receive answer with citations
-  3. Display the answer and cite file locations
-```
-
-**Example 2: Debug retrieval**
-```
-User: Use rag.search to see what code comes up for "inbound fax processing" in faxbot,
-      show me the top 5 results
-
-Claude Code will:
-  1. Call: rag.search(repo="faxbot", question="inbound fax processing", top_k=5)
-  2. Show you the 5 most relevant code locations with scores
-
-**Example 3: Trigger a Netlify deploy**
-```
-User: Use netlify_deploy to rebuild vivified.dev
-```
-
-**Example 4: Fetch allowlisted docs**
-```
-User: Use web_get to fetch https://github.com/openai/codex
-```
-```
+Claude Code will call the tool and display results.
 
 ### Connecting to Codex
 
@@ -381,39 +572,30 @@ brew install openai/tap/codex
 # Via npm (all platforms)
 npm install -g @openai/codex
 
-# Verify installation
+# Verify
 codex --version
 ```
 
-#### Step 2: Register the MCP Server
+#### Step 2: Register MCP Server
 
 ```bash
-codex mcp add faxbot-rag -- \
-  /Users/davidmontgomery/faxbot_folder/rag-service/.venv/bin/python \
-  /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py
+codex mcp add rag-service -- \
+  /path/to/rag-service/.venv/bin/python \
+  /path/to/rag-service/mcp_server.py
 ```
 
-This adds the server to `~/.codex/config.toml`:
-
-```toml
-[[mcp.servers]]
-name = "faxbot-rag"
-command = "/Users/davidmontgomery/faxbot_folder/rag-service/.venv/bin/python"
-args = ["/Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py"]
-```
+This adds the server to `~/.codex/config.toml`.
 
 #### Step 3: Verify Registration
 
 ```bash
 codex mcp list
 # Should show:
-# Name        Command                                                            Args
-# faxbot-rag  /Users/davidmontgomery/faxbot_folder/rag-service/.venv/bin/python  /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py
+# Name         Command                                    Args
+# rag-service  /path/to/.venv/bin/python                  /path/to/mcp_server.py
 ```
 
 #### Step 4: Test in Codex
-
-Start a Codex session:
 
 ```bash
 codex
@@ -421,12 +603,33 @@ codex
 
 Then try:
 ```
-User: Use the rag.search tool to find code about "provider setup" in vivified
+User: Use rag_search to find code about "API endpoints" in repo-b
 
-User: Use rag.answer to tell me how authentication works in the faxbot repo
+User: Use rag_answer to explain how authentication works in repo-a
 ```
 
-Codex will automatically discover and call the registered tools.
+### MCP Example Usage
+
+**Example 1: Debug retrieval**
+```
+User: Use rag.search to see what code comes up for "webhook handling" in repo-b,
+      show me the top 5 results
+```
+
+**Example 2: Get full answer**
+```
+User: Use rag.answer to explain how we validate OAuth tokens in repo-a
+```
+
+**Example 3: Trigger deployment**
+```
+User: Use netlify_deploy to rebuild site-a.com
+```
+
+**Example 4: Fetch documentation**
+```
+User: Use web_get to fetch https://platform.openai.com/docs/models
+```
 
 ### MCP Server Management
 
@@ -435,12 +638,12 @@ Codex will automatically discover and call the registered tools.
 codex mcp list
 
 # Remove a server
-codex mcp remove faxbot-rag
+codex mcp remove rag-service
 
 # Re-add with updated path
-codex mcp add faxbot-rag -- /path/to/python /path/to/mcp_server.py
+codex mcp add rag-service -- /path/to/python /path/to/mcp_server.py
 
-# Test the server manually (stdio mode)
+# Test manually (stdio mode)
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
   .venv/bin/python mcp_server.py
 ```
@@ -467,7 +670,7 @@ python eval_loop.py
 # Duration:        12.4s
 ```
 
-### Creating & Managing Golden Tests
+### Creating Golden Tests
 
 Golden tests are in `golden.json`:
 
@@ -475,46 +678,22 @@ Golden tests are in `golden.json`:
 [
   {
     "q": "Where is OAuth token validated?",
-    "repo": "vivified",
-    "expect_paths": ["identity", "auth", "oauth", "token"]
+    "repo": "repo-a",
+    "expect_paths": ["auth", "oauth", "token", "validation"]
   },
   {
-    "q": "How do we handle inbound faxes?",
-    "repo": "faxbot",
-    "expect_paths": ["app/", "fax", "inbound", "receive"]
+    "q": "How do we handle webhook retries?",
+    "repo": "repo-b",
+    "expect_paths": ["webhook", "retry", "queue", "handler"]
   }
 ]
 ```
 
-**How to add a new test:**
-
-1. **Identify a question** - Pick a real question you'd ask about your codebase
-2. **Determine the repo** - "vivified" or "faxbot"
-3. **Find expected paths** - What file paths should appear in results?
-   - Use **substring matching** - any result containing these strings counts as a hit
-   - Multiple strings = OR logic (any one match counts)
-4. **Add to golden.json**:
-
-```json
-{
-  "q": "Where do we mask PHI in diagnostic events?",
-  "repo": "vivified",
-  "expect_paths": ["diagnostic", "phi", "mask", "event"]
-}
-```
-
-5. **Test immediately**:
-
-```bash
-python eval_loop.py
-# New question will be included in the run
-```
+**Substring matching**: Any result containing these strings counts as a hit.
 
 ### Advanced Eval Features
 
-#### Save a Baseline
-
-After indexing or making retrieval changes, save current performance as baseline:
+#### Save Baseline
 
 ```bash
 python eval_loop.py --baseline
@@ -523,76 +702,26 @@ python eval_loop.py --baseline
 
 #### Compare vs Baseline (Regression Detection)
 
-After making code changes:
-
 ```bash
 python eval_loop.py --compare
 
-# Output:
-# ============================================================
-# REGRESSION CHECK: Current vs Baseline
-# ============================================================
-#
-# Top-1 Accuracy:
-#   Baseline: 0.700
-#   Current:  0.650
-#   Delta:    -0.050 ✗
-#
-# Top-5 Accuracy:
-#   Baseline: 0.900
-#   Current:  0.900
-#   Delta:    +0.000 ✓
-#
-# ⚠ REGRESSIONS (1 questions):
-#   [3] vivified: Where is ProviderSetupWizard rendered?
-#
-# ✗ Regressions detected!
+# Shows which questions regressed after code changes
 ```
 
-This tells you exactly which questions got worse.
-
 #### Watch Mode (Continuous Eval)
-
-Monitor files and auto-run eval on changes:
 
 ```bash
 python eval_loop.py --watch
 
-# ⏱ Watch mode: monitoring for changes...
-#    Watching: golden.json, hybrid_search.py, langgraph_app.py
-#
-# [5 seconds later, after you edit hybrid_search.py]
-# 🔄 Change detected: hybrid_search.py
-#
-# ============================================================
-# Running eval...
-# ============================================================
-# {
-#   "top1_accuracy": 0.700,
-#   "topk_accuracy": 0.900,
-#   "total": 10,
-#   "duration_secs": 11.2
-# }
+# Auto-runs eval when files change
+# Useful during active development
 ```
-
-Useful when actively tuning retrieval parameters.
 
 #### JSON Output (for CI/CD)
 
 ```bash
 python eval_loop.py --json > results.json
-# Outputs full results as JSON for parsing in scripts
 ```
-
-### Eval Best Practices
-
-1. **Start small** - 5-10 high-quality golden tests
-2. **Cover both repos** - Mix vivified and faxbot questions
-3. **Vary difficulty** - Include easy (exact matches) and hard (semantic) questions
-4. **Set baseline early** - Before major changes
-5. **Run before/after** - Compare when tuning parameters
-6. **Use watch mode** - During active development
-7. **Add failures** - When users report bad results, add those as golden tests
 
 ---
 
@@ -601,29 +730,27 @@ python eval_loop.py --json > results.json
 ### Morning Startup
 
 ```bash
-# 1. Check infra is up
-docker compose -f /Users/davidmontgomery/faxbot_folder/rag-service/infra/docker-compose.yml ps
+# Use the helper script (starts infra + MCP)
+cd /path/to/rag-service
+bash scripts/up.sh
 
-# 2. If not running, start it
-docker compose -f /Users/davidmontgomery/faxbot_folder/rag-service/infra/docker-compose.yml up -d
+# Or manually:
+cd /path/to/rag-service/infra
+docker compose up -d
 
-# 3. Activate venv
-cd /Users/davidmontgomery/faxbot_folder/rag-service
+# Start CLI chat
 . .venv/bin/activate
-
-# 4. Start API (optional, only if using HTTP)
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012 &
+export REPO=repo-a THREAD_ID=work-$(date +%Y%m%d)
+python chat_cli.py
 ```
 
 ### After Code Changes (Re-index)
-
-When you make changes to Vivified or Faxbot codebases:
 
 ```bash
 . .venv/bin/activate
 
 # Re-index affected repo
-REPO=vivified python index_repo.py  # or REPO=faxbot
+REPO=repo-a python index_repo.py
 
 # Run eval to check for regressions
 python eval_loop.py --compare
@@ -635,104 +762,22 @@ python eval_loop.py --compare
 - After significant refactors
 - Daily/nightly via cron (optional)
 
-### Adding New Golden Tests
-
-```bash
-# 1. Add test to golden.json (use your editor)
-
-# 2. Test the new question manually first
-. .venv/bin/activate
-python -c "
-from hybrid_search import search_routed_multi
-results = search_routed_multi('your new question', repo_override='vivified', final_k=5)
-print([r['file_path'] for r in results])
-"
-
-# 3. If results look good, run full eval
-python eval_loop.py
-
-# 4. If you're happy, update baseline
-python eval_loop.py --baseline
-```
-
 ### Debugging a Bad Answer
 
-When RAG gives a wrong or low-confidence answer:
-
 ```bash
-# 1. Use rag.search to see what was retrieved
-. .venv/bin/activate
+# 1. Use rag_search to see what was retrieved
 python -c "
-from mcp_server import MCPServer
-import json
-req = {
-    'jsonrpc': '2.0',
-    'id': 1,
-    'method': 'tools/call',
-    'params': {
-        'name': 'rag_search',
-        'arguments': {
-            'repo': 'vivified',
-            'question': 'your question here',
-            'top_k': 10
-        }
-    }
-}
-server = MCPServer()
-resp = server.handle_request(req)
-result = json.loads(resp['result']['content'][0]['text'])
-for r in result['results']:
+from hybrid_search import search_routed_multi
+results = search_routed_multi('your question', repo_override='repo-a', final_k=10)
+for r in results[:5]:
     print(f\"{r['rerank_score']:.3f} {r['file_path']}:{r['start_line']}\")
 "
 
-# 2. Check if the expected file is in the index
-python -c "
-from qdrant_client import QdrantClient
-import os
-q = QdrantClient(url=os.getenv('QDRANT_URL', 'http://127.0.0.1:6333'))
-res = q.scroll(
-    collection_name='code_chunks_vivified',
-    scroll_filter={'must': [{'key': 'file_path', 'match': {'text': 'path/to/file.py'}}]},
-    limit=5
-)
-print(len(res[0]), 'chunks found')
-"
+# 2. Check if expected file is in index
+grep "path/to/file.py" out/repo-a/chunks.jsonl
 
-# 3. If file is missing, check if it was indexed
-grep "path/to/file.py" out/vivified/chunks.jsonl
-
-# 4. If not indexed, check if it's being skipped
-# Edit ast_chunker.py skip_dirs or LANG_MAP if needed
-```
-
-### Testing MCP Tools Manually
-
-```bash
-. .venv/bin/activate
-
-# List tools
-python -c "
-from mcp_server import MCPServer
-import json
-req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
-print(json.dumps(MCPServer().handle_request(req), indent=2))
-"
-
-# Call rag_search
-python -c "
-from mcp_server import MCPServer
-import json
-req = {
-    'jsonrpc': '2.0',
-    'id': 2,
-    'method': 'tools/call',
-    'params': {
-        'name': 'rag_search',
-        'arguments': {'repo': 'vivified', 'question': 'OAuth', 'top_k': 3}
-    }
-}
-print(json.dumps(MCPServer().handle_request(req), indent=2))
-"
+# 3. If missing, check if .ragignore is excluding it
+cat data/exclude_globs.txt
 ```
 
 ---
@@ -741,200 +786,140 @@ print(json.dumps(MCPServer().handle_request(req), indent=2))
 
 ### Infrastructure Issues
 
-**Problem:** Qdrant returns 404 or connection refused
-
+**Qdrant connection refused:**
 ```bash
-# Check if running
+# Check status
 docker ps | grep qdrant
-
-# Check logs
-docker logs qdrant
 
 # Restart
 docker restart qdrant
 
-# Check again
+# Verify
 curl -s http://127.0.0.1:6333/collections
 ```
 
-**Problem:** Redis connection fails
-
+**Redis connection fails:**
 ```bash
-# Check if running
-docker ps | grep rag-redis
-
-# Test connection
-docker exec rag-redis redis-cli ping
-# Should return: PONG
-
-# Check logs
-docker logs rag-redis
+# Test
+docker exec rag-redis redis-cli ping  # Should return PONG
 
 # Restart
 docker restart rag-redis
 ```
 
-**Problem:** Collections missing
-
+**Collections missing:**
 ```bash
 # List collections
-curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
+curl -s http://127.0.0.1:6333/collections | jq
 
-# If missing, re-index
-REPO=vivified python index_repo.py
-REPO=faxbot python index_repo.py
-```
-
-If the collection is corrupted or recreate fails via client, try the fallback helper:
-
-```bash
-. .venv/bin/activate
-python qdrant_recreate_fallback.py  # re-creates current COLLECTION_NAME safely
+# Re-index if missing
+REPO=repo-a python index_repo.py
 ```
 
 ### Indexing Issues
 
-**Problem:** "ModuleNotFoundError" during indexing
+**Files not being indexed:**
+1. Check `.ragignore` patterns:
+   ```bash
+   cat data/exclude_globs.txt
+   ```
 
-```bash
-. .venv/bin/activate
-pip install -r requirements-rag.txt
-```
+2. Verify file extension is supported:
+   ```bash
+   grep "LANG_MAP" ast_chunker.py
+   # Supported: .py, .js, .ts, .tsx, .rb, .go, .java, .cpp, .c, etc.
+   ```
 
-**Problem:** OpenAI rate limits or 429 errors
+3. Check if directory is being pruned:
+   ```bash
+   grep "PRUNE_DIRS" filtering.py
+   ```
 
-```bash
-# Indexing uses batched embeddings (64 per request)
-# If you hit rate limits, add delays:
-# Edit index_repo.py, add time.sleep(0.5) between batches
-
-# Or use smaller repos first
-REPO=vivified python index_repo.py
-# Wait a few minutes
-REPO=faxbot python index_repo.py
-```
-
-**Problem:** Qdrant 500 errors (payload too large)
-
-This is already fixed in the current version (slim payloads + local code hydration).
-
-If you still see this:
-```bash
-# Check payload sizes
-python -c "
-from qdrant_client import QdrantClient
-import os
-q = QdrantClient(url=os.getenv('QDRANT_URL', 'http://127.0.0.1:6333'))
-point = q.retrieve('code_chunks_vivified', ids=[1], with_payload=True)[0]
-print('Payload keys:', point.payload.keys())
-# Should NOT include 'code' (moved to local chunks.jsonl)
-"
-```
+**OpenAI rate limits (429 errors):**
+- Indexing uses batched embeddings (64 per request)
+- Wait between repos if hitting limits
+- Consider using local embeddings (see Model Selection)
 
 ### MCP Issues
 
-**Problem:** Codex doesn't see the tools
-
+**Codex doesn't see tools:**
 ```bash
 # Check registration
 codex mcp list
 
-# If missing, re-register
-codex mcp add faxbot-rag -- \
-  /Users/davidmontgomery/faxbot_folder/rag-service/.venv/bin/python \
-  /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py
+# Re-register
+codex mcp add rag-service -- /path/to/python /path/to/mcp_server.py
 
 # Test manually
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
   .venv/bin/python mcp_server.py
 ```
 
-**Problem:** Claude Code doesn't see the tools
-
-1. Check config file exists:
+**Claude Code doesn't see tools:**
+1. Check config file:
    ```bash
    cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
    ```
+2. Verify absolute paths (no `~`)
+3. Restart Claude Code completely
 
-2. Verify absolute paths (no ~, use full paths)
-
-3. Restart Claude Code completely (not just close window)
-
-4. Check Claude Code logs (if available in UI)
-
-**Problem:** "Graph not initialized" in MCP calls
-
-This means LangGraph failed to load. Check:
-
+**"Graph not initialized" error:**
 ```bash
 # Test Redis connection
 docker exec rag-redis redis-cli ping
 
 # Test graph initialization
-. .venv/bin/activate
-python -c "from langgraph_app import build_graph; g = build_graph(); print('✓ Graph OK')"
+python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')"
 ```
 
 ### Retrieval Quality Issues
 
-**Problem:** Low accuracy / wrong results
+**Low accuracy / wrong results:**
 
-1. **Check if indexed recently:**
+1. **Check index freshness:**
    ```bash
-   ls -lh out/vivified/chunks.jsonl out/faxbot/chunks.jsonl
+   ls -lh out/repo-a/chunks.jsonl out/repo-b/chunks.jsonl
    # If old, re-index
    ```
 
-2. **Run eval to quantify:**
+2. **Run eval:**
    ```bash
    python eval_loop.py
-   # Look at top-1 and top-5 accuracy
    ```
 
-3. **Inspect what's being retrieved:**
+3. **Inspect retrieved docs:**
    ```bash
    python -c "
    from hybrid_search import search_routed_multi
-   docs = search_routed_multi('your query', repo_override='vivified', final_k=10)
+   docs = search_routed_multi('your query', repo_override='repo-a', final_k=10)
    for d in docs[:5]:
        print(f\"{d['rerank_score']:.3f} {d['file_path']}\")
    "
    ```
 
-4. **Adjust parameters:**
-   - Edit `hybrid_search.py`:
-     - Increase `topk_dense` / `topk_sparse` for more candidates
-     - Adjust layer bonuses in `_vivified_layer_bonus` / `_faxbot_layer_bonus`
-     - Tune path bonuses
-   - Edit `langgraph_app.py`:
-     - Lower confidence thresholds (lines 53-54)
-     - Increase multi-query rewrites (`MQ_REWRITES` env var)
-
-5. **Re-run eval after changes:**
-   ```bash
-   python eval_loop.py --compare
-   ```
+4. **Adjust parameters** (see [Advanced Configuration](#advanced-configuration) section)
 
 ---
 
-## Model Selection & Alternatives
+## Model Selection
 
- The RAG service defaults to:
- - **Generation**: Local Qwen 3 (via Ollama) using `GEN_MODEL` and `OLLAMA_URL`. Fully supports OpenAI Responses/Chat if you set `OPENAI_API_KEY` and point `GEN_MODEL` to an OpenAI model.
- - **Embeddings**: OpenAI `text-embedding-3-large` when available; automatically falls back to local `BAAI/bge-small-en-v1.5` (384‑d) if quota/network issues occur.
+The RAG service defaults to:
+- **Generation**: Local Qwen 3 via Ollama (`GEN_MODEL=qwen3-coder:30b`)
+- **Embeddings**: OpenAI `text-embedding-3-large` (auto-fallback to local BGE if unavailable)
+- **Reranking**: Cohere rerank-3.5 (fallback to local cross-encoder)
 
 ### Quick Alternatives
 
-| Goal | Embedding | Generation | Cost Savings |
-|------|-----------|------------|--------------|
-| **Free (Cloud)** | Google Gemini | Gemini 1.5 Flash | 100% |
-| **Best Value** | Voyage AI 3.5-lite | Gemini 1.5 Flash | ~75% |
-| **Fully Local (Mac)** | nomic-embed-text (Ollama) | Qwen2.5-Coder 7B | 100% (no API) |
-| **Local High-End** | BGE-M3 | Qwen2.5-Coder 32B | 100% (no API) |
+| Goal | Embedding | Generation | Cost |
+|------|-----------|------------|------|
+| **Best Performance** | Voyage voyage-3-large | Qwen 3 (local) | $ |
+| **Lowest Cost** | Google Gemini (free) | Gemini 2.5 Flash | Free |
+| **Fully Local** | nomic-embed-text | Qwen2.5-Coder 7B | Free |
+| **Privacy First** | BGE-M3 (local) | DeepSeek-Coder | Free |
 
-### Hardware-Specific Recommendations
+### Self-Hosted Setup
 
-**Apple Silicon Macs (M1/M2/M3/M4):**
+**For Mac (M1/M2/M3/M4):**
 ```bash
 # Install Ollama
 brew install ollama
@@ -947,97 +932,53 @@ ollama pull qwen2.5-coder:7b
 ollama pull qwen2.5-coder:32b
 ```
 
-**NVIDIA GPU (16GB+ VRAM):**
-- Embeddings: NV-Embed-v2 (optimized for NVIDIA)
-- Generation: Qwen2.5-Coder 32B or DeepSeek-Coder V2
+**For NVIDIA GPU (16GB+ VRAM):**
+- Use Ollama or vLLM
+- Models: Qwen2.5-Coder 32B, DeepSeek-Coder V2
 
-**See [docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md) for:**
-- Complete model comparison (20+ models)
-- Performance benchmarks (MTEB scores, HumanEval)
-- Migration guides (OpenAI → Local, OpenAI → Gemini)
-- Cost analysis and ROI calculations
-- Hardware-specific optimizations
+### Detailed Guides
+
+See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
+- Current pricing (as of Oct 2025)
+- Hardware requirements
+- Performance benchmarks
+- Migration guides
+- Complete model comparison
+
+**Note**: Model rankings change frequently. Always check current benchmarks:
+- [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard) - Embedding models
+- [OpenLLM Leaderboard](https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard) - Generation models
 
 ---
 
 ## Advanced Configuration
 
-### Environment Variables
+### Environment Variables Reference
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | — | Needed for OpenAI embeddings or generation |
-| `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant server URL |
-| `REDIS_URL` | `redis://127.0.0.1:6379/0` | Redis connection string |
-| `REPO` | `vivified` | Active repo for indexing/retrieval |
-| `COLLECTION_NAME` | `code_chunks_${REPO}` | Qdrant collection override |
+| `OPENAI_API_KEY` | — | For OpenAI embeddings/generation |
+| `OLLAMA_URL` | `http://127.0.0.1:11434/api` | Ollama API endpoint |
+| `GEN_MODEL` | `qwen3-coder:30b` | Generation model |
+| `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant server |
+| `REDIS_URL` | `redis://127.0.0.1:6379/0` | Redis connection |
+| `REPO` | `repo-a` | Active repo name |
 | `MQ_REWRITES` | `4` | Multi-query expansion count |
-| `RERANK_BACKEND` | `cohere` | Rerank backend: `cohere` (default) or `local` |
-| `COHERE_API_KEY` | — | Required if using Cohere backend |
-| `COHERE_RERANK_MODEL` | `rerank-3.5` | Cohere rerank model id (`rerank-2.5` supported) |
-| `RERANKER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Local/HF reranker fallback |
-| `OLLAMA_URL` | — | Ollama API base (e.g., `http://127.0.0.1:11434/api`) |
-| `GEN_MODEL` | `qwen3-coder:30b` | Primary generation model (Qwen 3 via Ollama) |
-| `EMBEDDING_TYPE` | `openai` | `openai` | `local` | `voyage` | `mxbai` |
-| `VOYAGE_API_KEY` | — | Required if `EMBEDDING_TYPE=voyage` |
-| `VOYAGE_EMBED_DIM` | `512` | Voyage output dimension (indexing) |
-| `EMBEDDING_DIM` | `512` | Local embedding output dimension (mxbai) |
-| `VENDOR_MODE` | `prefer_first_party` | Origin bonus mode |
-| `FAXBOT_PATH_BOOSTS` | `app/,lib/,config/,...` | Faxbot-specific path boosts |
-| `EVAL_MULTI` | `1` | Use multi-query in eval (0/1) |
-| `EVAL_FINAL_K` | `5` | Top-K for eval metrics |
-| `GOLDEN_PATH` | `golden.json` | Path to golden test file |
-| `BASELINE_PATH` | `eval_baseline.json` | Path to eval baseline |
-| `NETLIFY_API_KEY` | — | Enables `netlify_deploy` MCP tool |
-
-### RAG Ignore / Exclusions
-
-- Centralized file gating avoids indexing noise and large/minified artifacts.
-- Built-in directory pruning and file extension checks live in `filtering.py` (PRUNE_DIRS, VALID_EXTS).
-- Additional project-specific excludes can be added via `data/exclude_globs.txt` (glob patterns).
-
-Common actions:
-- Add a path: edit `data/exclude_globs.txt` and append a glob (e.g., `**/dist/**`).
-- Re-index the affected repo: `REPO=vivified python index_repo.py` (or `REPO=faxbot`).
-- Verify: `curl -s http://127.0.0.1:6333/collections | jq` and run `python eval_loop.py`.
+| `RERANK_BACKEND` | `cohere` | `cohere` \| `hf` \| `local` |
+| `COHERE_API_KEY` | — | For Cohere reranking |
+| `EMBEDDING_TYPE` | `openai` | `openai` \| `voyage` \| `local` \| `gemini` |
+| `NETLIFY_API_KEY` | — | For netlify_deploy tool |
 
 ### Tuning Retrieval
 
-**To boost specific file types or layers:**
+Edit `hybrid_search.py` to adjust:
+- Layer bonuses (boost specific file types)
+- Path bonuses (boost specific directories)
+- Candidate counts (`topk_dense`, `topk_sparse`)
 
-Edit `hybrid_search.py`:
-
-```python
-# Adjust layer bonus tables (lines 21-37)
-table={'server':{'kernel':0.10,'plugin':0.04,'ui':0.00,...}}
-#              ↑ increase these to boost more
-
-# Adjust path bonuses (lines 61-73)
-for sfx, b in [
-    ('/identity/', 0.12),  # ← increase bonus
-    ('/auth/', 0.12),
-    ...
-]:
-```
-
-**To change confidence gates:**
-
-Edit `langgraph_app.py`:
-
-```python
-# Line 53: Lower thresholds to generate more often
-if top1 >= 0.62 or avg5 >= 0.55 or conf >= 0.55:
-#         ↑ lower these to be less strict
-```
-
-**To use more retrieval candidates:**
-
-Edit `hybrid_search.py` (search_routed_multi function, around line 120):
-
-```python
-docs = search_routed(q, repo_override=repo, topk_dense=75, topk_sparse=75, final_k=20)
-#                                             ↑ increase for more candidates
-```
+Edit `langgraph_app.py` to adjust:
+- Confidence thresholds
+- Multi-query rewrite count
 
 ### Adding New Languages
 
@@ -1046,119 +987,121 @@ Edit `ast_chunker.py`:
 ```python
 LANG_MAP = {
     ".py": "python",
-    ".rb": "ruby",    # ← add Ruby
+    ".rb": "ruby",
     ".go": "go",
+    ".rs": "rust",  # ← Add Rust
     # ... add more
 }
 
 FUNC_NODES = {
-    "ruby": {"class", "module", "def"},  # ← define AST node types
+    "rust": {"fn_item", "impl_item"},  # ← Define AST nodes
     # ...
 }
 ```
 
-Then re-index:
-```bash
-REPO=faxbot python index_repo.py
-```
-
-### Building Code Cards (Optional)
-
-Code cards are 1-3 line summaries that can improve retrieval for UI/integration questions:
-
-```bash
-. .venv/bin/activate
-
-# Build cards for Vivified
-REPO=vivified python build_cards.py
-
-# Build cards for Faxbot (limit to 300 chunks initially)
-REPO=faxbot CARDS_MAX=300 python build_cards.py
-
-# Cards are saved to:
-# out/vivified/cards.jsonl
-# out/vivified/bm25_cards/
-```
-
-Cards are automatically used by `hybrid_search.py` if present.
+Then re-index.
 
 ---
 
 ## File Reference
 
+### Core Files
+
 | File | Purpose |
 |------|---------|
+| `mcp_server.py` | **MCP stdio server for local agents** |
+| `mcp_server_http.py` | **MCP HTTP server for remote agents** |
+| `chat_cli.py` | **Interactive CLI chat with memory** |
 | `serve_rag.py` | FastAPI HTTP server |
-| `langgraph_app.py` | LangGraph pipeline (iterative retrieval) |
+| `langgraph_app.py` | LangGraph retrieval pipeline |
 | `hybrid_search.py` | Hybrid search (BM25 + dense + rerank) |
-| `index_repo.py` | Indexing script (chunks → BM25 → Qdrant) |
-| `mcp_server.py` | MCP tool server for agents |
-| `mcp_server_http.py` | Optional HTTP MCP server (FastMCP) |
-| `eval_rag.py` | Basic eval runner |
-| `eval_loop.py` | Advanced eval with baselines/regressions |
-| `build_cards.py` | Code card summaries |
-| `ast_chunker.py` | AST-aware code chunking |
-| `rerank.py` | Cross-encoder reranking |
-| `embed_cache.py` | Embedding cache (avoids re-embedding) |
+| `index_repo.py` | Indexing script |
+| `eval_loop.py` | Eval harness with regression tracking |
+
+### Configuration
+
+| File | Purpose |
+|------|---------|
+| `.env` | Environment variables (API keys, URLs) |
 | `golden.json` | Golden test questions |
-| `AGENTS.md` | Agent behavior guidelines |
-| `MCP_README.md` | MCP-specific docs |
-| `QUICKSTART_MCP.md` | Quick MCP reference |
+| `data/exclude_globs.txt` | **.ragignore patterns** |
+| `filtering.py` | Built-in directory/extension filters |
 
----
+### Scripts
 
-## Support & References
-
-- **MCP Specification:** https://modelcontextprotocol.io/
-- **Codex CLI:** https://github.com/openai/codex
-- **Codex MCP Docs:** https://developers.openai.com/codex/mcp/
-- **OpenAI Agents SDK:** https://openai.github.io/openai-agents-python/
-- **AgentKit:** https://openai.com/index/introducing-agentkit/
-- **LangGraph:** https://python.langchain.com/docs/langgraph
-- **Qdrant:** https://qdrant.tech/documentation/
+| File | Purpose |
+|------|---------|
+| `scripts/up.sh` | **Start infra + MCP (recommended)** |
+| `scripts/down.sh` | Stop all services |
+| `scripts/status.sh` | Check service status |
+| `scripts/analyze_keywords.py` | **Generate keywords for your repos** |
+| `scripts/analyze_keywords_v2.py` | Enhanced keyword analysis |
 
 ---
 
 ## Quick Command Reference
 
 ```bash
-# Infrastructure
-docker compose -f ../infra/docker-compose.yml up -d
-docker compose -f ../infra/docker-compose.yml ps
-docker restart qdrant rag-redis
+# === Infrastructure ===
+bash scripts/up.sh                      # Start everything (recommended)
+bash scripts/status.sh                  # Check status
+bash scripts/down.sh                    # Stop everything
 
-# Indexing
+# === Indexing ===
 . .venv/bin/activate
-REPO=vivified python index_repo.py
-REPO=faxbot python index_repo.py
+REPO=repo-a python index_repo.py
+REPO=repo-b python index_repo.py
 
-# API Server
+# === CLI Chat (Recommended) ===
+export REPO=repo-a THREAD_ID=work-session
+python chat_cli.py
+
+# === API Server (Optional) ===
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 
-# Eval
-python eval_loop.py
-python eval_loop.py --baseline
-python eval_loop.py --compare
-python eval_loop.py --watch
+# === Eval ===
+python eval_loop.py                     # Run tests
+python eval_loop.py --baseline          # Save baseline
+python eval_loop.py --compare           # Check regressions
+python eval_loop.py --watch             # Watch mode
 
-# MCP
-codex mcp list
-codex mcp add faxbot-rag -- .venv/bin/python mcp_server.py
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | .venv/bin/python mcp_server.py
+# === MCP ===
+codex mcp list                          # List servers
+codex mcp add rag-service -- .venv/bin/python mcp_server.py
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
+  .venv/bin/python mcp_server.py        # Test manually
 
-# Netlify deploy via MCP (from Codex chat)
-# User: Use netlify_deploy to rebuild both sites
-
-# HTTP GET tool (allowlisted hosts)
-# User: Use web_get to fetch https://github.com/openai/codex
-
-# Test retrieval
-python -c "from hybrid_search import search_routed_multi; print(search_routed_multi('oauth', repo_override='vivified', final_k=5))"
+# === Keyword Generation ===
+cd scripts
+python analyze_keywords.py /path/to/repo-a
+python analyze_keywords_v2.py /path/to/repo-a
 ```
 
 ---
 
-**Version:** 1.1.0
+## Claude Code Alone vs Claude Code + RAG
+
+**RAG saves 91% tokens = 11x more queries before hitting your Claude rate limits.**
+
+**Tested:** Oct 8, 2025 | **Claude:** Sonnet 4.5 on $200/mo Pro
+
+| Approach | Tokens/Query | Queries/Week (Before Rate Limit) | Latency | Quality |
+|----------|--------------|----------------------------------|---------|---------|
+| **Claude Code Alone** | 12,700 | 100 (Sonnet) / 23 (Opus) | 5-10s | Excellent |
+| **Claude Code + RAG** | 1,141 | **1,110 (Sonnet) / 263 (Opus)** | 2.9s | Excellent |
+| **DIFFERENCE** | **-91%** | **+1,010% / +1,043%** | **2-3x faster** | Same |
+
+**Why this matters:**
+- ✅ **11x more queries** before hitting weekly rate limits
+- ✅ **2-3x faster** (no file reading overhead)
+- ✅ **Same quality** (excellent answers from both)
+- ✅ **Never get rate limited** on heavy coding days (with Opus especially)
+
+**The problem:** Claude Pro has weekly rate limits (~1.27M tokens/week for Sonnet, ~300K for Opus). Without RAG, you can hit those limits in a single day with Opus.
+
+**The solution:** RAG reduces tokens by 91%, so you can code all week without hitting limits.
+
+**📊 [See complete analysis](docs/PERFORMANCE_AND_COST.md)** | **[Contributing benchmarks](docs/CONTRIBUTING.md)**
 
 ---
 
@@ -1166,249 +1109,25 @@ python -c "from hybrid_search import search_routed_multi; print(search_routed_mu
 
 📂 **See [docs/README.md](docs/README.md) for complete documentation index**
 
-Comprehensive guides are available in the [`docs/`](docs/) folder:
-
-### 📘 Core Documentation
-- **[MCP Integration Guide](docs/MCP_README.md)** - Complete MCP server documentation
-  - MCP protocol details
-  - Tool specifications (`rag.answer`, `rag.search`)
-  - Troubleshooting MCP connections
-  - Agent behavior rules
-
-- **[Quick Start MCP](docs/QUICKSTART_MCP.md)** - Fast reference card
-  - Essential commands
-  - Quick examples for Codex and Claude Code
-  - Common workflows
-
-### 🤖 Model Selection
-- **[Model Recommendations](docs/MODEL_RECOMMENDATIONS.md)** - Comprehensive model guide
-  - 20+ embedding models (cloud + local)
-  - 15+ inference models (cloud + local)
-  - Hardware-specific recommendations (Mac M1-M4, NVIDIA, CPU)
-  - Migration guides (OpenAI → Local, OpenAI → Gemini, etc.)
-  - Cost/performance analysis with benchmarks
-  - ROI calculations and optimization strategies
-
-### 📋 Implementation Details
-- **[Implementation Summary](docs/IMPLEMENTATION_COMPLETE.md)** - What was delivered
-  - Complete feature list
-  - Architecture diagrams
-  - Smoke test results
-  - Comparison with previous failed implementations
-
-- **[Summary](docs/SUMMARY.md)** - Quick overview
-  - Key features
-  - Files created
-  - Quick command reference
+- **[Performance & Cost Analysis](docs/PERFORMANCE_AND_COST.md)** - Real measurements & ROI calculator
+- **[MCP Integration Guide](docs/MCP_README.md)** - Complete MCP documentation
+- **[MCP Quick Start](docs/QUICKSTART_MCP.md)** - Fast reference
+- **[Remote MCP Setup](docs/REMOTE_MCP.md)** - HTTP/HTTPS/tunneling
+- **[CLI Chat Guide](docs/CLI_CHAT.md)** - Interactive terminal chat
+- **[Model Recommendations](docs/MODEL_RECOMMENDATIONS.md)** - Current pricing & benchmarks
+- **[Model Comparison](docs/GEN_MODEL_COMPARISON.md)** - Qwen vs OpenAI
 
 ---
 
-## File Reference
-
-### Main Application Files
-| File | Purpose |
-|------|---------|
-| `serve_rag.py` | FastAPI HTTP server (`/health`, `/answer`) |
-| `langgraph_app.py` | LangGraph pipeline (iterative retrieval) |
-| `hybrid_search.py` | Hybrid search (BM25 + dense + rerank) |
-| `index_repo.py` | Indexing script (chunks → BM25 → Qdrant) |
-| `mcp_server.py` | **MCP tool server for AI agents** |
-| `eval_rag.py` | Basic eval runner |
-| `eval_loop.py` | **Advanced eval with baselines/regressions** |
-| `build_cards.py` | Code card summaries |
-| `ast_chunker.py` | AST-aware code chunking |
-| `rerank.py` | Cross-encoder reranking |
-| `embed_cache.py` | Embedding cache (avoids re-embedding) |
-
-### Configuration & Data
-| File | Purpose |
-|------|---------|
-| `golden.json` | **Golden test questions for eval** |
-| `.env` | Environment variables (API keys, URLs) |
-| `requirements.txt` | Python dependencies |
-| `AGENTS.md` | **Agent behavior guidelines** |
-
-### Documentation
-| File | Purpose |
-|------|---------|
-| `README.md` | **This file - complete setup guide** |
-| `docs/MCP_README.md` | MCP technical documentation |
-| `docs/QUICKSTART_MCP.md` | Quick MCP reference |
-| `docs/MODEL_RECOMMENDATIONS.md` | Model selection guide |
-| `docs/IMPLEMENTATION_COMPLETE.md` | Implementation summary |
-| `docs/SUMMARY.md` | Quick overview |
+**Version:** 2.0.0  
+**Last Updated:** October 8, 2025
 
 ---
 
-## Quick Command Reference
+## Support & References
 
-```bash
-# === Infrastructure ===
-docker compose -f ../infra/docker-compose.yml up -d
-docker compose -f ../infra/docker-compose.yml ps
-docker restart qdrant rag-redis
-
-# === Indexing ===
-. .venv/bin/activate
-REPO=vivified python index_repo.py
-REPO=faxbot python index_repo.py
-
-# === API Server ===
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012
-
-# === Eval ===
-python eval_loop.py
-python eval_loop.py --baseline
-python eval_loop.py --compare
-python eval_loop.py --watch
-
-# === MCP ===
-codex mcp list
-codex mcp add faxbot-rag -- .venv/bin/python mcp_server.py
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | .venv/bin/python mcp_server.py
-
-# === Test Retrieval ===
-python -c "from hybrid_search import search_routed_multi; print(search_routed_multi('oauth', repo_override='vivified', final_k=5))"
-```
-
-
-
----
-
-## Additional Documentation
-
-Comprehensive guides are available in the [`docs/`](docs/) folder:
-
-### 📘 Core Documentation
-- **[MCP Integration Guide](docs/MCP_README.md)** - Complete MCP server documentation
-  - MCP protocol details
-  - Tool specifications (`rag.answer`, `rag.search`)
-  - Troubleshooting MCP connections
-  - Agent behavior rules
-
-- **[Quick Start MCP](docs/QUICKSTART_MCP.md)** - Fast reference card
-  - Essential commands
-  - Quick examples for Codex and Claude Code
-  - Common workflows
-
-### 🤖 Model Selection
-- **[Model Recommendations](docs/MODEL_RECOMMENDATIONS.md)** - Comprehensive model guide
-  - 20+ embedding models (cloud + local)
-  - 15+ inference models (cloud + local)
-  - Hardware-specific recommendations (Mac M1-M4, NVIDIA, CPU)
-  - Migration guides (OpenAI → Local, OpenAI → Gemini, etc.)
-  - Cost/performance analysis with benchmarks
-  - ROI calculations and optimization strategies
-
-### 📋 Implementation Details
-- **[Implementation Summary](docs/IMPLEMENTATION_COMPLETE.md)** - What was delivered
-  - Complete feature list
-  - Architecture diagrams
-  - Smoke test results
-  - Comparison with previous failed implementations
-
-- **[Summary](docs/SUMMARY.md)** - Quick overview
-  - Key features
-  - Files created
-  - Quick command reference
-
----
-
-## File Reference
-
-### Main Application Files
-| File | Purpose |
-|------|---------|
-| `serve_rag.py` | FastAPI HTTP server (`/health`, `/answer`) |
-| `langgraph_app.py` | LangGraph pipeline (iterative retrieval) |
-| `hybrid_search.py` | Hybrid search (BM25 + dense + rerank) |
-| `index_repo.py` | Indexing script (chunks → BM25 → Qdrant) |
-| `mcp_server.py` | **MCP tool server for AI agents** |
-| `eval_rag.py` | Basic eval runner |
-| `eval_loop.py` | **Advanced eval with baselines/regressions** |
-| `build_cards.py` | Code card summaries |
-| `ast_chunker.py` | AST-aware code chunking |
-| `rerank.py` | Cross-encoder reranking |
-| `embed_cache.py` | Embedding cache (avoids re-embedding) |
-
-### Configuration & Data
-| File | Purpose |
-|------|---------|
-| `golden.json` | **Golden test questions for eval** |
-| `.env` | Environment variables (API keys, URLs) |
-| `requirements.txt` | Python dependencies |
-| `AGENTS.md` | **Agent behavior guidelines** |
-
-### Documentation
-| File | Purpose |
-|------|---------|
-| `README.md` | **This file - complete setup guide** |
-| `docs/MCP_README.md` | MCP technical documentation |
-| `docs/QUICKSTART_MCP.md` | Quick MCP reference |
-| `docs/MODEL_RECOMMENDATIONS.md` | Model selection guide |
-| `docs/IMPLEMENTATION_COMPLETE.md` | Implementation summary |
-| `docs/SUMMARY.md` | Quick overview |
-
----
-
-## Quick Command Reference
-
-```bash
-# === Infrastructure ===
-docker compose -f ../infra/docker-compose.yml up -d
-docker compose -f ../infra/docker-compose.yml ps
-docker restart qdrant rag-redis
-
-# === Indexing ===
-. .venv/bin/activate
-REPO=vivified python index_repo.py
-REPO=faxbot python index_repo.py
-
-# === API Server ===
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012
-
-# === Eval ===
-python eval_loop.py
-python eval_loop.py --baseline
-python eval_loop.py --compare
-python eval_loop.py --watch
-
-# === MCP ===
-codex mcp list
-codex mcp add faxbot-rag -- .venv/bin/python mcp_server.py
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | .venv/bin/python mcp_server.py
-
-# === Test Retrieval ===
-python -c "from hybrid_search import search_routed_multi; print(search_routed_multi('oauth', repo_override='vivified', final_k=5))"
-```
-
----
-
-## CLI Chat Interface
-
-For interactive terminal chat with conversation memory:
-
-```bash
-. .venv/bin/activate
-
-# Install rich library for terminal UI
-pip install rich
-
-# Start chat (vivified repo)
-export REPO=vivified
-export THREAD_ID=my-session
-python chat_cli.py
-```
-
-**Commands:**
-- Type your question directly
-- `/repo faxbot` - Switch repository
-- `/clear` - Clear conversation history
-- `/help` - Show commands
-- `/exit` - Exit chat
-
-**Features:**
-- Redis-backed conversation memory
-- Rich terminal UI with markdown rendering
-- Citation display with file paths and scores
-- Per-repo conversation threads
+- **MCP Specification:** https://modelcontextprotocol.io/
+- **Codex CLI:** https://github.com/openai/codex
+- **LangGraph:** https://python.langchain.com/docs/langgraph
+- **Qdrant:** https://qdrant.tech/documentation/
+- **MTEB Leaderboard:** https://huggingface.co/spaces/mteb/leaderboard
