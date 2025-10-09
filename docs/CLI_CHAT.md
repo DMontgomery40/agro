@@ -20,6 +20,13 @@ export THREAD_ID=my-session
 python chat_cli.py
 ```
 
+### Streaming Mode (Optional)
+
+```bash
+# Requires API server running (e.g., uvicorn serve_rag:app --host 127.0.0.1 --port 8012)
+python chat_cli.py --stream [--api-url http://127.0.0.1:8012]
+```
+
 ### Commands
 
 | Command | Description |
@@ -29,6 +36,10 @@ python chat_cli.py
 | `/save` | Save checkpoint (automatic with Redis) |
 | `/help` | Show available commands |
 | `/exit`, `/quit` | Exit chat |
+
+Notes
+- Streaming prints tokens as they arrive from `/answer_stream`.
+- If OAuth is enabled on the API, set `OAUTH_TOKEN` in your environment; the CLI will include it as a bearer token.
 
 ### Examples
 
