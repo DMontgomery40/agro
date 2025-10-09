@@ -56,6 +56,7 @@ class ChatCLI:
         self.api_url = (api_url or os.getenv('RAG_API_URL') or 'http://127.0.0.1:8012').rstrip('/')
         self.graph = None
         self._init_graph()
+        self._repos_known = list_repos()
 
     def _init_graph(self):
         """Initialize LangGraph with Redis checkpoints."""
@@ -212,6 +213,14 @@ Switch repo:
             "Type your question or use `/help` for commands."
         )
         console.print(Panel(Text.from_markup(welcome), border_style="cyan"))
+        if not self._repos_known:
+            console.print(Panel(
+                Text.from_markup(
+                    "[yellow]No repositories configured.[/yellow]\n"
+                    "Run [bold]/setup[/bold] to add your current project and register Codex/Claude."
+                ),
+                title="Setup needed", border_style="yellow"
+            ))
 
     def run(self):
         """Main chat loop."""
