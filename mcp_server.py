@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
+from config_loader import list_repos, get_default_repo
 import urllib.request, urllib.error, urllib.parse
 import json as _json
 
@@ -62,14 +63,15 @@ class MCPServer:
             }
 
         try:
-            cfg = {"configurable": {"thread_id": f"mcp-{repo or 'default'}"}}
+            repo_name = repo if repo in list_repos() else get_default_repo()
+            cfg = {"configurable": {"thread_id": f"mcp-{repo_name or 'default'}"}}
             state = {
                 "question": question,
                 "documents": [],
                 "generation": "",
                 "iteration": 0,
                 "confidence": 0.0,
-                "repo": repo
+                "repo": repo_name
             }
 
             result = self.graph.invoke(state, cfg)
@@ -84,7 +86,7 @@ class MCPServer:
             return {
                 "answer": result.get("generation", ""),
                 "citations": citations,
-                "repo": result.get("repo", repo or "unknown"),
+                "repo": result.get("repo", repo_name or "unknown"),
                 "confidence": float(result.get("confidence", 0.0))
             }
         except Exception as e:
@@ -102,9 +104,10 @@ class MCPServer:
         Returns: {results: List[Dict], repo: str, count: int}
         """
         try:
+            repo_name = repo if repo in list_repos() else get_default_repo()
             docs = search_routed_multi(
                 question,
-                repo_override=repo,
+                repo_override=repo_name,
                 m=4,
                 final_k=top_k
             )
@@ -117,14 +120,14 @@ class MCPServer:
                     "end_line": d.get("end_line", 0),
                     "language": d.get("language", ""),
                     "rerank_score": float(d.get("rerank_score", 0.0)),
-                    "repo": d.get("repo", repo or "unknown")
+                    "repo": d.get("repo", repo_name or "unknown")
                 }
                 for d in docs
             ]
 
             return {
                 "results": results,
-                "repo": repo or (results[0]["repo"] if results else "unknown"),
+                "repo": repo_name or (results[0]["repo"] if results else "unknown"),
                 "count": len(results)
             }
         except Exception as e:
@@ -170,7 +173,10 @@ class MCPServer:
     def handle_netlify_deploy(self, domain: str) -> Dict[str, Any]:
         targets: list[str]
         if domain == "both":
-            targets = ["faxbot.net", "vivified.dev"]
+            env_targets = os.getenv("NETLIFY_DOMAINS", "").strip()
+            targets = [d.strip() for d in env_targets.split(",") if d.strip()] or []
+            if not targets:
+                return {"error": "NETLIFY_DOMAINS not set for 'both' target"}
         else:
             targets = [domain]
         results = []
@@ -212,7 +218,7 @@ class MCPServer:
             return {"error": "url must start with http(s)"}
         if not self._is_allowed_url(url):
             return {"error": "host not allowlisted"}
-        req = urllib.request.Request(url, method="GET", headers={"User-Agent": "faxbot-rag-mcp/1.0"})
+        req = urllib.request.Request(url, method="GET", headers={"User-Agent": "rag-service-mcp/1.0"})
         try:
             with urllib.request.urlopen(req, timeout=20) as resp:
                 raw = resp.read(max_bytes + 1)
@@ -242,7 +248,7 @@ class MCPServer:
           "params": {
             "name": "rag.answer" | "rag.search",
             "arguments": {
-              "repo": "vivified" | "faxbot",
+              "repo": "<repo name>",
               "question": "...",
               "top_k": 10  # optional, search only
             }
@@ -254,6 +260,8 @@ class MCPServer:
 
         if method == "tools/list":
             # Return available tools
+            # Build dynamic enum from configured repos
+            repo_enum = list_repos()
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
@@ -261,14 +269,14 @@ class MCPServer:
                     "tools": [
                         {
                             "name": "rag_answer",
-                            "description": "Get RAG answer with citations for a question in a specific repo (vivified|faxbot)",
+                            "description": "Get RAG answer with citations for a question in a configured repo",
                             "inputSchema": {
                                 "type": "object",
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'vivified' or 'faxbot'",
-                                        "enum": ["vivified", "faxbot"]
+                                        "description": "Repository name (from repos.json)",
+                                        "enum": repo_enum
                                     },
                                     "question": {
                                         "type": "string",
@@ -286,8 +294,8 @@ class MCPServer:
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'vivified' or 'faxbot'",
-                                        "enum": ["vivified", "faxbot"]
+                                        "description": "Repository name (from repos.json)",
+                                        "enum": repo_enum
                                     },
                                     "question": {
                                         "type": "string",
@@ -304,14 +312,13 @@ class MCPServer:
                         },
                         {
                             "name": "netlify_deploy",
-                            "description": "Trigger a Netlify build for faxbot.net, vivified.dev, or both (uses NETLIFY_API_KEY)",
+                            "description": "Trigger a Netlify build for a domain or 'both' (uses NETLIFY_API_KEY; set NETLIFY_DOMAINS for 'both')",
                             "inputSchema": {
                                 "type": "object",
                                 "properties": {
                                     "domain": {
                                         "type": "string",
-                                        "description": "Target domain",
-                                        "enum": ["faxbot.net", "vivified.dev", "both"],
+                                        "description": "Target domain (or 'both' to deploy multiple from NETLIFY_DOMAINS)",
                                         "default": "both"
                                     }
                                 }
@@ -401,7 +408,7 @@ class MCPServer:
                         "tools": {}
                     },
                     "serverInfo": {
-                        "name": "faxbot-rag-mcp",
+                        "name": "rag-service-mcp",
                         "version": "1.0.0"
                     }
                 }

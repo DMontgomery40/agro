@@ -41,11 +41,14 @@ print(f'✓ Found {len(tools)} tools: {names}')
 "
 
 echo ""
-echo "3. Test rag.search (vivified)..."
+echo "3. Test rag.search (first configured repo)..."
 python -c "
 import json, sys
 from mcp_server import MCPServer
+ from config_loader import list_repos
 
+ repos = list_repos()
+ repo = repos[0] if repos else 'repo-a'
 req = {
     'jsonrpc': '2.0',
     'id': 3,
@@ -53,14 +56,14 @@ req = {
     'params': {
         'name': 'rag_search',
         'arguments': {
-            'repo': 'vivified',
+            'repo': repo,
             'question': 'Where is OAuth token validated?',
             'top_k': 5
         }
     }
 }
 
-print('Calling rag_search for vivified...', file=sys.stderr)
+print(f'Calling rag_search for {repo}...', file=sys.stderr)
 server = MCPServer()
 resp = server.handle_request(req)
 
@@ -74,11 +77,14 @@ if result['count'] > 0:
 "
 
 echo ""
-echo "4. Test rag.search (faxbot)..."
+echo "4. Test rag.search (second configured repo, if any)..."
 python -c "
 import json, sys
 from mcp_server import MCPServer
+ from config_loader import list_repos
 
+ repos = list_repos()
+ repo = (repos[1] if len(repos) > 1 else (repos[0] if repos else 'repo-b'))
 req = {
     'jsonrpc': '2.0',
     'id': 4,
@@ -86,14 +92,14 @@ req = {
     'params': {
         'name': 'rag_search',
         'arguments': {
-            'repo': 'faxbot',
+            'repo': repo,
             'question': 'How do we handle inbound faxes?',
             'top_k': 5
         }
     }
 }
 
-print('Calling rag_search for faxbot...', file=sys.stderr)
+print(f'Calling rag_search for {repo}...', file=sys.stderr)
 server = MCPServer()
 resp = server.handle_request(req)
 

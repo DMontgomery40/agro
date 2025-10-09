@@ -22,6 +22,7 @@ load_dotenv()
 # Import eval logic
 from eval_rag import main as run_eval, hit, GOLDEN_PATH, USE_MULTI, FINAL_K
 from hybrid_search import search_routed, search_routed_multi
+from config_loader import get_default_repo
 
 
 BASELINE_PATH = os.getenv('BASELINE_PATH', 'eval_baseline.json')
@@ -41,7 +42,7 @@ def run_eval_with_results() -> Dict[str, Any]:
     t0 = time.time()
     for i, row in enumerate(gold, 1):
         q = row['q']
-        repo = row.get('repo') or os.getenv('REPO', 'vivified')
+        repo = row.get('repo') or os.getenv('REPO', get_default_repo())
         expect = row.get('expect_paths') or []
 
         if USE_MULTI:

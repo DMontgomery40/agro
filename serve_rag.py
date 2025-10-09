@@ -3,8 +3,9 @@ from pydantic import BaseModel
 from typing import Optional
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
+from config_loader import list_repos, get_default_repo
 
-app = FastAPI(title="Faxbot/Vivified RAG")
+app = FastAPI(title="RAG Service")
 
 _graph = None
 def get_graph():
@@ -29,7 +30,7 @@ def health():
 @app.get("/answer", response_model=Answer)
 def answer(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: vivified|faxbot")
+    repo: Optional[str] = Query(None, description="Repository override: configured repo name")
 ):
     """Answer a question using strict per-repo routing.
 
@@ -37,14 +38,19 @@ def answer(
     Otherwise, a lightweight router selects the repo from the query content.
     """
     g = get_graph()
-    state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0, "repo": (repo.strip() if repo else None)}
+    # Validate repo if provided
+    repo_clean = (repo.strip() if repo else None)
+    if repo_clean and repo_clean not in list_repos():
+        # If unknown, fall back to default to avoid hard failures
+        repo_clean = get_default_repo()
+    state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0, "repo": repo_clean}
     res = g.invoke(state, CFG)
     return {"answer": res["generation"]}
 
 @app.get("/search")
 def search(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: vivified|faxbot"),
+    repo: Optional[str] = Query(None, description="Repository override: configured repo name"),
     top_k: int = Query(10, description="Number of results to return")
 ):
     """Search for relevant code locations without generation.

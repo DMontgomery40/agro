@@ -3,7 +3,8 @@
 
 set -e
 
-RAG_ROOT="/Users/davidmontgomery/faxbot_folder/rag-service"
+# Auto-detect repo root (script dir parent)
+RAG_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VENV_PYTHON="${RAG_ROOT}/.venv/bin/python"
 MCP_SERVER="${RAG_ROOT}/mcp_server.py"
 
@@ -31,24 +32,26 @@ if command -v codex &> /dev/null; then
     echo "   Codex found: $(which codex)"
 
     # Check if already registered
-    if codex mcp list 2>/dev/null | grep -q "faxbot-rag"; then
-        echo "   ⚠️  faxbot-rag already registered"
+    # Use a generic, stable server name
+    SERVER_NAME="rag-service"
+    if codex mcp list 2>/dev/null | grep -q "$SERVER_NAME"; then
+        echo "   ⚠️  $SERVER_NAME already registered"
         read -p "   Remove and re-register? (y/n) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            codex mcp remove faxbot-rag || true
-            codex mcp add faxbot-rag -- "$VENV_PYTHON" "$MCP_SERVER"
+            codex mcp remove "$SERVER_NAME" || true
+            codex mcp add "$SERVER_NAME" -- "$VENV_PYTHON" "$MCP_SERVER"
             echo "   ✅ Re-registered with Codex"
         fi
     else
-        codex mcp add faxbot-rag -- "$VENV_PYTHON" "$MCP_SERVER"
+        codex mcp add "$SERVER_NAME" -- "$VENV_PYTHON" "$MCP_SERVER"
         echo "   ✅ Registered with Codex"
     fi
 
     echo ""
     echo "   To use in Codex:"
     echo "   $ codex"
-    echo "   > Use rag_search to find OAuth code in vivified"
+    echo "   > Use rag_search to find OAuth code in your repo"
 else
     echo "   ⚠️  Codex CLI not found. Install with:"
     echo "      brew install codex"
@@ -83,7 +86,7 @@ else
 
 {
   "mcpServers": {
-    "faxbot-rag": {
+    "rag-service": {
       "command": "$VENV_PYTHON",
       "args": ["$MCP_SERVER"],
       "env": {
@@ -103,7 +106,7 @@ EOF
             cat > "$CLAUDE_CONFIG" <<EOF
 {
   "mcpServers": {
-    "faxbot-rag": {
+    "rag-service": {
       "command": "$VENV_PYTHON",
       "args": ["$MCP_SERVER"],
       "env": {
@@ -120,7 +123,7 @@ EOF
     else
         echo "   Manual steps:"
         echo "   1. Open: $CLAUDE_CONFIG"
-        echo "   2. Add the 'faxbot-rag' entry shown above"
+        echo "   2. Add the 'rag-service' entry shown above"
         echo "   3. Replace 'your-api-key-here' with your OpenAI API key"
         echo "   4. Restart Claude Code"
     fi
@@ -134,7 +137,7 @@ echo ""
 echo "✅ Setup complete!"
 echo ""
 echo "Next steps:"
-echo "  • Codex: Run 'codex' and try: Use rag_search to find OAuth in vivified"
+echo "  • Codex: Run 'codex' and try: Use rag_search to find OAuth in your repo"
 echo "  • Claude Code: Restart app, then use rag_answer or rag_search tools"
 echo ""
 echo "Docs:"

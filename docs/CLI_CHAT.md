@@ -5,7 +5,7 @@ Interactive terminal chat for the RAG service with conversation memory.
 ## Installation
 
 ```bash
-cd /Users/path/to/repo-b_folder/rag-service
+cd /path/to/rag-service
 . .venv/bin/activate
 pip install rich
 ```
@@ -15,7 +15,7 @@ pip install rich
 ### Basic Usage
 
 ```bash
-export REPO=repo-a
+export REPO=<your-repo-name from repos.json>
 export THREAD_ID=my-session
 python chat_cli.py
 ```
@@ -24,7 +24,7 @@ python chat_cli.py
 
 | Command | Description |
 |---------|-------------|
-| `/repo <name>` | Switch repository (repo-a or repo-b) |
+| `/repo <name>` | Switch repository (must exist in repos.json) |
 | `/clear` | Clear conversation history (starts new thread) |
 | `/save` | Save checkpoint (automatic with Redis) |
 | `/help` | Show available commands |
@@ -34,14 +34,14 @@ python chat_cli.py
 
 **Ask a question:**
 ```
-repo-a > Where is OAuth token validated?
+<repo> > Where is OAuth token validated?
 ```
 
 **Switch repos mid-conversation:**
 ```
-repo-a > /repo repo-b
-✓ Switched to repo: repo-b
-repo-b > How do we handle inbound faxes?
+<repo> > /repo another-repo
+✓ Switched to repo: another-repo
+another-repo > How do we handle inbound jobs?
 ```
 
 **Get help:**
@@ -70,7 +70,7 @@ Switch between repo-a and repo-b without losing conversation context.
 
 ```bash
 # Required
-export REPO=repo-a           # or repo-b
+export REPO=<your-repo-name>
 export THREAD_ID=my-session    # unique ID for this conversation
 
 # Optional (set in .env)

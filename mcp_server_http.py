@@ -1,12 +1,13 @@
 from __future__ import annotations
 import os, json
-from typing import Literal, Dict, Any
+from typing import Dict, Any
 
 from fastmcp import FastMCP
 
 # Reuse internal pipeline
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
+from config_loader import list_repos, get_default_repo
 
 
 mcp = FastMCP("rag-service")
@@ -21,17 +22,19 @@ def _get_graph():
 
 
 @mcp.tool()
-def answer(repo: Literal["vivified", "faxbot"], question: str) -> Dict[str, Any]:
+def answer(repo: str, question: str) -> Dict[str, Any]:
     """Answer a codebase question using local LangGraph (retrieval+generation). Returns text + citations."""
     g = _get_graph()
-    cfg = {"configurable": {"thread_id": f"http-{repo}"}}
+    # Validate repo against configured list; fall back to default
+    repo_name = repo if repo in list_repos() else get_default_repo()
+    cfg = {"configurable": {"thread_id": f"http-{repo_name}"}}
     state = {
         "question": question,
         "documents": [],
         "generation": "",
         "iteration": 0,
         "confidence": 0.0,
-        "repo": repo,
+        "repo": repo_name,
     }
     res = g.invoke(state, cfg)
     docs = res.get("documents", [])[:5]
@@ -39,15 +42,16 @@ def answer(repo: Literal["vivified", "faxbot"], question: str) -> Dict[str, Any]
     return {
         "answer": res.get("generation", ""),
         "citations": citations,
-        "repo": res.get("repo", repo),
+        "repo": res.get("repo", repo_name),
         "confidence": float(res.get("confidence", 0.0) or 0.0),
     }
 
 
 @mcp.tool()
-def search(repo: Literal["vivified", "faxbot"], question: str, top_k: int = 10) -> Dict[str, Any]:
+def search(repo: str, question: str, top_k: int = 10) -> Dict[str, Any]:
     """Retrieve relevant code locations without generation."""
-    docs = search_routed_multi(question, repo_override=repo, m=4, final_k=top_k)
+    repo_name = repo if repo in list_repos() else get_default_repo()
+    docs = search_routed_multi(question, repo_override=repo_name, m=4, final_k=top_k)
     results = [
         {
             "file_path": d.get("file_path", ""),
@@ -55,11 +59,11 @@ def search(repo: Literal["vivified", "faxbot"], question: str, top_k: int = 10) 
             "end_line": d.get("end_line", 0),
             "language": d.get("language", ""),
             "rerank_score": float(d.get("rerank_score", 0.0) or 0.0),
-            "repo": d.get("repo", repo),
+            "repo": d.get("repo", repo_name),
         }
         for d in docs
     ]
-    return {"results": results, "repo": repo, "count": len(results)}
+    return {"results": results, "repo": repo_name, "count": len(results)}
 
 
 if __name__ == "__main__":
