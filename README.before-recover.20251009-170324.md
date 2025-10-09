@@ -1,6 +1,22 @@
-# AGRO
+<div align="center">
 
-## Another Good Rag Option
+# 🎁
+
+## This is not another wrapper.
+
+## This is the gift inside.
+
+
+**The usual setup:** You use a pretty tool that wraps an LLM's API  
+**This setup:** A RAG engine. Claude/Codex wrap around *it*.
+
+</div>
+
+
+
+
+
+# RAG Service - Complete Guide
 
 ---
 
@@ -17,12 +33,6 @@ This is a RAG (Retrieval-Augmented Generation) engine that:
 - Codex/Claude are clients that call into this engine via MCP; they “wrap” the RAG, not the other way around.
 - We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
 - Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
-
-Modular by design
-
-Every component in this stack is swappable. Models, rerankers, vector DB, streaming transport, and even the orchestration 
-graph are suggestions, not requirements. Treat this repo as a reference implementation you can piece apart: keep what you like, 
-replace what you don’t. The docs show one happy path; you can rewire models and services to suit your environment.
 
 ---
 
