@@ -46,9 +46,14 @@ cd /path/to/rag-service && bash scripts/up.sh
 . .venv/bin/activate
 python -c "import fastapi, qdrant_client, bm25s; print('✓ All deps OK')"
 
-# 3) Index repos (replace with your repo names)
+# 3) Configure repos once, then index
+cp repos.json.example repos.json && $EDITOR repos.json
+
+# Index one
 REPO=repo-a python index_repo.py
-REPO=repo-b python index_repo.py
+
+# Or index all configured (REPO unset)
+python index_repo.py
 
 # 4) Start CLI chat (interactive)
 export REPO=repo-a THREAD_ID=my-session
@@ -216,9 +221,8 @@ EMBEDDING_TYPE=openai           # openai | local | voyage | gemini
 OPENAI_API_KEY=                 # Required for OpenAI embeddings
 VOYAGE_API_KEY=                 # Required for Voyage embeddings
 
-# Optional: Path boosts (comma-separated, repo-specific)
-REPO_A_PATH_BOOSTS=src/,lib/,core/
-REPO_B_PATH_BOOSTS=app/,controllers/,models/
+# Optional: Netlify multi-site deploys for MCP tool
+NETLIFY_DOMAINS=site-a.com,site-b.com
 
 # Optional: MCP integrations
 NETLIFY_API_KEY=                # For netlify_deploy tool
@@ -314,7 +318,7 @@ curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
 ```bash
 . .venv/bin/activate
 
-# Index first repo (replace with your repo name and path)
+# Index first repo (replace with your repo name)
 REPO=repo-a python index_repo.py
 # This will:
 #   - Scan /path/to/your/repo-a (configured in index_repo.py)
@@ -473,7 +477,7 @@ Retrieval-only (no generation, faster for debugging)
 Trigger Netlify builds (requires `NETLIFY_API_KEY`)
 
 **Arguments:**
-- `domain`: Site to deploy (`"site-a.com"`, `"site-b.com"`, or `"both"`)
+- `domain`: Site to deploy (e.g., `"site-a.com"`, or `"both"` to deploy all in `NETLIFY_DOMAINS`)
 
 **Returns:**
 ```json

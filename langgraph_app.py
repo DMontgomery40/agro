@@ -5,6 +5,7 @@ from dotenv import load_dotenv, find_dotenv
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.redis import RedisSaver
 from hybrid_search import search_routed_multi as hybrid_search_routed_multi
+from config_loader import get_default_repo
 from env_model import generate_text
 
 # Load environment from repo root .env without hard-coded paths
@@ -48,7 +49,7 @@ def retrieve_node(state: RAGState) -> Dict:
     docs = hybrid_search_routed_multi(q, repo_override=repo, m=mq, final_k=20)
     conf = float(sum(d.get('rerank_score',0.0) for d in docs)/max(1,len(docs)))
     # Propagate the routed repo into state so downstream nodes build correct headers
-    repo_used = (repo or (docs[0].get('repo') if docs else os.getenv('REPO','vivified')))
+    repo_used = (repo or (docs[0].get('repo') if docs else os.getenv('REPO', get_default_repo())))
     return {'documents': docs, 'confidence': conf, 'iteration': state.get('iteration',0)+1, 'repo': repo_used}
 
 
@@ -85,7 +86,7 @@ def generate_node(state: RAGState) -> Dict:
     # Lightweight verifier: if confidence low, try multi-query retrieval and regenerate once
     conf = float(state.get('confidence', 0.0) or 0.0)
     if conf < 0.55:
-        repo = state.get('repo') or os.getenv('REPO','vivified')
+        repo = state.get('repo') or os.getenv('REPO', get_default_repo())
         alt_docs = hybrid_search_routed_multi(q, repo_override=repo, m=4, final_k=10)
         if alt_docs:
             ctx2 = alt_docs[:5]
@@ -94,12 +95,12 @@ def generate_node(state: RAGState) -> Dict:
             user2 = f"Question:\n{q}\n\nContext:\n{context_text2}\n\nCitations (paths and line ranges):\n{citations2}\n\nAnswer:"
             content2, _ = generate_text(user_input=user2, system_instructions=sys, reasoning_effort=None)
             content = (content2 or content or '')
-    repo_hdr = state.get('repo') or (ctx[0].get('repo') if ctx else None) or os.getenv('REPO','vivified')
+    repo_hdr = state.get('repo') or (ctx[0].get('repo') if ctx else None) or os.getenv('REPO', get_default_repo())
     header = f"[repo: {repo_hdr}]"
     return {'generation': header + "\n" + content}
 
 def fallback_node(state: RAGState) -> Dict:
-    repo_hdr = state.get('repo') or (state.get('documents')[0].get('repo') if state.get('documents') else None) or os.getenv('REPO','vivified')
+    repo_hdr = state.get('repo') or (state.get('documents')[0].get('repo') if state.get('documents') else None) or os.getenv('REPO', get_default_repo())
     header = f"[repo: {repo_hdr}]"
     msg = "I don't have high confidence from local code. Try refining the question or expanding the context."
     return {'generation': header + "\n" + msg}

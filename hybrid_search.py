@@ -4,6 +4,12 @@ import collections
 from typing import List, Dict
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
+from config_loader import (
+    get_default_repo,
+    choose_repo_from_query,
+    path_boosts as cfg_path_boosts,
+    layer_bonuses as cfg_layer_bonuses,
+)
 from qdrant_client import QdrantClient, models
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -26,25 +32,11 @@ def _classify_query(q:str)->str:
         return 'infra'
     return 'server'
 
-def _vivified_layer_bonus(layer:str,intent:str)->float:
-    layer_lower=(layer or '').lower()
-    intent_lower=(intent or 'server').lower()
-    table={'server':{'kernel':0.10,'plugin':0.04,'ui':0.00,'docs':0.00,'tests':0.00,'infra':0.02},
-           'integration':{'integration':0.12,'kernel':0.04,'ui':0.00,'docs':0.00,'tests':0.00,'infra':0.00},
-           'ui':{'ui':0.12,'docs':0.06,'kernel':0.02,'plugin':0.02,'tests':0.00,'infra':0.00},
-           'sdk':{'kernel':0.04,'docs':0.02},
-           'infra':{'infra':0.12,'kernel':0.04}}
-    return table.get(intent_lower,{}).get(layer_lower,0.0)
-
-def _faxbot_layer_bonus(layer:str,intent:str)->float:
-    layer_lower=(layer or '').lower()
-    intent_lower=(intent or 'server').lower()
-    table={'server':{'server':0.10,'integration':0.06,'fax':0.30,'admin console':0.10,'sdk':0.00,'infra':0.00,'docs':0.02},
-           'integration':{'provider':0.12,'traits':0.10,'server':0.06,'ui':0.00,'sdk':0.00,'infra':0.02,'docs':0.00},
-           'ui':{'ui':0.12,'docs':0.06,'server':0.02,'hipaa':0.20},
-           'sdk':{'sdk':0.12,'server':0.04,'docs':0.02},
-           'infra':{'infra':0.12,'server':0.04,'provider':0.04}}
-    return table.get(intent_lower,{}).get(layer_lower,0.0)
+def _layer_bonus_for_repo(repo: str, layer: str, intent: str) -> float:
+    layer_lower = (layer or '').lower()
+    intent_lower = (intent or 'server').lower()
+    table = cfg_layer_bonuses(repo)
+    return float(table.get(intent_lower, {}).get(layer_lower, 0.0))
 
 def _provider_plugin_hint(fp:str, code:str)->float:
     fp=(fp or '').lower()
@@ -90,16 +82,14 @@ def _path_bonus(fp: str) -> float:
             bonus += b
     return bonus
 
-# Additional Faxbot-only path boosts (env-tunable)
-def _faxbot_path_boost(fp: str, repo_tag: str) -> float:
-    import os as _os
-    if (repo_tag or '').lower() != 'faxbot':
+# Config-driven path boosts per repo (optional)
+def _config_path_boost(fp: str, repo_tag: str) -> float:
+    boosts = [b.lower() for b in cfg_path_boosts(repo_tag)]
+    if not boosts:
         return 0.0
-    cfg = _os.getenv('FAXBOT_PATH_BOOSTS', 'app/,lib/,config/,scripts/,server/,api/,api/app,app/services,app/routers,api/admin_ui,app/plugins')
-    tokens = [t.strip().lower() for t in cfg.split(',') if t.strip()]
     s = (fp or '').lower()
     bonus = 0.0
-    for tok in tokens:
+    for tok in boosts:
         if tok and tok in s:
             bonus += 0.06
     return min(bonus, 0.18)
@@ -118,7 +108,7 @@ try:
 except Exception:
     pass
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
-REPO = os.getenv('REPO','vivified')
+REPO = os.getenv('REPO', get_default_repo())
 VENDOR_MODE = os.getenv('VENDOR_MODE','prefer_first_party')
 # Allow explicit collection override (for versioned collections per embedding config)
 COLLECTION = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
@@ -313,14 +303,14 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     # Apply path + layer intent + provider + feature + card + (optional) origin bonuses, then resort
     intent = _classify_query(query)
     for d in docs:
-        layer_bonus = _vivified_layer_bonus(d.get('layer',''), intent) if repo=='vivified' else _faxbot_layer_bonus(d.get('layer',''), intent)
+        layer_bonus = _layer_bonus_for_repo(repo, d.get('layer',''), intent)
         origin_bonus = _origin_bonus(d.get('origin',''), VENDOR_MODE) if 'VENDOR_MODE' in os.environ else 0.0
         repo_tag = d.get('repo', repo)
         chunk_id = str(d.get('id', ''))
         d['rerank_score'] = float(
             d.get('rerank_score', 0.0)
             + _path_bonus(d.get('file_path', ''))
-            + _faxbot_path_boost(d.get('file_path',''), repo_tag)
+            + _config_path_boost(d.get('file_path',''), repo_tag)
             + layer_bonus
             + _provider_plugin_hint(d.get('file_path', ''), d.get('code', '')[:1000])
             + _feature_bonus(query, d.get('file_path',''), d.get('code','')[:800])
@@ -374,27 +364,10 @@ def _apply_filename_boosts(docs: list[dict], question: str) -> None:
 
 # --- Strict per-repo routing helpers (no fusion) ---
 def route_repo(query: str, default_repo: str | None = None) -> str:
-    q = (query or '').lower()
-    if q.startswith('vivified:') or ' vivified' in f' {q}':
-        return 'vivified'
-    if q.startswith('faxbot:') or ' faxbot' in f' {q}':
-        return 'faxbot'
-    viv_hits = 0
-    for k in ['provider setup wizard','providersetupwizard','pluginsetupwizard','admin_ui','plugin','plugins','kernel','apprise','pushover','hubspot','vivified']:
-        if k in q:
-            viv_hits += 1
-    fax_hits = 0
-    for k in ['faxbot','sendfax','getfax','asterisk','ami','t.38','cloudflared','hipaa','phi','event log','diagnostic','signalwire','phaxio','documo','sinch']:
-        if k in q:
-            fax_hits += 1
-    if viv_hits > fax_hits:
-        return 'vivified'
-    if fax_hits > viv_hits:
-        return 'faxbot'
-    return (default_repo or os.getenv('REPO', 'vivified') or 'vivified').strip()
+    return choose_repo_from_query(query, default=(default_repo or get_default_repo()))
 
 def search_routed(query: str, repo_override: str | None = None, final_k: int = 10):
-    repo = (repo_override or route_repo(query, default_repo=os.getenv('REPO', 'vivified')) or os.getenv('REPO', 'vivified')).strip()
+    repo = (repo_override or route_repo(query, default_repo=os.getenv('REPO', get_default_repo())) or get_default_repo()).strip()
     return search(query, repo=repo, final_k=final_k)
 
 # Multi-query expansion (cheap) and routed search
@@ -413,7 +386,7 @@ def expand_queries(query: str, m: int = 4) -> list[str]:
         return [query]
 
 def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4, final_k: int = 10):
-    repo = (repo_override or route_repo(query) or os.getenv('REPO','vivified')).strip()
+    repo = (repo_override or route_repo(query) or get_default_repo()).strip()
     variants = expand_queries(query, m=m)
     all_docs = []
     for qv in variants:

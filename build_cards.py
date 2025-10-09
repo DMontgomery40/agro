@@ -2,11 +2,12 @@ import os, json
 from typing import Dict
 from dotenv import load_dotenv
 from env_model import generate_text
+from config_loader import get_default_repo, out_dir
 
 load_dotenv()
-REPO = os.getenv('REPO','vivified').strip()
+REPO = (os.getenv('REPO') or get_default_repo()).strip()
 MAX_CHUNKS = int(os.getenv('CARDS_MAX','0') or '0')
-BASE = os.path.join(os.path.dirname(__file__), 'out', REPO)
+BASE = out_dir(REPO)
 CHUNKS = os.path.join(BASE, 'chunks.jsonl')
 CARDS = os.path.join(BASE, 'cards.jsonl')
 CARDS_TXT = os.path.join(BASE, 'cards.txt')

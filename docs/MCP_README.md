@@ -35,15 +35,15 @@ See [docs/REMOTE_MCP.md](REMOTE_MCP.md) for HTTP setup.
 ### 2. Register MCP Server with Codex
 
 ```bash
-codex mcp add repo-b-rag -- \
-  /Users/path/to/repo-b_folder/rag-service/.venv/bin/python \
-  /Users/path/to/repo-b_folder/rag-service/mcp_server.py
+codex mcp add rag-service -- \
+  .venv/bin/python \
+  mcp_server.py
 ```
 
 Verify registration:
 ```bash
 codex mcp list
-# Should show: repo-b-rag
+# Should show: rag-service
 ```
 
 ### 3. Test MCP Server (Manual)
@@ -72,19 +72,19 @@ Once registered, Codex can natively call these tools:
 In a Codex chat session:
 
 ```
-User: Use rag_answer to find where OAuth tokens are validated in repo-a
+User: Use rag_answer to find where OAuth tokens are validated in <your-repo>
 
 Codex will call:
-  rag_answer(repo="repo-a", question="Where is OAuth token validated?")
+  rag_answer(repo="<your-repo>", question="Where is OAuth token validated?")
 
 Returns:
 {
-  "answer": "[repo: repo-a]\nOAuth tokens are validated in...",
+  "answer": "[repo: <your-repo>]\nOAuth tokens are validated in...",
   "citations": [
     "identity/auth/oauth.py:42-67",
     "identity/middleware/token.py:89-120"
   ],
-  "repo": "repo-a",
+  "repo": "<your-repo>",
   "confidence": 0.78
 }
 ```
@@ -92,7 +92,7 @@ Returns:
 ### Example 3: Trigger a Netlify Deploy
 
 ```
-User: Use netlify_deploy to rebuild repo-b.net
+User: Use netlify_deploy to rebuild mysite.dev
 
 Returns:
 {
@@ -113,10 +113,10 @@ Returns: {"url": "...", "status": 200, "length": 12345, "clipped": true, "conten
 ### Example 2: Debug retrieval
 
 ```
-User: Use rag_search to see what code comes up for "inbound fax handling" in repo-b
+User: Use rag_search to see what code comes up for "inbound job handling" in <your-repo>
 
 Codex will call:
-  rag_search(repo="repo-b", question="How do we handle inbound faxes?", top_k=5)
+  rag_search(repo="<your-repo>", question="How do we handle inbound jobs?", top_k=5)
 
 Returns:
 {
@@ -127,11 +127,11 @@ Returns:
       "end_line": 89,
       "language": "ruby",
       "rerank_score": 0.82,
-      "repo": "repo-b"
+      "repo": "<your-repo>"
     },
     ...
   ],
-  "repo": "repo-b",
+  "repo": "<your-repo>",
   "count": 5
 }
 ```
@@ -183,12 +183,12 @@ Edit `golden.json`:
 [
   {
     "q": "Where is ProviderSetupWizard rendered?",
-    "repo": "repo-a",
+    "repo": "<your-repo>",
     "expect_paths": ["ProviderSetupWizard", "admin_ui", "components"]
   },
   {
     "q": "How do we queue outbound fax jobs?",
-    "repo": "repo-b",
+    "repo": "<your-repo>",
     "expect_paths": ["app/", "job", "fax", "outbound"]
   }
 ]
@@ -229,14 +229,14 @@ The `expect_paths` uses substring matching — any result containing one of thes
 
 ### "No results returned"
 
-- Ensure repo is indexed: `REPO=repo-a python index_repo.py`
+- Ensure repo is indexed: `REPO=<your-repo> python index_repo.py`
 - Check collections exist: `curl -s http://127.0.0.1:6333/collections | jq`
-- Try search directly: `python -c "from hybrid_search import search_routed; print(search_routed('test', repo_override='repo-a'))"`
+- Try search directly: `python -c "from hybrid_search import search_routed; print(search_routed('test', repo_override='<your-repo>'))"`
 
 ### "Codex can't find the tools"
 
 - Verify registration: `codex mcp list`
-- Re-register if needed: `codex mcp remove repo-b-rag && codex mcp add repo-b-rag -- ...`
+- Re-register if needed: `codex mcp remove rag-service && codex mcp add rag-service -- ...`
 - Check Codex config: `cat ~/.codex/config.toml | grep mcp`
 
 ## References

@@ -4,12 +4,12 @@ Interactive CLI chat interface for RAG service.
 Uses LangGraph with Redis checkpoints for conversation memory.
 
 Usage:
-    export REPO=vivified
+    export REPO=<your repo name from repos.json>
     export THREAD_ID=my-session-1
     python chat_cli.py
 
 Commands:
-    /repo <name>    - Switch repository (vivified or faxbot)
+    /repo <name>    - Switch repository (must be in repos.json)
     /save           - Save conversation checkpoint
     /clear          - Clear conversation history
     /help           - Show commands
@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent / ".env")
 
 from langgraph_app import build_graph
+from config_loader import get_default_repo, list_repos
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -32,14 +33,15 @@ from rich.prompt import Prompt
 console = Console()
 
 # Configuration
-REPO = os.getenv('REPO', 'vivified')
+REPO = os.getenv('REPO', get_default_repo())
 THREAD_ID = os.getenv('THREAD_ID', 'cli-chat')
 
 
 class ChatCLI:
     """Interactive CLI chat with RAG."""
 
-    def __init__(self, repo: str = 'vivified', thread_id: str = 'cli-chat'):
+    def __init__(self, repo: str = None, thread_id: str = 'cli-chat'):
+        repo = repo or get_default_repo()
         self.repo = repo
         self.thread_id = thread_id
         self.graph = None
@@ -86,8 +88,9 @@ class ChatCLI:
 
     def switch_repo(self, new_repo: str):
         """Switch to a different repository."""
-        if new_repo not in ['vivified', 'faxbot']:
-            console.print(f"[red]✗[/red] Invalid repo. Use 'vivified' or 'faxbot'")
+        allowed = list_repos()
+        if new_repo not in allowed:
+            console.print(f"[red]✗[/red] Invalid repo. Use one of: {', '.join(allowed) or '[]'}")
             return
 
         self.repo = new_repo
@@ -95,10 +98,11 @@ class ChatCLI:
 
     def show_help(self):
         """Show available commands."""
-        help_text = """
+        allowed = ', '.join(list_repos()) or '(none configured)'
+        help_text = f"""
 ## Commands
 
-- `/repo <name>` - Switch repository (vivified or faxbot)
+- `/repo <name>` - Switch repository (configured repos: {allowed})
 - `/save` - Save conversation checkpoint
 - `/clear` - Clear conversation history
 - `/help` - Show this help
@@ -163,7 +167,7 @@ Type your question or use `/help` for commands.
                         if len(parts) > 1:
                             self.switch_repo(parts[1].strip())
                         else:
-                            console.print("[red]Usage:[/red] /repo <vivified|faxbot>")
+                            console.print(f"[red]Usage:[/red] /repo <one of: {', '.join(list_repos())}>")
                         continue
 
                     elif cmd == '/save':

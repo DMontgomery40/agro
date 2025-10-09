@@ -4,6 +4,12 @@ import hashlib
 from typing import List, Dict
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
+from config_loader import (
+    get_default_repo,
+    get_repo_paths,
+    out_dir as cfg_out_dir,
+    list_repos,
+)
 from ast_chunker import lang_from_path, collect_files, chunk_code
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -62,14 +68,10 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 if OPENAI_API_KEY and OPENAI_API_KEY.strip().upper() in {"SK-REPLACE", "REPLACE"}:
     OPENAI_API_KEY = None
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
-# Repo scoping
-REPO = os.getenv('REPO', 'vivified').strip()
-_BASES = {
-    'vivified': ['/Users/davidmontgomery/faxbot_folder/vivified'],
-    'faxbot': ['/Users/davidmontgomery/faxbot_folder/faxbot'],
-}
-BASES = _BASES.get(REPO, _BASES['vivified'])
-OUTDIR = f'/Users/davidmontgomery/faxbot_folder/rag-service/out/{REPO}'
+# Repo scoping (generic, config-driven)
+REPO = (os.getenv('REPO') or get_default_repo()).strip()
+BASES = get_repo_paths(REPO)
+OUTDIR = cfg_out_dir(REPO)
 # Allow explicit collection override (for versioned collections per embedding config)
 COLLECTION = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
 
@@ -116,37 +118,29 @@ def should_index_file(path: str) -> bool:
     return True
 
 
-# --- Repo-aware layer tagging ---
+# --- Generic layer tagging ---
 def detect_layer(fp: str) -> str:
     f = (fp or '').lower()
-    if REPO == 'vivified':
-        if '/core/admin_ui/' in f or '/site/' in f or '/docs-site/' in f:
-            return 'ui'
-        if '/plugins/' in f or '/core/plugins/' in f or 'notification' in f or 'pushover' in f or 'apprise' in f:
-            return 'plugin'
-        if '/core/api/' in f or '/core/' in f or '/server' in f:
-            return 'kernel'
-        if '/docs/' in f or '/internal_docs/' in f:
-            return 'docs'
-        if '/tests/' in f or '/test_' in f:
-            return 'tests'
-        if '/infra/' in f or '/deploy/' in f or '/scripts/' in f:
-            return 'infra'
-        return 'kernel'
-    else:
-        if '/admin_ui/' in f or '/site/' in f or '/docs-site/' in f:
-            return 'ui'
-        if 'provider' in f or 'providers' in f or 'integration' in f or 'webhook' in f or 'adapter' in f:
-            return 'integration'
-        if '/api/' in f or '/backends/' in f or '/server' in f:
-            return 'server'
-        if '/sdks/' in f or '/python_mcp/' in f or '/node_mcp/' in f or '/plugin-dev-kit/' in f:
-            return 'sdk'
-        if '/docs/' in f or '/internal_docs/' in f:
-            return 'docs'
-        if '/asterisk/' in f or '/config/' in f or '/infra/' in f:
-            return 'infra'
+    # UI indicators
+    if any(tok in f for tok in ('/admin_ui/', '/ui/', '/docs-site/', '.tsx', '.jsx')):
+        return 'ui'
+    # SDK / tools
+    if any(tok in f for tok in ('/sdks/', '/sdk/', '/python_mcp/', '/node_mcp/', '/plugin-dev-kit/')):
+        return 'sdk'
+    # Documentation
+    if any(tok in f for tok in ('/docs/', '/internal_docs/')):
+        return 'docs'
+    # Infrastructure
+    if any(tok in f for tok in ('/infra/', '/config/', '/deploy/', '/asterisk/', '/freeswitch/')):
+        return 'infra'
+    # Integrations / providers
+    if any(tok in f for tok in ('provider', 'providers', 'integration', 'webhook', 'adapter')):
+        return 'integration'
+    # Server/API
+    if any(tok in f for tok in ('/api/', '/server', '/backend')):
         return 'server'
+    # Default
+    return 'server'
 
 VENDOR_MARKERS = (
     "/vendor/","/third_party/","/external/","/deps/","/node_modules/",
@@ -397,4 +391,17 @@ def main() -> None:
     print(f'Indexed {len(chunks)} chunks to Qdrant (embeddings: {len(embs[0])} dims).')
 
 if __name__ == '__main__':
-    main()
+    # If REPO is set, index that single repo. Otherwise, index all configured repos.
+    import subprocess, sys as _sys
+    if os.getenv('REPO'):
+        main()
+    else:
+        repos = list_repos()
+        if not repos:
+            print('No repos configured (repos.json missing or empty). Set REPO and REPO_PATH to index single repo.', flush=True)
+            _sys.exit(1)
+        for name in repos:
+            env = os.environ.copy()
+            env['REPO'] = name
+            print(f"\n=== Indexing repo: {name} ===")
+            subprocess.check_call([_sys.executable, __file__], env=env)
