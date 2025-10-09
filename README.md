@@ -179,6 +179,10 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 
 ### Phase 1: Infrastructure
 
+Note: This repo already includes `infra/docker-compose.yml` with relative volumes.
+Prefer using `bash scripts/up.sh` or `cd infra && docker compose up -d` rather than
+hand-writing a compose file.
+
 ```bash
 # Create directory structure
 mkdir -p /path/to/rag-service/{infra,data/qdrant,data/redis}

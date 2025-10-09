@@ -6,7 +6,7 @@
 
 How to use RAG locally vs externally:
 - Local Python (preferred in-repo):
-  - `cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate`
+  - `. .venv/bin/activate`
   - Run a quick search:
     ```bash
     python - <<'PY'
@@ -16,16 +16,16 @@ How to use RAG locally vs externally:
     PY
     ```
 - MCP tools (for agents/IDE/outside this repo):
-  - One-time: `codex mcp add rag-service -- python /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py && codex mcp list`
+  - One-time: `codex mcp add rag-service -- python ./mcp_server.py && codex mcp list`
   - Then call `rag_search` / `rag_answer` with `repo` and `question`.
 - Quick infra checks (Qdrant/Redis):
-  - `cd /Users/davidmontgomery/faxbot_folder/rag-service/infra && docker compose up -d`
+  - `cd infra && docker compose up -d`
   - `curl -s http://127.0.0.1:6333/collections`
   - `docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redis-cli ping`
 - Index after code changes (required for fresh results):
-  - `cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
+  - `. .venv/bin/activate && REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
 - Optional HTTP answers (no search endpoint):
-  - `cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
+  - `. .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
   - `curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=vivified"`
 
 
@@ -65,7 +65,7 @@ python -c "import fastapi, qdrant_client, bm25s; print('✓ fastapi, qdrant_clie
 
 ### 1) Bring up Infra (Qdrant + Redis) and verify
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service/infra && \
+cd infra && \
 echo "compose up" && docker compose up -d && \
 echo "check qdrant" && curl -s http://127.0.0.1:6333/collections || true && \
 echo "check redis" && docker ps --format '{{.Names}}' | grep -i redis >/dev/null && \
@@ -74,7 +74,7 @@ docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redi
 
 ### 2) Index (run after code changes)
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && \
+. .venv/bin/activate && \
 echo "index vivified" && REPO=vivified python index_repo.py && \
 echo "index faxbot" && REPO=faxbot python index_repo.py && \
 echo "verify collections" && curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
@@ -82,7 +82,7 @@ echo "verify collections" && curl -s http://127.0.0.1:6333/collections | jq '.re
 
 ### 3) Run the HTTP service (in its own terminal)
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && \
+. .venv/bin/activate && \
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 ```
 
@@ -95,7 +95,7 @@ curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=vivi
 
 ### 4) MCP server (for agents)
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && \
+. .venv/bin/activate && \
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 python mcp_server.py
 ```
@@ -103,13 +103,13 @@ python mcp_server.py
 Register with Codex CLI (one-time):
 
 ```bash
-codex mcp add rag-service -- python /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py && \
+codex mcp add rag-service -- python ./mcp_server.py && \
 codex mcp list
 ```
 
 ### 5) Eval loop (local)
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && \
+. .venv/bin/activate && \
 echo "run evals" && python eval_loop.py && \
 echo "save baseline (optional)" && python eval_loop.py --baseline && \
 echo "compare vs baseline" && python eval_loop.py --compare
@@ -117,7 +117,7 @@ echo "compare vs baseline" && python eval_loop.py --compare
 
 ### 6) Minimal CLI chat
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && \
+. .venv/bin/activate && \
 export REPO=vivified && export THREAD_ID=my-session && \
 python chat_cli.py
 ```
@@ -271,7 +271,7 @@ The indexer excludes vendor/3rd-party libraries to prevent retrieval pollution. 
 After updating `exclude_globs.txt`, re-index both repos:
 
 ```bash
-cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && \
+. .venv/bin/activate && \
 REPO=vivified python index_repo.py && \
 REPO=faxbot python index_repo.py
 ```
@@ -336,7 +336,7 @@ echo "re-index faxbot" && REPO=faxbot python index_repo.py
 
 ```bash
 codex mcp list || true && \
-codex mcp add rag-service -- python /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py
+codex mcp add rag-service -- python ./mcp_server.py
 ```
 
 ### Low retrieval quality
