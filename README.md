@@ -2,13 +2,19 @@
 
 ---
 
-This is a RAG (Retrieval-Augmented Generation) that:
+This is a RAG (Retrieval-Augmented Generation) engine that:
 - Maintains **strict separation** between repositories (never mixes them)
 - Uses **hybrid search** (BM25 + dense embeddings + reranking)
 - Provides **MCP tools** (stdio + HTTP modes) for Codex and Claude Code
 - Includes **eval harness** with regression tracking
 - Supports **multi-query expansion** and **local code hydration**
 - Features **interactive CLI chat** with conversation memory
+
+### Positioning (what we are — and aren’t)
+- RAG-first: this repo is the retrieval + answer engine (your runtime).
+- Codex/Claude are clients that call into this engine via MCP; they “wrap” the RAG, not the other way around.
+- We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
+- Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
 
 ---
 
