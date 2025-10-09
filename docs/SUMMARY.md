@@ -195,6 +195,18 @@ python eval_loop.py
 # Output: Total questions: 10, Top-1 accuracy: X%, ...
 ```
 
+## Defaults
+
+- Generation: Qwen 3 via Ollama (configure with `GEN_MODEL` and `OLLAMA_URL`)
+- Embeddings: OpenAI `text-embedding-3-large` when available; automatic local fallback (BGE-small, 384‑d)
+- Rerank: Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`), with local cross‑encoder fallback
+
+## Operations
+
+- Always-on helper: `bash scripts/up.sh` (starts Qdrant + Redis and backgrounds MCP)
+- Index repos: `REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
+- Health/status: `bash scripts/status.sh`
+
 ## Architecture
 
 ```

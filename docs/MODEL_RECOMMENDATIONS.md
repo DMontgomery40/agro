@@ -2,6 +2,10 @@
 
 This guide helps you choose the best embedding and inference models for your RAG service based on hardware, budget, and performance requirements.
 
+Defaults in this repo:
+- Generation defaults to local Qwen 3 (via Ollama). Configure with `GEN_MODEL` (e.g., `qwen3-coder:30b`) and `OLLAMA_URL`.
+- Rerank defaults to Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`). Provide `COHERE_API_KEY` or switch to local/HF cross‑encoder.
+
 ---
 
 ## 📊 Quick Decision Matrix

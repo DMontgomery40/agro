@@ -13,6 +13,16 @@
 5. **Eval Loop** - `eval_loop.py` with baselines and regression tracking
 6. **Golden Tests** - `golden.json` with 10 test cases
 
+## Before You Start
+
+- Bring infra + MCP up (always-on helper):
+  - `bash scripts/up.sh`
+- Index both repos (once per code change):
+  - `REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
+- Defaults:
+  - Generation → Qwen 3 via Ollama (`GEN_MODEL` + `OLLAMA_URL`)
+  - Rerank → Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
+
 ## Quick Commands
 
 ### Check MCP Registration
@@ -118,9 +128,10 @@ These are now documented in `AGENTS.md`:
 ## Troubleshooting
 
 **"Graph not initialized"**
-- Check infra: `docker compose -f ../infra/docker-compose.yml ps`
+- Use the helper: `bash scripts/up.sh` (handles infra + background MCP)
 - Check Redis: `docker exec rag-redis redis-cli ping`
 - Check Qdrant: `curl -s http://127.0.0.1:6333/collections`
+- Note: Graph compiles without Redis if temporarily unavailable.
 
 **"No results"**
 - Index repos: `REPO=vivified python index_repo.py`
@@ -128,6 +139,7 @@ These are now documented in `AGENTS.md`:
 
 **"Codex can't find tools"**
 - Re-register: `codex mcp remove faxbot-rag && codex mcp add faxbot-rag -- .venv/bin/python mcp_server.py`
+- Ensure MCP is running: `bash scripts/status.sh`
 
 ## References
 

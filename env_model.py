@@ -11,7 +11,7 @@ except Exception as e:
 # Default to a valid, stable alias. Users may override with a dated pin
 # (e.g., gpt-4o-mini-2024-07-18) or another provider via GEN_MODEL.
 # Prefer a widely available small model alias
-_DEFAULT_MODEL = os.getenv("GEN_MODEL", "gpt-4o-mini")
+_DEFAULT_MODEL = os.getenv("GEN_MODEL", os.getenv("ENRICH_MODEL", "qwen3-coder:30b"))
 
 _client = None
 
@@ -19,6 +19,8 @@ _client = None
 def client() -> OpenAI:
     global _client
     if _client is None:
+        # Let OPENAI_API_KEY and OPENAI_BASE_URL (if set) drive the target
+        # This allows using OpenAI-hosted models or an OpenAI-compatible server (e.g., vLLM/Ollama proxy)
         _client = OpenAI()
     return _client
 
@@ -76,6 +78,48 @@ def generate_text(
     if extra:
         kwargs.update(extra)
 
-    resp = client().responses.create(**kwargs)
-    text = _extract_text(resp)
-    return text, resp
+    # If using local Qwen via Ollama, prefer its API first
+    OLLAMA_URL = os.getenv("OLLAMA_URL")
+    prefer_ollama = bool(OLLAMA_URL) and ("qwen" in (mdl or "").lower())
+    if prefer_ollama:
+        try:
+            import requests
+            sys_text = (system_instructions or "").strip()
+            prompt = (f"<system>{sys_text}</system>\n" if sys_text else "") + user_input
+            resp = requests.post(
+                OLLAMA_URL.rstrip("/") + "/generate",
+                json={
+                    "model": mdl,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {"temperature": 0.2, "num_ctx": 8192},
+                },
+                timeout=120,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            text = (data.get("response") or "").strip()
+            if text:
+                return text, data
+        except Exception:
+            pass
+    # Try OpenAI Responses API
+    try:
+        resp = client().responses.create(**kwargs)
+        text = _extract_text(resp)
+        return text, resp
+    except Exception:
+        # Fallback to Chat Completions for OpenAI-compatible servers that don't expose Responses API
+        try:
+            messages = []
+            if system_instructions:
+                messages.append({"role": "system", "content": system_instructions})
+            messages.append({"role": "user", "content": user_input})
+            ckwargs: Dict[str, Any] = {"model": mdl, "messages": messages}
+            if response_format and isinstance(response_format, dict):
+                ckwargs["response_format"] = response_format
+            cc = client().chat.completions.create(**ckwargs)
+            text = (cc.choices[0].message.content if getattr(cc, "choices", []) else "") or ""
+            return text, cc
+        except Exception as e:
+            raise RuntimeError(f"Generation failed for model={mdl}: {e}")

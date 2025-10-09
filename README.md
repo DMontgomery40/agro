@@ -33,27 +33,28 @@ This is a production RAG (Retrieval-Augmented Generation) service that:
 
 ## Quick Start
 
-**Prerequisites**: Docker Compose, Python 3.11+, OpenAI API key
+**Prerequisites**: Docker Compose, Python 3.11+. For local inference, run Ollama (Qwen 3).
 
 ```bash
-# 1. Start infrastructure (Qdrant + Redis)
-cd /Users/davidmontgomery/faxbot_folder/rag-service/infra
-docker compose up -d
+# 1) Bring infra + MCP up (always-on helper)
+cd /Users/davidmontgomery/faxbot_folder/rag-service && bash scripts/up.sh
 
-# 2. Activate venv and verify deps
-cd /Users/davidmontgomery/faxbot_folder/rag-service
+# 2) Activate venv and verify deps
 . .venv/bin/activate
 python -c "import fastapi, qdrant_client, bm25s; print('✓ All deps OK')"
 
-# 3. Index repos (run both)
+# 3) Index repos (run both)
 REPO=vivified python index_repo.py
 REPO=faxbot python index_repo.py
 
-# 4. Run the API server
+# 4) Run the HTTP API (optional)
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 
-# 5. Test it
-curl "http://localhost:8012/answer?q=Where%20is%20OAuth%20validated&repo=vivified"
+# 5) Smoke test
+curl "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=vivified"
+
+# MCP tools quick check (stdio)
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 ```
 
 ---
@@ -180,9 +181,6 @@ Create `.env` file:
 
 ```bash
 cat > .env <<'EOF'
-# Required
-OPENAI_API_KEY=sk-proj-...
-
 # Infrastructure
 QDRANT_URL=http://127.0.0.1:6333
 REDIS_URL=redis://127.0.0.1:6379/0
@@ -190,21 +188,25 @@ REDIS_URL=redis://127.0.0.1:6379/0
 # RAG Configuration
 REPO=vivified
 MQ_REWRITES=4
-RERANKER_MODEL=BAAI/bge-reranker-v2-m3
 
-# Generation (Responses API)
-GEN_MODEL=gpt-4o-mini
+# Reranker (default: Cohere)
+RERANK_BACKEND=cohere           # cohere | local
+COHERE_API_KEY=                 # set this to enable Cohere rerank
+COHERE_RERANK_MODEL=rerank-3.5  # or rerank-2.5
+# Optional local/Jina model fallback
+RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+
+# Generation (default: local Qwen 3 via Ollama)
+OLLAMA_URL=http://127.0.0.1:11434/api
+GEN_MODEL=qwen3-coder:30b       # override if using OpenAI/others
 
 # Optional: Faxbot path boosts (comma-separated)
 FAXBOT_PATH_BOOSTS=app/,lib/,config/,scripts/,server/,api/
 
-# Optional: Embeddings + rerank backends
-EMBEDDING_TYPE=openai   # openai | local | voyage | mxbai
+# Optional: Embeddings provider
+EMBEDDING_TYPE=openai           # openai | local | voyage | mxbai
 VOYAGE_API_KEY=
-EMBEDDING_DIM=512       # when using mxbai
-RERANK_BACKEND=local    # local | cohere
-COHERE_API_KEY=
-COHERE_RERANK_MODEL=rerank-v3.5
+EMBEDDING_DIM=512               # when using mxbai
 
 # Optional: Indexing/routing
 COLLECTION_NAME=code_chunks_${REPO}
@@ -917,9 +919,9 @@ python -c "from langgraph_app import build_graph; g = build_graph(); print('✓ 
 
 ## Model Selection & Alternatives
 
- The RAG service currently uses:
- - **Embeddings**: OpenAI `text-embedding-3-large` (3072 dims, $0.13/1M tokens)
- - **Generation**: OpenAI Responses API with `gpt-4o-mini-latest` by default (override via `GEN_MODEL`); you may pin a dated model (e.g., `gpt-4o-mini-2024-07-18`).
+ The RAG service defaults to:
+ - **Generation**: Local Qwen 3 (via Ollama) using `GEN_MODEL` and `OLLAMA_URL`. Fully supports OpenAI Responses/Chat if you set `OPENAI_API_KEY` and point `GEN_MODEL` to an OpenAI model.
+ - **Embeddings**: OpenAI `text-embedding-3-large` when available; automatically falls back to local `BAAI/bge-small-en-v1.5` (384‑d) if quota/network issues occur.
 
 ### Quick Alternatives
 
@@ -964,17 +966,18 @@ ollama pull qwen2.5-coder:32b
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | — | OpenAI API key (needed if `EMBEDDING_TYPE=openai`) |
+| `OPENAI_API_KEY` | — | Needed for OpenAI embeddings or generation |
 | `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant server URL |
 | `REDIS_URL` | `redis://127.0.0.1:6379/0` | Redis connection string |
 | `REPO` | `vivified` | Active repo for indexing/retrieval |
 | `COLLECTION_NAME` | `code_chunks_${REPO}` | Qdrant collection override |
 | `MQ_REWRITES` | `4` | Multi-query expansion count |
-| `RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | Cross-encoder model name |
-| `RERANK_BACKEND` | `local` | `local` or `cohere` rerank backend |
-| `COHERE_API_KEY` | — | Required if `RERANK_BACKEND=cohere` |
-| `COHERE_RERANK_MODEL` | `rerank-v3.5` | Cohere rerank model id |
-| `GEN_MODEL` | `gpt-4o-mini` | Responses API generation model |
+| `RERANK_BACKEND` | `cohere` | Rerank backend: `cohere` (default) or `local` |
+| `COHERE_API_KEY` | — | Required if using Cohere backend |
+| `COHERE_RERANK_MODEL` | `rerank-3.5` | Cohere rerank model id (`rerank-2.5` supported) |
+| `RERANKER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Local/HF reranker fallback |
+| `OLLAMA_URL` | — | Ollama API base (e.g., `http://127.0.0.1:11434/api`) |
+| `GEN_MODEL` | `qwen3-coder:30b` | Primary generation model (Qwen 3 via Ollama) |
 | `EMBEDDING_TYPE` | `openai` | `openai` | `local` | `voyage` | `mxbai` |
 | `VOYAGE_API_KEY` | — | Required if `EMBEDDING_TYPE=voyage` |
 | `VOYAGE_EMBED_DIM` | `512` | Voyage output dimension (indexing) |

@@ -18,10 +18,9 @@ How to use RAG locally vs externally:
 - MCP tools (for agents/IDE/outside this repo):
   - One-time: `codex mcp add rag-service -- python /Users/davidmontgomery/faxbot_folder/rag-service/mcp_server.py && codex mcp list`
   - Then call `rag_search` / `rag_answer` with `repo` and `question`.
-- Quick infra checks (Qdrant/Redis):
-  - `cd /Users/davidmontgomery/faxbot_folder/rag-service/infra && docker compose up -d`
-  - `curl -s http://127.0.0.1:6333/collections`
-  - `docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redis-cli ping`
+- Bring up infra + MCP (always-on helper):
+  - `cd /Users/davidmontgomery/faxbot_folder/rag-service && bash scripts/up.sh`
+  - Health: `bash scripts/status.sh`
 - Index after code changes (required for fresh results):
   - `cd /Users/davidmontgomery/faxbot_folder/rag-service && . .venv/bin/activate && REPO=vivified python index_repo.py && REPO=faxbot python index_repo.py`
 - Optional HTTP answers (no search endpoint):
@@ -58,14 +57,10 @@ echo "activate venv" && \
 . .venv/bin/activate && \
 echo "verify deps" && \
 python -c "import fastapi, qdrant_client, bm25s; print('✓ fastapi, qdrant_client, bm25s loaded')"
-1) Bring up Infra (Qdrant + Redis) and verify
+1) Bring up Infra + MCP (always-on)
 bash
 Copy code
-cd /Users/davidmontgomery/faxbot_folder/rag-service/infra && \
-echo "compose up" && docker compose up -d && \
-echo "check qdrant" && curl -s http://127.0.0.1:6333/collections || true && \
-echo "check redis" && docker ps --format '{{.Names}}' | grep -i redis >/dev/null && \
-docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redis-cli ping
+cd /Users/davidmontgomery/faxbot_folder/rag-service && bash scripts/up.sh && bash scripts/status.sh
 2) Index (run after code changes)
 bash
 Copy code
@@ -142,7 +137,7 @@ AST-aware chunking (ast_chunker.py), layer tagging (ui/server/integration/infra)
 
 BM25 index build (stemming).
 
-Embeddings: OpenAI text-embedding-3-large (3072 dims) → Qdrant upsert (metadata only).
+Embeddings: OpenAI text-embedding-3-large when available; automatic local fallback (BGE-small, 384‑d) → Qdrant upsert (metadata only).
 
 Local cache to prevent re-embedding unchanged chunks.
 
@@ -154,7 +149,7 @@ Intent classification (ui/server/integration/sdk/infra) → per-repo layer bonus
 
 Multi-query expansion (defaults enabled; count configurable).
 
-BM25 + vector fusion → cross-encoder rerank → local hydration of code.
+BM25 + vector fusion → Cohere rerank (default) or local cross-encoder → local hydration of code.
 
 Returns top-K with rerank_score, file_path, start_line, end_line, layer, repo.
 
@@ -164,7 +159,7 @@ Iterative retrieval with confidence gating (top-1 and/or avg-k).
 
 Query rewriting on low confidence; multi-query fallback.
 
-Redis checkpointer for convo state; strict per-repo state.
+Redis checkpointer for convo state; strict per-repo state. Graph compiles without Redis if unavailable.
 
 MCP server (mcp_server.py)
 
@@ -202,7 +197,7 @@ out/{repo}/cards.jsonl (optional code “cards” for high-level hits)
 Environment
 Required
 
-OPENAI_API_KEY
+If using OpenAI embeddings/generation: `OPENAI_API_KEY`
 
 Infra
 
@@ -214,7 +209,7 @@ RAG
 
 REPO (vivified | faxbot) for indexers/CLIs
 
-RERANKER_MODEL (default BAAI/bge-reranker-v2-m3)
+RERANK_BACKEND (default cohere) and COHERE_RERANK_MODEL (default rerank-3.5); optional RERANKER_MODEL for local/HF fallback
 
 MQ_REWRITES (multi-query count)
 
@@ -224,7 +219,7 @@ CONF_TOP1 (e.g., 0.60) and CONF_AVG5 (e.g., 0.52) to calibrate gating
 
 FINAL_K, TOPK_DENSE, TOPK_SPARSE tuning knobs
 
-GEN_MODEL to pick the answer model (e.g., a small “o”/“mini” for fast replies)
+GEN_MODEL (default qwen3-coder:30b) and OLLAMA_URL for local Qwen 3; set GEN_MODEL to OpenAI model to use Responses/Chat
 
 If a variable isn’t wired yet, prefer adding it rather than hard-coding thresholds. Avoid “drop gate to .50” just to “make it work.”
 
