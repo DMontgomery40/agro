@@ -110,7 +110,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 |-----------|---------|------|
 | **MCP Server (stdio)** | Tool server for local agents | `mcp_server.py` |
 | **MCP Server (HTTP)** | Tool server for remote agents | `mcp_server_http.py` |
-| **FastAPI** | HTTP REST API (`/health`, `/answer`) | `serve_rag.py` |
+| **FastAPI** | HTTP REST API (`/health`, `/search`, `/answer`) | `serve_rag.py` |
 | **LangGraph** | Iterative retrieval pipeline with Redis checkpoints | `langgraph_app.py` |
 | **Hybrid Search** | BM25 + dense + rerank with repo routing | `hybrid_search.py` |
 | **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `index_repo.py` |
