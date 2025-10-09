@@ -6,7 +6,11 @@ Uses LangGraph with Redis checkpoints for conversation memory.
 Usage:
     export REPO=<your repo name from repos.json>
     export THREAD_ID=my-session-1
+    # Blocking (default, in-process)
     python chat_cli.py
+
+    # Streaming via HTTP SSE (requires API running at RAG_API_URL or 127.0.0.1:8012)
+    python chat_cli.py --stream [--api-url http://127.0.0.1:8012]
 
 Commands:
     /repo <name>    - Switch repository (must be in repos.json)
@@ -19,6 +23,7 @@ import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
+import urllib.parse, urllib.request
 
 # Load environment
 load_dotenv(Path(__file__).parent / ".env")
@@ -28,6 +33,7 @@ from config_loader import get_default_repo, list_repos
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.text import Text
 from rich.prompt import Prompt
 
 console = Console()
@@ -40,10 +46,12 @@ THREAD_ID = os.getenv('THREAD_ID', 'cli-chat')
 class ChatCLI:
     """Interactive CLI chat with RAG."""
 
-    def __init__(self, repo: str = None, thread_id: str = 'cli-chat'):
+    def __init__(self, repo: str = None, thread_id: str = 'cli-chat', *, stream: bool = False, api_url: str | None = None):
         repo = repo or get_default_repo()
         self.repo = repo
         self.thread_id = thread_id
+        self.stream_enabled = bool(stream)
+        self.api_url = (api_url or os.getenv('RAG_API_URL') or 'http://127.0.0.1:8012').rstrip('/')
         self.graph = None
         self._init_graph()
 
@@ -70,6 +78,17 @@ class ChatCLI:
 
     def ask(self, question: str) -> dict:
         """Ask a question and get answer."""
+        if self.stream_enabled:
+            # Stream via HTTP SSE endpoint /answer_stream
+            return self._ask_stream_http(question)
+        # Pre-flight: detect available generation backend to avoid long waits
+        backend = self._detect_generation_backend()
+        if backend == 'none':
+            msg = (
+                "No generation backend configured. Set OPENAI_API_KEY for OpenAI Responses/Chat, "
+                "or set OLLAMA_URL (and pull a local model) for local Qwen."
+            )
+            return {"generation": msg, "documents": [], "confidence": 0.0}
         try:
             state = {
                 "question": question,
@@ -79,11 +98,69 @@ class ChatCLI:
                 "confidence": 0.0,
                 "repo": self.repo
             }
-
             result = self.graph.invoke(state, self._get_config())
             return result
         except Exception as e:
             console.print(f"[red]Error:[/red] {e}")
+            return {"generation": f"Error: {e}", "documents": [], "confidence": 0.0}
+
+    def _detect_generation_backend(self) -> str:
+        """Return 'ollama', 'openai', or 'none' based on quick checks."""
+        try:
+            ollama = os.getenv('OLLAMA_URL', '').strip()
+            if ollama:
+                tags = (ollama.rstrip('/') + '/tags')
+                req = urllib.request.Request(tags)
+                with urllib.request.urlopen(req, timeout=0.5) as resp:
+                    if resp.status == 200:
+                        return 'ollama'
+        except Exception:
+            pass
+        if os.getenv('OPENAI_API_KEY', '').strip():
+            return 'openai'
+        return 'none'
+
+    def _ask_stream_http(self, question: str) -> dict:
+        """Stream answer over HTTP SSE, printing tokens as they arrive."""
+        try:
+            # Build URL
+            q = urllib.parse.quote(question)
+            repo = urllib.parse.quote(self.repo)
+            url = f"{self.api_url}/answer_stream?q={q}&repo={repo}"
+            req = urllib.request.Request(url)
+            # Optional bearer token
+            tok = os.getenv('OAUTH_TOKEN', '').strip()
+            if tok:
+                req.add_header('Authorization', f'Bearer {tok}')
+            with urllib.request.urlopen(req) as resp:
+                # Stream lines
+                full = []
+                while True:
+                    line = resp.readline()
+                    if not line:
+                        break
+                    try:
+                        s = line.decode('utf-8', errors='ignore')
+                    except Exception:
+                        continue
+                    if not s.startswith('data:'):
+                        continue
+                    data = s[len('data:'):].strip()
+                    if not data:
+                        continue
+                    if data == '[DONE]':
+                        break
+                    if data.startswith('[ERROR]'):
+                        console.print(f"[red]{data}[/red]")
+                        break
+                    # Print streamed chunk
+                    full.append(data)
+                    console.print(data, end='')
+                # Ensure newline after stream
+                console.print("\n")
+                return {"generation": ''.join(full), "documents": [], "confidence": 0.0}
+        except Exception as e:
+            console.print(f"[red]Streaming error:[/red] {e}")
             return {"generation": f"Error: {e}", "documents": [], "confidence": 0.0}
 
     def switch_repo(self, new_repo: str):
@@ -125,15 +202,13 @@ Switch repo:
 
     def show_welcome(self):
         """Show welcome message."""
-        welcome = f"""
-# 🤖 RAG CLI Chat
-
-Connected to: [bold cyan]{self.repo}[/bold cyan]
-Thread ID: [bold]{self.thread_id}[/bold]
-
-Type your question or use `/help` for commands.
-        """
-        console.print(Panel(Markdown(welcome), border_style="cyan"))
+        welcome = (
+            "# 🤖 RAG CLI Chat\n\n"
+            f"Connected to: [bold cyan]{self.repo}[/bold cyan]\n"
+            f"Thread ID: [bold]{self.thread_id}[/bold]\n\n"
+            "Type your question or use `/help` for commands."
+        )
+        console.print(Panel(Text.from_markup(welcome), border_style="cyan"))
 
     def run(self):
         """Main chat loop."""
@@ -196,12 +271,20 @@ Type your question or use `/help` for commands.
                 docs = result.get('documents', [])
 
                 # Display answer in panel
-                console.print("\n")
-                console.print(Panel(
-                    Markdown(answer),
-                    title=f"Answer (confidence: {confidence:.2f})",
-                    border_style="green" if confidence > 0.6 else "yellow"
-                ))
+                if not self.stream_enabled:
+                    console.print("\n")
+                    console.print(Panel(
+                        Markdown(answer),
+                        title=f"Answer (confidence: {confidence:.2f})",
+                        border_style="green" if confidence > 0.6 else "yellow"
+                    ))
+                else:
+                    # Already streamed; show a small summary panel
+                    console.print(Panel(
+                        Markdown("(streamed)\n" + (answer[:200] + ('...' if len(answer) > 200 else ''))),
+                        title=f"Answer (stream)",
+                        border_style="cyan"
+                    ))
 
                 # Show top citations
                 if docs:
@@ -223,27 +306,11 @@ Type your question or use `/help` for commands.
                 console.print(f"[red]Error:[/red] {e}")
                 continue
 
-
-def main():
-    """Entry point."""
-    # Check dependencies
-    try:
-        from rich.console import Console
-        from rich.markdown import Markdown
-        from rich.panel import Panel
-        from rich.prompt import Prompt
-    except ImportError:
-        print("Error: Missing 'rich' library. Install with: pip install rich")
-        sys.exit(1)
-
-    # Get config from environment
-    repo = os.getenv('REPO', 'vivified')
-    thread_id = os.getenv('THREAD_ID', 'cli-chat')
-
-    # Create and run chat
-    chat = ChatCLI(repo=repo, thread_id=thread_id)
-    chat.run()
-
-
 if __name__ == '__main__':
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description='RAG CLI Chat')
+    parser.add_argument('--stream', action='store_true', help='Stream via HTTP SSE (requires API server)')
+    parser.add_argument('--api-url', default=os.getenv('RAG_API_URL', 'http://127.0.0.1:8012'), help='API base URL for streaming')
+    args = parser.parse_args()
+    cli = ChatCLI(repo=REPO, thread_id=THREAD_ID, stream=args.stream, api_url=args.api_url)
+    cli.run()

@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Query
+import os
+from fastapi import FastAPI, Query, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import Optional
 from langgraph_app import build_graph
@@ -16,6 +19,21 @@ def get_graph():
 
 CFG = {"configurable": {"thread_id": "http"}}
 
+# --- Optional OAuth (Bearer) gate, off by default ---
+_OAUTH_ENABLED = (os.getenv("OAUTH_ENABLED", "false") or "false").lower() == "true"
+_OAUTH_TOKEN = os.getenv("OAUTH_TOKEN", "")
+_bearer = HTTPBearer(auto_error=False)
+
+def verify_auth(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)):
+    if not _OAUTH_ENABLED:
+        return None
+    if not creds or not creds.scheme.lower() == "bearer" or not creds.credentials:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    tok = creds.credentials.strip()
+    if _OAUTH_TOKEN and tok != _OAUTH_TOKEN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+    return None
+
 class Answer(BaseModel):
     answer: str
 
@@ -30,7 +48,8 @@ def health():
 @app.get("/answer", response_model=Answer)
 def answer(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: configured repo name")
+    repo: Optional[str] = Query(None, description="Repository override: configured repo name"),
+    _auth=Depends(verify_auth)
 ):
     """Answer a question using strict per-repo routing.
 
@@ -51,7 +70,8 @@ def answer(
 def search(
     q: str = Query(..., description="Question"),
     repo: Optional[str] = Query(None, description="Repository override: configured repo name"),
-    top_k: int = Query(10, description="Number of results to return")
+    top_k: int = Query(10, description="Number of results to return"),
+    _auth=Depends(verify_auth)
 ):
     """Search for relevant code locations without generation.
 
@@ -70,3 +90,44 @@ def search(
         for d in docs
     ]
     return {"results": results, "repo": repo, "count": len(results)}
+
+
+# --- Optional SSE streaming (off by default; separate endpoint) ---
+
+def _sse_format(data: str) -> str:
+    # Basic SSE event format
+    return f"data: {data}\n\n"
+
+
+@app.get("/answer_stream")
+def answer_stream(
+    q: str = Query(..., description="Question"),
+    repo: Optional[str] = Query(None, description="Repository override: configured repo name"),
+    _auth=Depends(verify_auth)
+):
+    """Stream an answer over SSE. Does not change /answer behavior."""
+    g = get_graph()
+
+    repo_clean = (repo.strip() if repo else None)
+    if repo_clean and repo_clean not in list_repos():
+        repo_clean = get_default_repo()
+
+    def gen():
+        try:
+            state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0, "repo": repo_clean}
+            res = g.invoke(state, CFG)
+            text = (res.get("generation") or "")
+            # Stream in chunks to avoid buffering
+            chunk = 120
+            for i in range(0, len(text), chunk):
+                yield _sse_format(text[i:i+chunk])
+            yield _sse_format("[DONE]")
+        except Exception as e:
+            yield _sse_format(f"[ERROR] {str(e)}")
+
+    headers = {
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+        "Content-Type": "text/event-stream; charset=utf-8",
+    }
+    return StreamingResponse(gen(), headers=headers, media_type="text/event-stream")

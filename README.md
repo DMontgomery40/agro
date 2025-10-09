@@ -1,11 +1,5 @@
 # RAG Service - Complete Guide
 
-**Multi-repository RAG system with MCP integration for AI agents**
-
-> **Note**: This guide uses two example repos (a healthcare app and a Rails service) from the original author's setup. However, **this system works with ANY multi-repo codebase**. The `scripts/` folder includes tools to auto-generate keywords and configurations for your specific projects.
-
-👉 **New here?** See [docs/README.md](docs/) for specialized guides (MCP, models, CLI chat)
-
 ---
 
 This is a RAG (Retrieval-Augmented Generation) that:
@@ -39,14 +33,23 @@ This is a RAG (Retrieval-Augmented Generation) that:
 **Prerequisites**: Docker Compose, Python 3.11+. For local inference, install Ollama.
 
 ```bash
+# 0) Get the code
+git clone https://github.com/DMontgomery40/rag-service.git
+cd rag-service
+
 # 1) Bring infra + MCP up (always-on helper)
 cd /path/to/rag-service && bash scripts/up.sh
 
 # 2) Activate venv and verify deps
 . .venv/bin/activate
-python -c "import fastapi, qdrant_client, bm25s; print('✓ All deps OK')"
+python -c "import fastapi, qdrant_client, bm25s, langgraph; print('✓ fastapi, qdrant_client, bm25s, langgraph OK')"
 
 # 3) Configure repos once, then index
+# Option A: Quick script (from rag-service root)
+python scripts/make_repos_json.py repo-a=/abs/path/a repo-b=/abs/path/b --default repo-a
+# Option B: Interactive quick-setup (run from YOUR repo root)
+python /path/to/rag-service/scripts/quick_setup.py
+# Option C: Manual edit
 cp repos.json.example repos.json && $EDITOR repos.json
 
 # Index one
@@ -69,44 +72,58 @@ curl "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=repo-a"
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 ```
 
+### Optional (Additive) Features
+
+- SSE streaming (off by default)
+  - Endpoint: `/answer_stream?q=...&repo=...`
+  - CLI or UIs can opt-in to streaming via this endpoint; default remains blocking.
+- OAuth bearer (off by default)
+  - Enable with `OAUTH_ENABLED=true` and set `OAUTH_TOKEN=...`
+  - Applies to `/answer`, `/search`, and `/answer_stream` when enabled.
+- Node proxy (HTTP+SSE), optional
+  - `docker compose -f docker-compose.services.yml --profile api --profile node up -d`
+  - Proxies `/mcp/answer`, `/mcp/search`, `/mcp/answer_stream` to Python API.
+- Docker (opt-in)
+  - Python API image via `Dockerfile`
+  - Node proxy via `Dockerfile.node`
+  - Compose file: `docker-compose.services.yml` (profiles: `api`, `mcp-http`, `node`)
+
 ---
 
 ## Architecture
 
 ```
-┌───────────────────────────────────────────────────────────┐
-│          AI Agents (Codex/Claude Code/Remote)             │
-└────────────┬──────────────────────────┬───────────────────┘
-             │ MCP stdio                │ MCP HTTP/HTTPS
-             ▼                          ▼
-┌─────────────────────────┐   ┌─────────────────────────┐
-│    mcp_server.py        │   │  mcp_server_http.py     │
-│    (stdio mode)         │   │  (HTTP mode)            │
-└────────────┬────────────┘   └─────────────┬───────────┘
-             │                              │
-             └──────────────┬───────────────┘
-                            ▼
-         ┌──────────────────┼──────────────────┐
-         ▼                  ▼                  ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│ serve_rag.py │  │langgraph_app │  │hybrid_search │
-│  (FastAPI)   │  │  (LangGraph) │  │  (Retrieval) │
-└──────────────┘  └──────────────┘  └──────┬───────┘
-                                            │
-         ┌──────────────────────────────────┼──────────────────┐
-         ▼                                  ▼                  ▼
-┌──────────────┐                  ┌──────────────┐  ┌──────────────┐
-│   Qdrant     │                  │    BM25S     │  │ Local Chunks │
-│  (vectors)   │                  │  (sparse)    │  │    (.jsonl)  │
-└──────────────┘                  └──────────────┘  └──────────────┘
-         │                                  │                  │
-         └──────────────────────────────────┴──────────────────┘
-                             ▲
-                             │
-                     ┌───────┴────────┐
-                     │  index_repo.py │
-                     │  (indexing)    │
-                     └────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  AI Agents (Codex/Claude)   CLI Chat (local)                 CLI Chat (stream) │
+└────────────┬───────────────────────┬──────────────┬───────────────────────────┘
+             │ MCP stdio            │ MCP HTTP     │ HTTP (SSE)                
+             ▼                       ▼              ▼                           
+┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐ 
+│   mcp_server.py     │     │  mcp_server_http.py │     │     serve_rag.py    │ 
+│   (stdio mode)      │     │  (HTTP mode)        │     │  (FastAPI /answer*) │ 
+└──────────┬──────────┘     └──────────┬──────────┘     └──────────┬──────────┘ 
+           │                            │                           │            
+           └──────────────┬─────────────┴──────────────┬────────────┘            
+                          ▼                            ▼                         
+                ┌──────────────────┐          ┌──────────────────┐               
+                │  langgraph_app   │ ◄────────┤  hybrid_search   │               
+                │   (LangGraph)    │          │   (Retrieval)    │               
+                └─────────┬────────┘          └─────────┬────────┘               
+                          │                             │                          
+          ┌───────────────┴──────────────┐    ┌─────────┴────────┐               
+          ▼                              ▼    ▼                  ▼               
+   ┌──────────────┐               ┌──────────────┐       ┌──────────────┐        
+   │   Qdrant     │               │    BM25S     │       │ Local Chunks │        
+   │  (vectors)   │               │  (sparse)    │       │    (.jsonl)  │        
+   └──────────────┘               └──────────────┘       └──────────────┘        
+                          ▲                                                         
+                          │                                                         
+                  ┌───────┴────────┐                                                
+                  │  index_repo.py │                                                
+                  │  (indexing)    │                                                
+                  └────────────────┘                                                
+
+* /answer* = includes /answer (JSON) and /answer_stream (SSE)
 ```
 
 ### Key Components
@@ -121,6 +138,12 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 | **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `index_repo.py` |
 | **CLI Chat** | Interactive terminal chat with memory | `chat_cli.py` |
 | **Eval Harness** | Golden tests with regression tracking | `eval_loop.py` |
+| **Cards Builder** | Summarizes chunks into `cards.jsonl` and builds BM25 over cards for high‑level retrieval | `build_cards.py` |
+| **Reranker** | Cross‑encoder re‑ranking (Cohere rerank‑3.5 or local), plus filename/path/card/feature bonuses | `rerank.py` |
+| **Embedding Cache** | Caches OpenAI embeddings to avoid re‑embedding unchanged chunks | `embed_cache.py` |
+| **AST Chunker** | Language‑aware code chunking across ecosystems | `ast_chunker.py` |
+| **Filtering** | Centralized file/dir pruning and source gating | `filtering.py` |
+| **Generation Shim** | OpenAI Responses/Chat or local Qwen via Ollama with resilient fallbacks | `env_model.py` |
 
 ---
 

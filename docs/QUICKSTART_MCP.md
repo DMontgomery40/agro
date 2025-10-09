@@ -17,8 +17,9 @@
 
 - Bring infra + MCP up (always-on helper):
   - `bash scripts/up.sh`
-- Configure repos once:
-  - `cp repos.json.example repos.json && $EDITOR repos.json`
+- Configure repos (choose one):
+  - Quick script: `python scripts/make_repos_json.py repo-a=/abs/path/a repo-b=/abs/path/b --default repo-a`
+  - Manual: `cp repos.json.example repos.json && $EDITOR repos.json`
 - Index repos (once per code change):
   - `REPO=<your-repo-name> python index_repo.py` (repeat per repo)
 - Defaults:
@@ -45,6 +46,15 @@ req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
 print(json.dumps(MCPServer().handle_request(req)['result']['tools'], indent=2))
 "
 ```
+
+### Optional: Streaming and OAuth
+
+- Streaming (SSE)
+  - API endpoint: `/answer_stream?q=...&repo=...`
+  - CLI: `python chat_cli.py --stream` (requires API server, defaults to `http://127.0.0.1:8012`, override with `--api-url`)
+- OAuth (Bearer)
+  - Off by default. Enable with `OAUTH_ENABLED=true` and set `OAUTH_TOKEN=...`
+  - Applies to `/answer`, `/search`, and `/answer_stream` when enabled. Include header `Authorization: Bearer $OAUTH_TOKEN`.
 
 ### New Tools: Quick Examples
 
