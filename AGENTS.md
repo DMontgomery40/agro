@@ -149,7 +149,7 @@ Intent classification (ui/server/integration/sdk/infra) → per-repo layer bonus
 
 Multi-query expansion (defaults enabled; count configurable).
 
-BM25 + vector fusion → Cohere rerank (default) or local cross-encoder → local hydration of code.
+BM25 + vector fusion → local cross-encoder rerank (default; set RERANK_BACKEND=cohere for Cohere) → local hydration of code.
 
 Returns top-K with rerank_score, file_path, start_line, end_line, layer, repo.
 
@@ -209,7 +209,7 @@ RAG
 
 REPO (vivified | faxbot) for indexers/CLIs
 
-RERANK_BACKEND (default cohere) and COHERE_RERANK_MODEL (default rerank-3.5); optional RERANKER_MODEL for local/HF fallback
+RERANK_BACKEND (default local) and COHERE_RERANK_MODEL (default rerank-3.5); set RERANK_BACKEND=cohere + COHERE_API_KEY for Cohere; RERANKER_MODEL for local/HF model
 
 MQ_REWRITES (multi-query count)
 

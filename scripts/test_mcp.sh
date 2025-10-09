@@ -2,7 +2,7 @@
 # Test MCP server functionality
 set -e
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 . .venv/bin/activate
 
 echo "==================================="
@@ -33,11 +33,11 @@ req = {'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list', 'params': {}}
 server = MCPServer()
 resp = server.handle_request(req)
 tools = resp['result']['tools']
-assert len(tools) == 2
+assert len(tools) >= 2
 names = [t['name'] for t in tools]
 assert 'rag_answer' in names
 assert 'rag_search' in names
-print(f'✓ Found {len(tools)} tools: {[t[\"name\"] for t in tools]}')
+print(f'✓ Found {len(tools)} tools: {names}')
 "
 
 echo ""

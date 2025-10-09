@@ -127,7 +127,7 @@ Returns:
 ## Defaults and Behavior
 
 - Generation defaults to local Qwen 3 (Ollama). Set `GEN_MODEL` and `OLLAMA_URL` accordingly, or switch to OpenAI by setting `OPENAI_API_KEY` and `GEN_MODEL` to an OpenAI model.
-- Reranking defaults to Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`). Provide `COHERE_API_KEY`. Falls back to local cross‑encoder.
+- Reranking defaults to local cross-encoder. Set `RERANK_BACKEND=cohere` + `COHERE_API_KEY` to use Cohere rerank-3.5.
 - LangGraph compiles without Redis if unavailable; Redis is used for checkpointing when present.
 
 ## Agent Rules (Codex Behavior)

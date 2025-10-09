@@ -11,6 +11,8 @@ Server options
 Quick start (local http)
 ```bash
 . .venv/bin/activate
+# Install fastmcp if not already installed
+pip install fastmcp
 export MCP_HTTP_HOST=0.0.0.0 MCP_HTTP_PORT=8013 MCP_HTTP_PATH=/mcp
 python mcp_server_http.py
 # Test (replace host if remote):
