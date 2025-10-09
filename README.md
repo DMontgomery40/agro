@@ -1,3 +1,21 @@
+<div align="center">
+
+# 🎁
+
+## This is not another wrapper.
+
+## This is the gift inside.
+
+
+**The usual setup:** You use a pretty tool that wraps an LLM's API  
+**This setup:** A RAG engine. Claude/Codex wrap around *it*.
+
+</div>
+
+
+
+
+
 # RAG Service - Complete Guide
 
 ---
@@ -36,47 +54,51 @@ This is a RAG (Retrieval-Augmented Generation) engine that:
 
 ## Quick Start
 
-**Prerequisites**: Docker Compose, Python 3.11+. For local inference, install Ollama.
+**Prerequisites**
+- Python 3.11+
+- Docker Engine + Compose
+  - macOS (no Docker Desktop): `brew install colima docker` then `colima start`
+  - macOS (Docker Desktop): install Docker Desktop and start it
+  - Linux: install Docker and Compose via your distro
+- Optional local inference: Ollama installed and running (`ollama list`)
+  - Linux without Python: `apt update && apt install -y python3 python3-venv python3-pip`
 
 ```bash
 # 0) Get the code
 git clone https://github.com/DMontgomery40/rag-service.git
 cd rag-service
 
-# 1) Bring infra + MCP up (always-on helper)
-cd /path/to/rag-service && bash scripts/up.sh
+# 1) Start Docker (macOS without Docker Desktop)
+#     Colima provides Docker on macOS: start it once
+colima start   # if you installed `colima` via Homebrew
 
-# 2) Activate venv and verify deps
-. .venv/bin/activate
-python -c "import fastapi, qdrant_client, bm25s, langgraph; print('✓ fastapi, qdrant_client, bm25s, langgraph OK')"
+# 2) Bring infra + MCP up (Qdrant + Redis)
+bash scripts/up.sh
 
-# 3) Configure repos once, then index
-# Option A: Quick script (from rag-service root)
-python scripts/make_repos_json.py repo-a=/abs/path/a repo-b=/abs/path/b --default repo-a
-# Option B: Interactive quick-setup (run from YOUR repo root)
-python /path/to/rag-service/scripts/quick_setup.py
-# Option C: Manual edit
-cp repos.json.example repos.json && $EDITOR repos.json
-
-# Index one
-REPO=repo-a python index_repo.py
-
-# Or index all configured (REPO unset)
-python index_repo.py
+# 3) One-command setup (recommended)
+#     From THIS folder, pass your repo path/name. If you want to index THIS
+#     repo itself, just use "." and a name you like.
+bash scripts/setup.sh . rag-service
 
 # 4) Start CLI chat (interactive)
-export REPO=repo-a THREAD_ID=my-session
+export REPO=rag-service THREAD_ID=my-session
+python -m venv .venv && . .venv/bin/activate  # if .venv not present yet
 python chat_cli.py
 
-# Or: Run HTTP API (optional)
+# Optional: Run the HTTP API + stream
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+curl "http://127.0.0.1:8012/search?q=oauth&repo=rag-service"
+curl -N "http://127.0.0.1:8012/answer_stream?q=hello&repo=rag-service"
 
-# 5) Smoke test
-curl "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=repo-a"
-
-# MCP tools quick check (stdio mode)
+# MCP tools quick check (stdio)
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 ```
+
+### Common setup hiccups (fast fixes)
+- Docker not found on macOS: install and start Colima: `brew install colima docker && colima start`.
+- “Permission denied” on scripts: run with an interpreter: `python scripts/quick_setup.py` or `bash scripts/setup.sh`.
+- `python: command not found` on Linux: `apt update && apt install -y python3 python3-venv python3-pip`.
+- “Is it frozen?”: use streaming (`python chat_cli.py --stream`) or run `bash scripts/setup.sh ...` and watch progress.
 
 ### Optional (Additive) Features
 

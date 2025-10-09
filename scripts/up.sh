@@ -22,11 +22,17 @@ echo "[up] Starting MCP server in background ..."
 if pgrep -f "python mcp_server.py" >/dev/null; then
   echo "[up] MCP already running."
 else
-  nohup bash -lc ". .venv/bin/activate && python mcp_server.py" >/tmp/mcp_server.log 2>&1 &
-  sleep 1
+  if [ -f "$ROOT_DIR/.venv/bin/python" ] || [ -f "$ROOT_DIR/.venv/Scripts/python.exe" ]; then
+    nohup bash -lc ". $ROOT_DIR/.venv/bin/activate 2>/dev/null || true; python mcp_server.py" >/tmp/mcp_server.log 2>&1 &
+    sleep 1
+    echo "[up] MCP started (see /tmp/mcp_server.log)"
+  else
+    echo "[up] Skipping MCP start: .venv not found."
+    echo "     Run 'bash scripts/setup.sh /abs/path/to/your/repo your-repo' to install deps and configure."
+  fi
 fi
 
-echo "[up] Done. Logs: /tmp/mcp_server.log"
+echo "[up] Done."
 
 # --- Optional: Start local Ollama (Qwen 3) if available ---
 if command -v ollama >/dev/null 2>&1; then
