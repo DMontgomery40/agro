@@ -850,6 +850,88 @@ Purpose: Nudge scoring toward first‑party app code without hiding vendor conte
 - Env: `FAXBOT_PATH_BOOSTS` (comma‑separated substrings; default: `app/,lib/,config/,scripts/,server/,api/,api/app,app/services,app/routers`).
 - Applied only when `repo=faxbot`. Each match adds a small bonus; capped.
 
+## PHASE 17 — Embedding Cache (saves credits)
+
+Purpose: Avoid re-embedding unchanged chunks. Reindex anytime; unchanged vectors are reused.
+
+- Where: `embed_cache.py`, used automatically by `index_repo.py`.
+- Cache path: `out/<REPO>/embed_cache.jsonl` (hash → vector).
+- Behavior: On reindex, only new/changed hashes are embedded; the rest load from the cache.
+
+## PHASE 18 — Slim Qdrant Payload + Local Code Hydration
+
+Purpose: Prevent Qdrant 500s by avoiding large payloads and loading code bodies locally.
+
+- Qdrant payload includes only: `file_path`, `start_line`, `end_line`, `language`, `layer`, `repo`, `hash`, `id`.
+- Code bodies are hydrated from `out/<REPO>/chunks.jsonl` by `hash`/`id` before rerank/generation.
+
+## PHASE 19 — Multi‑Query Retrieval (cheap recall boost)
+
+Purpose: Expand a query into 2–4 phrasings (4o‑mini) and re‑rank the union per‑repo (never fused).
+
+- API:
+  - `search_routed_multi(q, repo_override=None, m=4, final_k=10)` (Python)
+  - Generation auto‑uses this as a second pass if confidence < 0.55.
+- CLI example (Vivified):
+
+cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+. .venv/bin/activate && \
+python - <<'PY'
+from hybrid_search import search_routed_multi
+R = search_routed_multi('Where is ProviderSetupWizard rendered?', repo_override='vivified', m=4, final_k=5)
+print([d['file_path'] for d in R])
+PY
+
+## PHASE 20 — Codebook “Cards” (structured summaries)
+
+Purpose: 1–3 line JSON per chunk (symbols, purpose, routes) to aid retrieval, especially UI/integrations.
+
+- Build (per repo):
+
+cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+. .venv/bin/activate && \
+REPO=vivified python build_cards.py
+
+- Faxbot cards (can be large, use a cap first):
+
+REPO=faxbot CARDS_MAX=300 python build_cards.py
+
+Notes: CARDS_MAX limits how many chunks to summarize on a first pass. Omit to build all.
+
+- Artifacts:
+  - JSONL: `out/<REPO>/cards.jsonl`
+  - BM25: `out/<REPO>/bm25_cards`
+
+## PHASE 21 — Eval Harness (golden questions)
+
+Purpose: Track retrieval hit‑rate (top‑1/top‑k) and correctness.
+
+- Create `golden.json` (example):
+
+[
+  {"q": "Where is ProviderSetupWizard rendered?", "repo": "vivified", "expect_paths": ["core/admin_ui/src/components/ProviderSetupWizard.tsx"]},
+  {"q": "Where do we mask PHI in events?", "repo": "faxbot", "expect_paths": ["app/"]}
+]
+
+- Run:
+
+cd /Users/davidmontgomery/faxbot_folder/rag-service && \
+. .venv/bin/activate && \
+REPO=vivified EVAL_MULTI=1 EVAL_FINAL_K=5 python eval_rag.py
+
+## PHASE 22 — Strict Per‑Repo Routing & Answer Header
+
+- Routing: `search_routed(q, repo_override=None)` always targets exactly one repo (Vivified or Faxbot). `?repo=vivified|faxbot` overrides via API.
+- No fusion: router never combines repos.
+- Answer header: All generated answers include `[repo: vivified]` or `[repo: faxbot]` on the first line.
+
+## PHASE 23 — Faxbot‑Only Path Boosts (env‑tunable)
+
+Purpose: Nudge scoring toward first‑party app code without hiding vendor content.
+
+- Env: `FAXBOT_PATH_BOOSTS` (comma‑separated substrings; default: `app/,lib/,config/,scripts/,server/,api/,api/app,app/services,app/routers`).
+- Applied only when `repo=faxbot`. Each match adds a small bonus; capped.
+
 ===================================================================
 END OF UPDATED RUNBOOK
 ======================
