@@ -1,6 +1,16 @@
 {
-  "default_repo": "project",
+  "default_repo": "agro",
   "repos": [
-    { "name": "project", "path": "." }
+    {
+      "name": "project",
+      "path": "."
+    },
+    {
+      "name": "agro",
+      "path": "/Users/davidmontgomery/agro",
+      "keywords": [],
+      "path_boosts": [],
+      "layer_bonuses": {}
+    }
   ]
 }
