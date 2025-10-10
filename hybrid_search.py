@@ -3,7 +3,13 @@ import json
 import collections
 from typing import List, Dict
 from pathlib import Path
+from config_loader import choose_repo_from_query, get_default_repo, out_dir
 from dotenv import load_dotenv, find_dotenv
+# Load any existing env ASAP so downstream imports (e.g., rerank backend) see them
+try:
+    load_dotenv(override=False)
+except Exception:
+    pass
 from qdrant_client import QdrantClient, models
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -177,12 +183,21 @@ def rrf(
     ranked = sorted(score.items(), key=lambda x: x[1], reverse=True)
     return [pid for pid, _ in ranked[:k]]
 def _load_chunks(repo: str) -> List[Dict]:
-    p = os.path.join(os.path.dirname(__file__), 'out', repo, 'chunks.jsonl')
-    chunks = []
+    """Load minimal chunk metadata (omit code to reduce memory)."""
+    p = os.path.join(out_dir(repo), 'chunks.jsonl')
+    chunks: List[Dict] = []
     if os.path.exists(p):
         with open(p, 'r', encoding='utf-8') as f:
             for line in f:
-                chunks.append(json.loads(line))
+                try:
+                    o = json.loads(line)
+                except Exception:
+                    continue
+                # Drop bulky fields to keep memory bounded
+                o.pop('code', None)
+                o.pop('summary', None)
+                o.pop('keywords', None)
+                chunks.append(o)
     return chunks
 
 def _load_bm25_map(idx_dir: str):
@@ -200,7 +215,7 @@ def _load_bm25_map(idx_dir: str):
     return None
 
 def _load_cards_bm25(repo: str):
-    idx_dir = os.path.join(os.path.dirname(__file__), 'out', repo, 'bm25_cards')
+    idx_dir = os.path.join(out_dir(repo), 'bm25_cards')
     try:
         import bm25s
         retr = bm25s.BM25.load(idx_dir)
@@ -210,7 +225,7 @@ def _load_cards_bm25(repo: str):
 
 def _load_cards_map(repo: str) -> Dict:
     """Load cards to get chunk ID mapping. Returns dict with card index -> chunk_id and chunk_id -> card data."""
-    cards_file = os.path.join(os.path.dirname(__file__), 'out', repo, 'cards.jsonl')
+    cards_file = os.path.join(out_dir(repo), 'cards.jsonl')
     cards_by_idx = {}  # card corpus index -> chunk_id
     cards_by_chunk_id = {}  # chunk_id -> card metadata
     try:
@@ -252,7 +267,7 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
         dense_pairs = []
 
     # ---- Sparse (BM25S) ----
-    idx_dir = os.path.join(os.path.dirname(__file__), 'out', repo, 'bm25_index')
+    idx_dir = os.path.join(out_dir(repo), 'bm25_index')
     retriever = bm25s.BM25.load(idx_dir)
     tokenizer = Tokenizer(stemmer=Stemmer('english'), stopwords='en')
     tokens = tokenizer.tokenize([query])
@@ -302,13 +317,10 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     fused = rrf(dense_ids, sparse_ids, k=max(final_k, 2*final_k)) if dense_pairs else sparse_ids[:final_k]
     by_id = {pid: p for pid,p in (dense_pairs + sparse_pairs)}
     docs = [by_id[pid] for pid in fused if pid in by_id]
-    # Hydrate code bodies from local cache before CE rerank
-    cache = _load_code_cache(repo)
-    for d in docs:
-        if not d.get('code'):
-            h = d.get('hash')
-            cid = str(d.get('id',''))
-            d['code'] = cache['by_hash'].get(h) or cache['by_id'].get(cid) or ''
+    # Hydrate code bodies with a low-memory strategy (lazy, on-demand)
+    HYDRATION_MODE = (os.getenv('HYDRATION_MODE','lazy') or 'lazy').lower()
+    if HYDRATION_MODE != 'none':
+        _hydrate_docs_inplace(repo, docs)
     docs = ce_rerank(query, docs, top_k=final_k)
     # Apply path + layer intent + provider + feature + card + (optional) origin bonuses, then resort
     intent = _classify_query(query)
@@ -336,7 +348,7 @@ def _load_code_cache(repo: str):
     import json
     if repo in _code_cache_by_repo:
         return _code_cache_by_repo[repo]
-    jl = os.path.join(os.path.dirname(__file__), 'out', repo, 'chunks.jsonl')
+    jl = os.path.join(out_dir(repo), 'chunks.jsonl')
     cache: dict[str, dict[str, str]] = {'by_hash': {}, 'by_id': {}}
     try:
         with open(jl, 'r', encoding='utf-8') as f:
@@ -357,6 +369,54 @@ def _load_code_cache(repo: str):
     _code_cache_by_repo[repo] = cache
     return cache
 
+def _hydrate_docs_inplace(repo: str, docs: List[Dict]) -> None:
+    """Fill missing code for the selected docs by streaming chunks.jsonl once.
+
+    Avoids loading the entire repo into memory. Honors HYDRATION_MAX_CHARS to cap snippet size.
+    """
+    needed_ids: set[str] = set()
+    needed_hashes: set[str] = set()
+    for d in docs:
+        if d.get('code'):
+            continue
+        cid = str(d.get('id','') or '')
+        h = d.get('hash')
+        if cid:
+            needed_ids.add(cid)
+        if h:
+            needed_hashes.add(h)
+    if not needed_ids and not needed_hashes:
+        return
+    jl = os.path.join(out_dir(repo), 'chunks.jsonl')
+    max_chars = int(os.getenv('HYDRATION_MAX_CHARS', '2000') or '2000')
+    found_by_id: dict[str, str] = {}
+    found_by_hash: dict[str, str] = {}
+    try:
+        with open(jl, 'r', encoding='utf-8') as f:
+            for line in f:
+                try:
+                    o = json.loads(line)
+                except Exception:
+                    continue
+                cid = str(o.get('id','') or '')
+                h = o.get('hash')
+                code = (o.get('code') or '')
+                if max_chars > 0 and code:
+                    code = code[:max_chars]
+                if cid and cid in needed_ids and cid not in found_by_id:
+                    found_by_id[cid] = code
+                if h and h in needed_hashes and h not in found_by_hash:
+                    found_by_hash[h] = code
+                if len(found_by_id) >= len(needed_ids) and len(found_by_hash) >= len(needed_hashes):
+                    break
+    except FileNotFoundError:
+        return
+    for d in docs:
+        if not d.get('code'):
+            cid = str(d.get('id','') or '')
+            h = d.get('hash')
+            d['code'] = found_by_id.get(cid) or (found_by_hash.get(h) if h else '') or ''
+
 # --- filename/path boosts applied post-rerank ---
 def _apply_filename_boosts(docs: list[dict], question: str) -> None:
     terms = set((question or '').lower().replace('/', ' ').replace('-', ' ').split())
@@ -374,24 +434,24 @@ def _apply_filename_boosts(docs: list[dict], question: str) -> None:
 
 # --- Strict per-repo routing helpers (no fusion) ---
 def route_repo(query: str, default_repo: str | None = None) -> str:
-    q = (query or '').lower()
-    if q.startswith('project:') or ' project' in f' {q}':
-        return 'project'
-    if q.startswith('project:') or ' project' in f' {q}':
-        return 'project'
-    viv_hits = 0
-    for k in ['provider setup wizard','providersetupwizard','pluginsetupwizard','admin_ui','plugin','plugins','kernel','apprise','pushover','hubspot','project']:
-        if k in q:
-            viv_hits += 1
-    fax_hits = 0
-    for k in ['project','sendfax','getfax','asterisk','ami','t.38','cloudflared','hipaa','phi','event log','diagnostic','signalwire','phaxio','documo','sinch']:
-        if k in q:
-            fax_hits += 1
-    if viv_hits > fax_hits:
-        return 'project'
-    if fax_hits > viv_hits:
-        return 'project'
-    return (default_repo or os.getenv('REPO', 'project') or 'project').strip()
+    """Route to a repo using repos.json config and lightweight prefixing.
+
+    - Supports explicit prefix: "<name>: question"
+    - Falls back to keyword voting as configured in repos.json
+    - Defaults to configured default_repo (repos.json) or env REPO
+    """
+    try:
+        # Prefer config-driven choice (handles prefixes + keywords)
+        return choose_repo_from_query(query, default=(default_repo or get_default_repo()))
+    except Exception:
+        # Very safe fallback
+        q = (query or '').lower().strip()
+        if ':' in q:
+            cand, _ = q.split(':', 1)
+            cand = cand.strip()
+            if cand:
+                return cand
+        return (default_repo or os.getenv('REPO', 'project') or 'project').strip()
 
 def search_routed(query: str, repo_override: str | None = None, final_k: int = 10):
     repo = (repo_override or route_repo(query, default_repo=os.getenv('REPO', 'project')) or os.getenv('REPO', 'project')).strip()
@@ -399,6 +459,9 @@ def search_routed(query: str, repo_override: str | None = None, final_k: int = 1
 
 # Multi-query expansion (cheap) and routed search
 def expand_queries(query: str, m: int = 4) -> list[str]:
+    # Fast path: no expansion requested
+    if m <= 1:
+        return [query]
     try:
         sys = "Rewrite a developer query into multiple search-friendly variants without changing meaning."
         user = f"Count: {m}\nQuery: {query}\nOutput one variant per line, no numbering."
