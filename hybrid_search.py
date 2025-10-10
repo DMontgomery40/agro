@@ -5,6 +5,11 @@ from typing import List, Dict
 from pathlib import Path
 from config_loader import choose_repo_from_query, get_default_repo, out_dir
 from dotenv import load_dotenv, find_dotenv
+# Load any existing env ASAP so downstream imports (e.g., rerank backend) see them
+try:
+    load_dotenv(override=False)
+except Exception:
+    pass
 from qdrant_client import QdrantClient, models
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -454,6 +459,9 @@ def search_routed(query: str, repo_override: str | None = None, final_k: int = 1
 
 # Multi-query expansion (cheap) and routed search
 def expand_queries(query: str, m: int = 4) -> list[str]:
+    # Fast path: no expansion requested
+    if m <= 1:
+        return [query]
     try:
         sys = "Rewrite a developer query into multiple search-friendly variants without changing meaning."
         user = f"Count: {m}\nQuery: {query}\nOutput one variant per line, no numbering."
