@@ -6,6 +6,7 @@ __pycache__/
 *.pyd
 *.so
 *$py.class
+.mcp.json
 
 # Distribution / packaging
 .Python
@@ -55,6 +56,11 @@ out/
 data/qdrant/
 data/qdrant.bak.*
 data/redis/
+
+# Local config with secrets (never commit)
+.mcp.json
+.env
+.env.*
 
 # Node
 node_modules/

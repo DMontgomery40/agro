@@ -1,3 +1,5 @@
+![AGRO Banner](docs/images/agro-hero-banner.png)
+
 # AGRO
 
 ## Another Good Rag Option
@@ -17,6 +19,22 @@ This is a RAG (Retrieval-Augmented Generation) engine that:
 - Codex/Claude are clients that call into this engine via MCP; they “wrap” the RAG, not the other way around.
 - We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
 - Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
+
+### Storage Planning Tool
+
+AGRO enables significant flexibility in configuration—but with great power comes great storage bills. Depending on your choices (embeddings, hydration, replication, etc.), you could easily reach 20× your original repository size. Commercial RAGs are expensive for precisely this reason.
+
+**Use our interactive storage calculator to plan your deployment:**
+
+[![AGRO Storage Calculator](docs/images/rag-calculator-screenshot.png)](https://vivified.dev/rag-calculator.html)
+
+**[→ Open the AGRO Storage Calculator](https://vivified.dev/rag-calculator.html)**
+
+The calculator lets you:
+- Estimate storage needs for your specific configuration
+- Compare minimal vs. low-latency deployment strategies
+- Factor in replication, hydration, and precision settings
+- See exactly how much storage each component requires
 
 ## RAG for Code — Comparative Matrix
 
@@ -976,12 +994,59 @@ python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')
 
 4. **Adjust parameters** (see [Advanced Configuration](#advanced-configuration) section)
 
+### Ollama Issues (Apple Silicon)
+
+**High GPU usage / thermal load:**
+
+Both MLX and Ollama use GPU (Metal) on Apple Silicon for LLM inference, not the Neural Engine (ANE). This causes:
+- High GPU utilization (often maxing out)
+- Heat generation and fan noise
+- Note: ANE is not used for large language models - it's for smaller, CoreML-optimized models
+
+**Performance**: MLX and Ollama have similar thermal profiles as both use Metal GPU. MLX may have better memory efficiency due to tighter Apple Silicon integration.
+
+**Ollama keeps restarting after kill:**
+
+If `pkill -9 ollama` or `killall -9 ollama` results in Ollama immediately respawning:
+
+```bash
+# Root cause: Homebrew's launchd service with KeepAlive=true
+
+# Proper fix: Stop the service
+brew services stop ollama
+
+# Verify it's stopped
+ps aux | grep ollama  # Should show nothing
+pgrep ollama          # Should return empty
+
+# Check launchd status
+launchctl list | grep ollama  # Should show nothing after stop
+```
+
+**Why this happens:**
+- Homebrew installs Ollama as a background service (launchd)
+- The service is configured with `KeepAlive=true`
+- When killed, launchd immediately restarts it
+- `brew services stop` properly unloads the service
+
+**Alternative**: If you still want to use Ollama occasionally:
+```bash
+# Stop the background service permanently
+brew services stop ollama
+
+# Run Ollama manually only when needed
+ollama serve  # Run in foreground, Ctrl+C to stop
+```
+
 ---
 
 ## Model Selection
 
 The RAG service defaults to:
-- **Generation**: Local Qwen 3 via Ollama (`GEN_MODEL=qwen3-coder:30b`)
+- **Generation (Apple Silicon)**: MLX with Qwen3-Coder-30B-A3B-Instruct-4bit (`ENRICH_BACKEND=mlx`)
+  - **Why MLX**: Uses Metal GPU acceleration optimized for Apple Silicon unified memory architecture
+  - **vs Ollama**: Better memory efficiency on Apple Silicon, though both use GPU (not ANE)
+- **Generation (Fallback/Other Platforms)**: Ollama with Qwen 3 (`GEN_MODEL=qwen3-coder:30b`)
 - **Embeddings**: OpenAI `text-embedding-3-large` (auto-fallback to local BGE if unavailable)
 - **Reranking**: Local cross-encoder (set `RERANK_BACKEND=cohere` + `COHERE_API_KEY` to use Cohere rerank-3.5)
 
@@ -989,24 +1054,29 @@ The RAG service defaults to:
 
 | Goal | Embedding | Generation | Cost |
 |------|-----------|------------|------|
-| **Best Performance** | Voyage voyage-3-large | Qwen 3 (local) | $ |
+| **Apple Silicon (M1-M4)** | nomic-embed-text | MLX + Qwen3-30B-A3B-4bit | Free |
+| **Best Performance** | Voyage voyage-3-large | MLX + Qwen3-30B (Mac) | $ |
 | **Lowest Cost** | Google Gemini (free) | Gemini 2.5 Flash | Free |
 | **Fully Local** | nomic-embed-text | Qwen2.5-Coder 7B | Free |
 | **Privacy First** | BGE-M3 (local) | DeepSeek-Coder | Free |
 
 ### Self-Hosted Setup
 
-**For Mac (M1/M2/M3/M4):**
+**For Mac (M1/M2/M3/M4) - RECOMMENDED:**
 ```bash
-# Install Ollama
-brew install ollama
+# Install MLX (Metal-optimized for Apple Silicon GPU)
+pip install mlx mlx-lm
 
-# For 8-16GB RAM
-ollama pull nomic-embed-text
-ollama pull qwen2.5-coder:7b
+# Download Qwen3 model (one-time, ~17GB)
+python -c "from mlx_lm import load; load('mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit')"
 
-# For 32GB+ RAM
-ollama pull qwen2.5-coder:32b
+# Update .env to use MLX
+echo "ENRICH_BACKEND=mlx" >> .env
+echo "GEN_MODEL=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit" >> .env
+
+# Alternative: Ollama (also GPU-based, similar performance)
+# brew install ollama
+# ollama pull qwen3-coder:30b  # 32GB+ RAM required
 ```
 
 **For NVIDIA GPU (16GB+ VRAM):**
