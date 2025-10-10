@@ -4,6 +4,13 @@ from typing import List, Dict
 from rerankers import Reranker
 from typing import Optional
 
+# Load .env early so config reads below see the right values
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False)
+except Exception:
+    pass
+
 _HF_PIPE = None  # optional transformers pipeline for models that require trust_remote_code
 
 _RERANKER = None
@@ -67,6 +74,12 @@ def get_reranker() -> Reranker:
 def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dict]:
     if not results:
         return []
+    # Optional hard disable for environments without model/network
+    if RERANK_BACKEND in ('none', 'off', 'disabled'):
+        # Assign neutral scores based on original order
+        for i, r in enumerate(results):
+            r['rerank_score'] = float(1.0 - (i * 0.01))
+        return results[:top_k]
     model_name = DEFAULT_MODEL
     # Optional Cohere backend (remote API)
     if RERANK_BACKEND == 'cohere':
