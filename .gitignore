@@ -6,6 +6,7 @@ __pycache__/
 *.pyd
 *.so
 *$py.class
+.mcp.json
 
 # Distribution / packaging
 .Python
