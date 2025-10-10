@@ -48,7 +48,7 @@ venv.bak/
 */.pdm-build/
 
 # Build / cache / data
-out/
+out.noindex/
 .dist/
 .cache
 *.egg-info/
