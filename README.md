@@ -1,8 +1,5 @@
 ![AGRO Banner](docs/images/agro-hero-banner.png)
 
-# AGRO
-
-## Another Good Rag Option
 
 ---
 
