@@ -6,7 +6,7 @@ from env_model import generate_text
 load_dotenv()
 REPO = os.getenv('REPO','project').strip()
 MAX_CHUNKS = int(os.getenv('CARDS_MAX','0') or '0')
-BASE = os.path.join(os.path.dirname(__file__), 'out', REPO)
+BASE = os.path.join(os.path.dirname(__file__), 'out.noindex', REPO)
 CHUNKS = os.path.join(BASE, 'chunks.jsonl')
 CARDS = os.path.join(BASE, 'cards.jsonl')
 CARDS_TXT = os.path.join(BASE, 'cards.txt')
