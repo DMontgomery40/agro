@@ -7,11 +7,10 @@ try:
 except Exception as e:
     raise RuntimeError("openai>=1.x is required for Responses API") from e
 
-# Model pin (Responses API): default to OpenAI gpt-4o-mini-latest
-# Default to a valid, stable alias. Users may override with a dated pin
-# (e.g., gpt-4o-mini-2024-07-18) or another provider via GEN_MODEL.
-# Prefer a widely available small model alias
-_DEFAULT_MODEL = os.getenv("GEN_MODEL", os.getenv("ENRICH_MODEL", "qwen3-coder:30b"))
+# Model pin (Responses API): default to OpenAI gpt-4o-mini
+# Users can override with GEN_MODEL (e.g., gpt-4.1, o4-mini, gpt-4o)
+# Avoid local defaults; prefer OpenAI to reduce confusion.
+_DEFAULT_MODEL = os.getenv("GEN_MODEL", os.getenv("ENRICH_MODEL", "gpt-4o-mini"))
 
 _client = None
 

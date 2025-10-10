@@ -143,8 +143,8 @@ def analyze_repo_semantic(repo_path, repo_name):
 
 if __name__ == '__main__':
     repos = {
-        'project': '/opt/app/faxbot_folder/project',
-        'faxbot': '/opt/app/faxbot_folder/faxbot'
+        'project': '/opt/app//project',
+        'project': '/opt/app//project'
     }
     
     all_results = {}
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     print(f'{"="*80}')
     
     viv_terms = {t['term'] for t in all_results['project'][:30]}
-    fax_terms = {t['term'] for t in all_results['faxbot'][:30]}
+    fax_terms = {t['term'] for t in all_results['project'][:30]}
     
     shared = viv_terms & fax_terms
     viv_only = viv_terms - fax_terms

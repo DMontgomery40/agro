@@ -13,7 +13,7 @@ FINAL_K = int(os.getenv('EVAL_FINAL_K','5'))
 Golden file format (golden.json):
 [
   {"q": "Where is ProviderSetupWizard rendered?", "repo": "project", "expect_paths": ["core/admin_ui/src/components/ProviderSetupWizard.tsx"]},
-  {"q": "Where do we mask PHI in events?", "repo": "faxbot", "expect_paths": ["app/..."]}
+  {"q": "Where do we mask PHI in events?", "repo": "project", "expect_paths": ["app/..."]}
 ]
 """
 

@@ -10,7 +10,8 @@ import sys
 import os
 import json
 import time
-sys.path.insert(0, '/opt/app/faxbot_folder/rag-service')
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, ROOT_DIR)
 
 try:
     import tiktoken
@@ -25,7 +26,7 @@ print("=" * 80)
 
 # Test query
 question = "How are fax jobs created and dispatched"
-repo = "faxbot"
+repo = "project"
 
 print(f"\nTest query: '{question}'")
 print(f"Repo: {repo}\n")

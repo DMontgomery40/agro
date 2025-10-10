@@ -43,7 +43,7 @@ def trigger(domain: str) -> dict:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: netlify_deploy.py [faxbot.net|project.dev|both|list]", file=sys.stderr)
+        print("Usage: netlify_deploy.py [project.net|project.dev|both|list]", file=sys.stderr)
         sys.exit(2)
     cmd = sys.argv[1].strip().lower()
     if cmd == "list":
@@ -53,7 +53,7 @@ def main():
             out.append({"id": s.get("id"), "name": s.get("name"), "url": s.get("url"), "custom_domain": s.get("custom_domain")})
         print(json.dumps(out, indent=2))
         return
-    domains = ["faxbot.net", "project.dev"] if cmd == "both" else [cmd]
+    domains = ["project.net", "project.dev"] if cmd == "both" else [cmd]
     results = [trigger(d) for d in domains]
     print(json.dumps(results, indent=2))
 

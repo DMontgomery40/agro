@@ -1,6 +1,11 @@
 import os, re, hashlib
 from typing import Dict, List, Optional
-from tree_sitter_languages import get_parser
+
+# Optional import: tree_sitter_languages may be unavailable on newer Python versions.
+try:
+    from tree_sitter_languages import get_parser as _ts_get_parser
+except Exception:
+    _ts_get_parser = None
 
 LANG_MAP = {
     ".py": "python", ".js": "javascript", ".jsx": "javascript",
@@ -42,7 +47,9 @@ def nonws_len(s:str)->int:
 
 def extract_imports(src:str, lang:str)->List[str]:
     try:
-        parser = get_parser(lang)
+        if _ts_get_parser is None:
+            raise RuntimeError("tree_sitter_languages not available")
+        parser = _ts_get_parser(lang)
         tree = parser.parse(bytes(src, "utf-8"))
         imports = []
         def walk(n):
@@ -138,7 +145,9 @@ def _guess_name(lang:str, text:str)->Optional[str]:
 def chunk_code(src:str, fpath:str, lang:str, target:int=900)->List[Dict]:
     """AST-aware chunking around functions/classes; falls back if no nodes."""
     try:
-        parser = get_parser(lang)
+        if _ts_get_parser is None:
+            raise RuntimeError("tree_sitter_languages not available")
+        parser = _ts_get_parser(lang)
         tree = parser.parse(bytes(src, "utf-8"))
         wanted = FUNC_NODES.get(lang, set())
         nodes = []

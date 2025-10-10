@@ -6,9 +6,9 @@
 2. **MCP Tools**:
    - `rag_answer(repo, question)` → full answer + citations
    - `rag_search(repo, question, top_k)` → retrieval only
-   - `netlify_deploy(domain)` → trigger Netlify build (`faxbot.net`, `project.dev`, or `both`) – requires `NETLIFY_API_KEY`
+   - `netlify_deploy(domain)` → trigger Netlify build (`project.net`, `project.dev`, or `both`) – requires `NETLIFY_API_KEY`
    - `web_get(url, max_bytes)` → HTTP GET for allowlisted hosts (openai.com, platform.openai.com, github.com, openai.github.io)
-3. **Codex Registration** - Already registered as `faxbot-rag`
+3. **Codex Registration** - Already registered as `project-rag`
 4. **Agent Rules** - Updated in `AGENTS.md`
 5. **Eval Loop** - `eval_loop.py` with baselines and regression tracking
 6. **Golden Tests** - `golden.json` with 10 test cases
@@ -18,7 +18,7 @@
 - Bring infra + MCP up (always-on helper):
   - `bash scripts/up.sh`
 - Index both repos (once per code change):
-  - `REPO=project python index_repo.py && REPO=faxbot python index_repo.py`
+  - `REPO=project python index_repo.py && REPO=project python index_repo.py`
 - Defaults:
   - Generation → Qwen 3 via Ollama (`GEN_MODEL` + `OLLAMA_URL`)
   - Rerank → Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
@@ -28,7 +28,7 @@
 ### Check MCP Registration
 ```bash
 codex mcp list
-# Should show: faxbot-rag
+# Should show: project-rag
 ```
 
 ### Test MCP Tools Manually
@@ -78,7 +78,7 @@ Open a new Codex session and try:
 ```
 User: Use rag_search to find code related to "OAuth token validation" in project
 
-User: Use rag_answer to explain how inbound faxes are processed in faxbot
+User: Use rag_answer to explain how inbound faxes are processed in project
 ```
 
 Codex will automatically call the registered MCP tools and display results.
@@ -95,7 +95,7 @@ mcp_server.py
                   Qdrant + Redis + BM25
                           ↓
                   out/project/chunks.jsonl
-                  out/faxbot/chunks.jsonl
+                  out/project/chunks.jsonl
 ```
 
 ## Agent Behavior Rules
@@ -105,7 +105,7 @@ These are now documented in `AGENTS.md`:
 1. ✗ Never assume user is wrong about paths/functions
 2. ✓ Always call RAG tools first before claiming something doesn't exist
 3. ✗ Never hallucinate file paths
-4. ✓ Respect repo boundaries (project ≠ faxbot)
+4. ✓ Respect repo boundaries (project ≠ project)
 5. ✓ Trust RAG citations as authoritative
 
 ## Files Created
@@ -138,7 +138,7 @@ These are now documented in `AGENTS.md`:
 - Verify collections: `curl -s http://127.0.0.1:6333/collections | jq`
 
 **"Codex can't find tools"**
-- Re-register: `codex mcp remove faxbot-rag && codex mcp add faxbot-rag -- .venv/bin/python mcp_server.py`
+- Re-register: `codex mcp remove project-rag && codex mcp add project-rag -- .venv/bin/python mcp_server.py`
 - Ensure MCP is running: `bash scripts/status.sh`
 
 ## References

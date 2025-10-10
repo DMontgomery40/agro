@@ -1,12 +1,12 @@
 **MANDATORY: Use RAG (rag_search) first**
 
 - Always call `rag_search` to locate files and exact line ranges before proposing changes or answering. Do not guess; do not rely on memory or broad greps.
-- Route every query to the correct repo via the `repo` argument: `faxbot` or `project`. Never mix results.
+- Route every query to the correct repo via the `repo` argument: `project` or `project`. Never mix results.
 - After retrieval, you may call `rag_answer` for a synthesized answer with citations. Answers must include file paths and line ranges from retrieval.
 
 How to use RAG locally vs externally:
 - Local Python (preferred in-repo):
-  - `cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate`
+  - `cd path/to/your/rag-service && . .venv/bin/activate`
   - Run a quick search:
     ```bash
     python - <<'PY'
@@ -16,16 +16,14 @@ How to use RAG locally vs externally:
     PY
     ```
 - MCP tools (for agents/IDE/outside this repo):
-  - One-time: `codex mcp add rag-service -- python /opt/app/faxbot_folder/rag-service/mcp_server.py && codex mcp list`
+  - One-time: `codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && codex mcp list`
   - Then call `rag_search` / `rag_answer` with `repo` and `question`.
-- Quick infra checks (Qdrant/Redis):
-  - `cd /opt/app/faxbot_folder/rag-service/infra && docker compose up -d`
+  - `cd path/to/your/rag-service/infra && docker compose up -d`
   - `curl -s http://127.0.0.1:6333/collections`
   - `docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redis-cli ping`
 - Index after code changes (required for fresh results):
-  - `cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && REPO=project python index_repo.py && REPO=faxbot python index_repo.py`
-- Optional HTTP answers (no search endpoint):
-  - `cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
+  - `cd path/to/your/rag-service && . .venv/bin/activate && REPO=project python index_repo.py && REPO=project python index_repo.py`
+  - `cd path/to/your/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
   - `curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=project"`
 
 
@@ -65,7 +63,7 @@ python -c "import fastapi, qdrant_client, bm25s; print('✓ fastapi, qdrant_clie
 
 ### 1) Bring up Infra (Qdrant + Redis) and verify
 ```bash
-cd /opt/app/faxbot_folder/rag-service/infra && \
+cd path/to/your/rag-service/infra && \
 echo "compose up" && docker compose up -d && \
 echo "check qdrant" && curl -s http://127.0.0.1:6333/collections || true && \
 echo "check redis" && docker ps --format '{{.Names}}' | grep -i redis >/dev/null && \
@@ -74,15 +72,15 @@ docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redi
 
 ### 2) Index (run after code changes)
 ```bash
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 echo "index project" && REPO=project python index_repo.py && \
-echo "index faxbot" && REPO=faxbot python index_repo.py && \
+echo "index project" && REPO=project python index_repo.py && \
 echo "verify collections" && curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
 ```
 
 ### 3) Run the HTTP service (in its own terminal)
 ```bash
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 ```
 
@@ -95,7 +93,7 @@ curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=proj
 
 ### 4) MCP server (for agents)
 ```bash
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 python mcp_server.py
 ```
@@ -103,13 +101,13 @@ python mcp_server.py
 Register with Codex CLI (one-time):
 
 ```bash
-codex mcp add rag-service -- python /opt/app/faxbot_folder/rag-service/mcp_server.py && \
+codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && \
 codex mcp list
 ```
 
 ### 5) Eval loop (local)
 ```bash
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 echo "run evals" && python eval_loop.py && \
 echo "save baseline (optional)" && python eval_loop.py --baseline && \
 echo "compare vs baseline" && python eval_loop.py --compare
@@ -117,7 +115,7 @@ echo "compare vs baseline" && python eval_loop.py --compare
 
 ### 6) Minimal CLI chat
 ```bash
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 export REPO=project && export THREAD_ID=my-session && \
 python chat_cli.py
 ```
@@ -146,11 +144,11 @@ Answer + Citations (must include file paths + line ranges)
 ```
 
 ### Repository routing
-Routing is explicit via `repo` (project or faxbot).
+Routing is explicit via `repo` (project or project).
 
-Qdrant collections are separate (e.g., `code_chunks_project`, `code_chunks_faxbot`).
+Qdrant collections are separate (e.g., `code_chunks_project`, `code_chunks_project`).
 
-Every answer must begin with `[repo: project]` or `[repo: faxbot]`.
+Every answer must begin with `[repo: project]` or `[repo: project]`.
 
 ---
 
@@ -234,7 +232,7 @@ LangGraph memory/checkpoint.
 
 ### RAG
 
-- `REPO` (project | faxbot) for indexers/CLIs
+- `REPO` (project | project) for indexers/CLIs
 - `RERANKER_MODEL` (default `BAAI/bge-reranker-v2-m3`)
 - `MQ_REWRITES` (multi-query count)
 
@@ -271,9 +269,9 @@ The indexer excludes vendor/3rd-party libraries to prevent retrieval pollution. 
 After updating `exclude_globs.txt`, re-index both repos:
 
 ```bash
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd /opt/app//rag-service && . .venv/bin/activate && \
 REPO=project python index_repo.py && \
-REPO=faxbot python index_repo.py
+REPO=project python index_repo.py
 ```
 
 ---
@@ -303,7 +301,7 @@ Expand golden set when agents miss or hallucinate.
 ### Run local evals
 
 ```bash
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd /opt/app//rag-service && . .venv/bin/activate && \
 python eval_loop.py && python eval_loop.py --compare
 ```
 
@@ -329,14 +327,14 @@ echo "redis ping" && docker exec "$(docker ps --format '{{.Names}}' | grep -i re
 ```bash
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name' && \
 echo "re-index project" && REPO=project python index_repo.py && \
-echo "re-index faxbot" && REPO=faxbot python index_repo.py
+echo "re-index project" && REPO=project python index_repo.py
 ```
 
 ### MCP not visible
 
 ```bash
 codex mcp list || true && \
-codex mcp add rag-service -- python /opt/app/faxbot_folder/rag-service/mcp_server.py
+codex mcp add rag-service -- python /opt/app//rag-service/mcp_server.py
 ```
 
 ### Low retrieval quality

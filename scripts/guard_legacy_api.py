@@ -2,11 +2,11 @@
 import os, sys, re
 
 SCAN_ALL = os.getenv("SCAN_ALL", "0").lower() in {"1","true","yes"}
-ROOTS = ["/opt/app/faxbot_folder/rag-service"]
+ROOTS = [os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))]
 if SCAN_ALL:
     ROOTS += [
-        "/opt/app/faxbot_folder/project",
-        "/opt/app/faxbot_folder/faxbot",
+        os.getenv('PROJECT_PATH', '/abs/path/to/project'),
+        os.getenv('project_PATH', '/abs/path/to/project'),
     ]
 
 BAD_PATTERNS = [

@@ -4,15 +4,15 @@ from hybrid_search import search_routed_multi
 TESTS = [
     ('project','ai studio','easy'),
     ('project','TBAC trait system','easy'),
-    ('faxbot','plugin builder','easy'),
-    ('faxbot','webhook verification','easy'),
+    ('project','plugin builder','easy'),
+    ('project','webhook verification','easy'),
     ('project','three lane gateway','medium'),
     ('project','plugin sandbox isolation','medium'),
-    ('faxbot','provider adapter traits','medium'),
-    ('faxbot','canonical event normalization','medium'),
+    ('project','provider adapter traits','medium'),
+    ('project','canonical event normalization','medium'),
     ('project','how does TBAC prevent PHI access','hard'),
     ('project','what is the general purpose of project','hard'),
-    ('faxbot','how do different providers interact','hard'),
+    ('project','how do different providers interact','hard'),
 ]
 
 os.environ.setdefault('EMBEDDING_TYPE', 'local')

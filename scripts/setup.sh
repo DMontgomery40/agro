@@ -38,18 +38,22 @@ need_python() {
   esac
 }
 
-# Ensure python3
-if ! command -v python3 >/dev/null 2>&1; then
+# Choose best Python (prefer 3.11 for compatibility)
+PY_BIN=""
+for cand in python3.11 python3.10 python3; do
+  if command -v "$cand" >/dev/null 2>&1; then PY_BIN="$cand"; break; fi
+done
+if [ -z "$PY_BIN" ]; then
   need_python
   exit 1
 fi
 
 cd "$ROOT_DIR"
 
-# Create venv if missing
+# Create venv if missing (with selected Python)
 if [ ! -f .venv/bin/python ] && [ ! -f .venv/Scripts/python.exe ]; then
-  echo "[setup] Creating virtualenv (.venv)"
-  python3 -m venv .venv
+  echo "[setup] Creating virtualenv (.venv) with $PY_BIN"
+  "$PY_BIN" -m venv .venv
 fi
 
 # Choose venv python
@@ -71,4 +75,3 @@ if [ -n "${REPO_NAME}" ]; then args+=("--name" "${REPO_NAME}"); fi
 "$VENV_PY" "${args[@]}"
 
 echo "[setup] Done"
-

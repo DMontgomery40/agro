@@ -13,7 +13,8 @@ bm25s[hf]==0.2.14
 PyStemmer==3.0.0
 
 # Chunking / parsing
-tree_sitter_languages==1.10.2
+# Prefer wheels that exist; skip on Python >=3.13 and fall back to regex chunking
+tree_sitter_languages==1.10.2; python_version < "3.13"
 
 # Reranking & Torch (MPS on Apple Silicon)
 rerankers>=0.4.1

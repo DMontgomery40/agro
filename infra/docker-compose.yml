@@ -11,7 +11,8 @@ services:
       - QDRANT__STORAGE__USE_MMAP=false
       - QDRANT__STORAGE__ON_DISK_PERSISTENCE=true
     volumes:
-      - /opt/app/faxbot_folder/data/qdrant:/qdrant/storage
+      # Use repo-relative storage directory (infra/.. -> data)
+      - ../data/qdrant:/qdrant/storage
   redis:
     image: redis/redis-stack:7.2.0-v10
     container_name: rag-redis
@@ -21,4 +22,5 @@ services:
     environment:
       - REDIS_ARGS=--appendonly yes
     volumes:
-      - /opt/app/faxbot_folder/data/redis:/data
+      # Use repo-relative storage directory (infra/.. -> data)
+      - ../data/redis:/data

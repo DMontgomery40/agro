@@ -78,8 +78,8 @@ def find_discriminative_keywords(repo_path, top_n=50):
 
 if __name__ == '__main__':
     repos = {
-        'project': '/opt/app/faxbot_folder/project',
-        'faxbot': '/opt/app/faxbot_folder/faxbot'
+        'project': os.getenv('PROJECT_PATH', '/abs/path/to/project'),
+        'project': os.getenv('project_PATH', '/abs/path/to/project')
     }
     
     all_results = {}
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     print(f'{"="*80}')
     
     viv_keywords = {k['keyword'] for k in all_results['project'][:30]}
-    fax_keywords = {k['keyword'] for k in all_results['faxbot'][:30]}
+    fax_keywords = {k['keyword'] for k in all_results['project'][:30]}
     
     overlap = viv_keywords & fax_keywords
     print(f'\nShared keywords (cause confusion): {len(overlap)}')
