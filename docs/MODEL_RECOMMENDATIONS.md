@@ -117,8 +117,24 @@ This guide helps you choose embedding and inference models based on your require
   - 7B: 8GB+ RAM
   - 14B: 16GB+ RAM
   - 30B: 32GB+ RAM (Mac M4 Max recommended)
-- **Setup**: `ollama pull qwen3-coder:30b`
+- **Setup (Ollama)**: `ollama pull qwen3-coder:30b`
+- **Setup (MLX - Apple Silicon)**: `pip install mlx mlx-lm` then `python -c "from mlx_lm import load; load('mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit')"`
 - **Speed**: 100+ tokens/sec on M4 Max
+
+#### MLX vs Ollama (Apple Silicon)
+- **MLX**:
+  - Direct Metal GPU integration
+  - Optimized for Apple Silicon unified memory
+  - Uses GPU, NOT Neural Engine (ANE is for smaller CoreML models)
+  - Better memory efficiency
+  - Setup: `pip install mlx mlx-lm`
+- **Ollama**:
+  - Also uses Metal GPU on Apple Silicon
+  - Similar thermal profile to MLX
+  - Easier multi-platform support
+  - More straightforward model management
+  - Setup: `brew install ollama`
+- **Verdict**: Both are good options - MLX may have slight memory efficiency edge, Ollama is more portable
 
 #### DeepSeek-Coder V3
 - **Variants**: 16B (~9GB), 236B (multi-GPU)
