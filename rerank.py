@@ -8,7 +8,8 @@ _HF_PIPE = None  # optional transformers pipeline for models that require trust_
 
 _RERANKER = None
 
-DEFAULT_MODEL = os.getenv('RERANKER_MODEL', 'cross-encoder/ms-marco-MiniLM-L-6-v2')
+# Default to a strong open-source cross-encoder; allow env override
+DEFAULT_MODEL = os.getenv('RERANKER_MODEL', 'BAAI/bge-reranker-v2-m3')
 # Default backend: local (set RERANK_BACKEND=cohere + COHERE_API_KEY to use Cohere API)
 RERANK_BACKEND = (os.getenv('RERANK_BACKEND', 'local') or 'local').lower()
 # Default Cohere model (override via COHERE_RERANK_MODEL). Accepts 'rerank-3.5' or 'rerank-2.5'.
@@ -102,9 +103,22 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
             pairs.append({'text': query, 'text_pair': code_snip})
         try:
             out = pipe(pairs, truncation=True)
+            raw = []
             for i, o in enumerate(out):
                 score = float(o.get('score', 0.0))
-                results[i]['rerank_score'] = score
+                s = _normalize(score, model_name)
+                results[i]['rerank_score'] = s
+                raw.append(s)
+            # Calibrate scores to 0..1 range per request
+            if raw:
+                mn, mx = min(raw), max(raw)
+                rng = (mx - mn)
+                if rng > 1e-9:
+                    for r in results:
+                        r['rerank_score'] = (float(r.get('rerank_score', 0.0)) - mn) / rng
+                elif mx != 0.0:
+                    for r in results:
+                        r['rerank_score'] = float(r.get('rerank_score', 0.0)) / abs(mx)
             results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
             return results[:top_k]
         except Exception:
@@ -121,8 +135,21 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
         # HF pipeline already used above; should not reach here
         return results[:top_k]
     ranked = rr.rank(query=query, docs=docs, doc_ids=list(range(len(docs))))
+    raw_scores = []
     for res in ranked.results:
         idx = res.document.doc_id
-        results[idx]['rerank_score'] = _normalize(res.score, model_name)
+        s = _normalize(res.score, model_name)
+        results[idx]['rerank_score'] = s
+        raw_scores.append(s)
+    # Calibrate to [0,1] per call for stable gating across backends
+    if raw_scores:
+        mn, mx = min(raw_scores), max(raw_scores)
+        rng = (mx - mn)
+        if rng > 1e-9:
+            for r in results:
+                r['rerank_score'] = (float(r.get('rerank_score', 0.0)) - mn) / rng
+        elif mx != 0.0:
+            for r in results:
+                r['rerank_score'] = float(r.get('rerank_score', 0.0)) / abs(mx)
     results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
     return results[:top_k]

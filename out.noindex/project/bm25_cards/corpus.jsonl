@@ -1,0 +1,138 @@
+{"id":0,"text":"./serve_rag.py"}
+{"id":1,"text":"./serve_rag.py"}
+{"id":2,"text":"search Search for relevant code locations without generation and return file paths, line ranges, and rerank scores.  ./serve_rag.py"}
+{"id":3,"text":"./rerank.py"}
+{"id":4,"text":"_maybe_init_hf_pipeline get_reranker Initialize and retrieve a Hugging Face pipeline or reranker for text classification/ranking tasks.  ./rerank.py"}
+{"id":5,"text":"./rerank.py"}
+{"id":6,"text":"./config_loader.py"}
+{"id":7,"text":"load_repos Load repository configuration from a JSON file or environment variables.  ./config_loader.py"}
+{"id":8,"text":"./config_loader.py"}
+{"id":9,"text":"./config_loader.py"}
+{"id":10,"text":"choose_repo_from_query Selects the most relevant repository based on a query string using keyword matching.  ./config_loader.py"}
+{"id":11,"text":"app Runs a Uvicorn server for a RAG application with configurable environment settings.  ./faxbot_rag.py"}
+{"id":12,"text":"./hybrid_search.py"}
+{"id":13,"text":"./hybrid_search.py"}
+{"id":14,"text":"./hybrid_search.py"}
+{"id":15,"text":"./hybrid_search.py"}
+{"id":16,"text":"./hybrid_search.py"}
+{"id":17,"text":"./hybrid_search.py"}
+{"id":18,"text":"./hybrid_search.py"}
+{"id":19,"text":"./hybrid_search.py"}
+{"id":20,"text":"_get_embedding Generates embeddings for input text using different embedding models based on configuration.  ./hybrid_search.py"}
+{"id":21,"text":"./hybrid_search.py"}
+{"id":22,"text":"./hybrid_search.py"}
+{"id":23,"text":"_load_cards_map Loads card data from a JSONL file and returns mappings between card indices and chunk IDs, and chunk IDs and card metadata.  ./hybrid_search.py"}
+{"id":24,"text":"./hybrid_search.py"}
+{"id":25,"text":"./hybrid_search.py"}
+{"id":26,"text":"./hybrid_search.py"}
+{"id":27,"text":"./hybrid_search.py"}
+{"id":28,"text":"./hybrid_search.py"}
+{"id":29,"text":"search_routed_multi Searches for code snippets matching a query across multiple variants and reranks results.  ./hybrid_search.py"}
+{"id":30,"text":"_should_index_file _prune_dirs_in_place Filter out unwanted files and directories for indexing.  ./filtering.py"}
+{"id":31,"text":"./env_model.py"}
+{"id":32,"text":"./env_model.py"}
+{"id":33,"text":"./env_model.py"}
+{"id":34,"text":"./eval_loop.py"}
+{"id":35,"text":"run_eval_with_results Runs evaluation and returns detailed results including accuracy metrics and hit information.  ./eval_loop.py"}
+{"id":36,"text":"./eval_loop.py"}
+{"id":37,"text":"./eval_loop.py"}
+{"id":38,"text":"./eval_loop.py"}
+{"id":39,"text":"main watch_mode run_eval_with_results save_baseline compare_with_baseline Runs an evaluation loop for RAG with optional baseline comparison and file watching capabilities.  ./eval_loop.py"}
+{"id":40,"text":"./build_cards.py"}
+{"id":41,"text":"./build_cards.py"}
+{"id":42,"text":"./mcp_server_http.py"}
+{"id":43,"text":"./mcp_server_http.py"}
+{"id":44,"text":"./mcp_server_http.py"}
+{"id":45,"text":"_blocked Blocks legacy Chat Completions API usage and redirects to Responses API  ./sitecustomize.py"}
+{"id":46,"text":"./langgraph_app.py"}
+{"id":47,"text":"should_use_multi_query retrieve_node Determine if a multi-query approach should be used for retrieval and retrieve relevant documents based on the question and repository context.  ./langgraph_app.py"}
+{"id":48,"text":"./langgraph_app.py"}
+{"id":49,"text":"generate_node Generates a response to a question using code context and citations, with optional fallback retrieval.  ./langgraph_app.py"}
+{"id":50,"text":"fallback_node Provides a fallback response when local code context is insufficient for generating an answer.  ./langgraph_app.py"}
+{"id":51,"text":"build_graph retrieve_node rewrite_query generate_node fallback_node route_after_retrieval Builds and compiles a state graph for RAG processing with conditional routing and Redis checkpointer.  ./langgraph_app.py"}
+{"id":52,"text":"./eval_rag.py"}
+{"id":53,"text":"Evaluates search performance by comparing expected and actual results from a golden dataset.  ./eval_rag.py"}
+{"id":54,"text":"Provides language-specific parsing utilities and configuration for code analysis.  ./ast_chunker.py"}
+{"id":55,"text":"./ast_chunker.py"}
+{"id":56,"text":"./ast_chunker.py"}
+{"id":57,"text":"collect_files Collects a list of file paths from given root directories, excluding specified patterns and directories.  ./ast_chunker.py"}
+{"id":58,"text":"./ast_chunker.py"}
+{"id":59,"text":"./ast_chunker.py"}
+{"id":60,"text":"./metadata_enricher.py"}
+{"id":61,"text":"enrich Enriches code content with summary and keywords using an external API.  ./metadata_enricher.py"}
+{"id":62,"text":"app Runs a Uvicorn server for a RAG application with configurable environment settings.  ./vivified_rag.py"}
+{"id":63,"text":"./chat_cli.py"}
+{"id":64,"text":"./chat_cli.py"}
+{"id":65,"text":"main ChatCLI Entry point for the CLI chat application that initializes dependencies and starts the chat interface.  ./chat_cli.py"}
+{"id":66,"text":"./qdrant_recreate_fallback.py"}
+{"id":67,"text":"recreate_collection_safe QdrantClient Safely recreates a Qdrant collection with fallback error handling.  ./qdrant_recreate_fallback.py"}
+{"id":68,"text":"./index_repo.py"}
+{"id":69,"text":"./index_repo.py"}
+{"id":70,"text":"./index_repo.py"}
+{"id":71,"text":"./index_repo.py"}
+{"id":72,"text":"./index_repo.py"}
+{"id":73,"text":"./index_repo.py"}
+{"id":74,"text":"./index_repo.py"}
+{"id":75,"text":"embed_texts_voyage Generates embeddings for a list of texts using the Voyage AI API.  ./index_repo.py"}
+{"id":76,"text":"./index_repo.py"}
+{"id":77,"text":"./embed_cache.py"}
+{"id":78,"text":"EmbeddingCache Caches and retrieves text embeddings to avoid recomputation.  ./embed_cache.py"}
+{"id":79,"text":"./mcp_server.py"}
+{"id":80,"text":"./mcp_server.py"}
+{"id":81,"text":"./node_mcp/server.js"}
+{"id":82,"text":"./node_mcp/server.js"}
+{"id":83,"text":"./node_mcp/server.js"}
+{"id":84,"text":"./scripts/quick_token_test.py"}
+{"id":85,"text":"./scripts/quick_token_test.py"}
+{"id":86,"text":"./scripts/quick_token_test.py"}
+{"id":87,"text":"./scripts/netlify_deploy.py"}
+{"id":88,"text":"trigger Triggers a build for a given domain and returns build status information.  ./scripts/netlify_deploy.py"}
+{"id":89,"text":"main trigger Deploy or list Netlify sites based on command-line arguments.  ./scripts/netlify_deploy.py"}
+{"id":90,"text":"./scripts/guard_legacy_api.py"}
+{"id":91,"text":"main Scans codebase for legacy APIs/models and reports violations.  ./scripts/guard_legacy_api.py"}
+{"id":92,"text":"./scripts/measure_overhead.py"}
+{"id":93,"text":"./scripts/measure_overhead.py"}
+{"id":94,"text":"./scripts/test_token_savings.py"}
+{"id":95,"text":"./scripts/test_token_savings.py"}
+{"id":96,"text":"./scripts/test_token_savings.py"}
+{"id":97,"text":"./scripts/test_token_savings.py"}
+{"id":98,"text":"./scripts/test_token_savings.py"}
+{"id":99,"text":"./scripts/eval_gate_guard.py"}
+{"id":100,"text":"main Validates answers in a JSONL file to ensure they contain required headers or citations.  ./scripts/eval_gate_guard.py"}
+{"id":101,"text":"./scripts/analyze_keywords_v2.py"}
+{"id":102,"text":"./scripts/analyze_keywords_v2.py"}
+{"id":103,"text":"./scripts/analyze_keywords_v2.py"}
+{"id":104,"text":"./scripts/test_token_comparison.py"}
+{"id":105,"text":"./scripts/test_token_comparison.py"}
+{"id":106,"text":"./scripts/test_token_comparison.py"}
+{"id":107,"text":"./scripts/test_token_comparison.py"}
+{"id":108,"text":"./scripts/test_token_comparison.py"}
+{"id":109,"text":"./scripts/test_token_comparison.py"}
+{"id":110,"text":"./scripts/test_token_comparison.py"}
+{"id":111,"text":"./scripts/quick_setup.py"}
+{"id":112,"text":"write_repos_json Updates or creates a repositories configuration file with a new repository entry and optionally sets it as the default.  ./scripts/quick_setup.py"}
+{"id":113,"text":"./scripts/quick_setup.py"}
+{"id":114,"text":"ensure_venv_and_deps Creates a virtual environment and installs required dependencies for a RAG application.  ./scripts/quick_setup.py"}
+{"id":115,"text":"./scripts/quick_setup.py"}
+{"id":116,"text":"./scripts/quick_setup.py"}
+{"id":117,"text":"./scripts/quick_setup.py"}
+{"id":118,"text":"./scripts/quick_setup.py"}
+{"id":119,"text":"./scripts/quick_setup.py"}
+{"id":120,"text":"./scripts/measure_token_savings.py"}
+{"id":121,"text":"./scripts/measure_token_savings.py"}
+{"id":122,"text":"./scripts/measure_token_savings.py"}
+{"id":123,"text":"./scripts/measure_token_savings.py"}
+{"id":124,"text":"./scripts/make_repos_json.py"}
+{"id":125,"text":"./scripts/make_repos_json.py"}
+{"id":126,"text":"./scripts/benchmark_improvements.py"}
+{"id":127,"text":"./scripts/benchmark_improvements.py"}
+{"id":128,"text":"./scripts/analyze_keywords.py"}
+{"id":129,"text":"./scripts/analyze_keywords.py"}
+{"id":130,"text":"./scripts/analyze_keywords.py"}
+{"id":131,"text":"./scripts/full_comparison.py"}
+{"id":132,"text":"./scripts/full_comparison.py"}
+{"id":133,"text":"./scripts/full_comparison.py"}
+{"id":134,"text":"./scripts/full_comparison.py"}
+{"id":135,"text":"./scripts/full_comparison.py"}
+{"id":136,"text":"./scripts/full_comparison.py"}
+{"id":137,"text":"./scripts/full_comparison.py"}

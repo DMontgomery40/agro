@@ -1,0 +1,139 @@
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./serve_rag.py", "id": "59bf7c28b427"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./serve_rag.py", "id": "40d06ae8f06d"}
+{"symbols": ["search"], "purpose": "Search for relevant code locations without generation and return file paths, line ranges, and rerank scores.", "routes": [], "file_path": "./serve_rag.py", "id": "96146003c458"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./rerank.py", "id": "937d51fe0b33"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./rerank.py", "id": "a7edd6abe1b4"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./rerank.py", "id": "7c060a11ae5f"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./config_loader.py", "id": "b08e7de8189f"}
+{"symbols": ["load_repos"], "purpose": "Load repository configuration from file or environment variables.", "routes": [], "file_path": "./config_loader.py", "id": "a27a604397e6"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./config_loader.py", "id": "d578207b43ed"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./config_loader.py", "id": "0d4925ab263c"}
+{"symbols": ["choose_repo_from_query"], "purpose": "Selects the most relevant repository based on a query string using keyword matching and voting.", "routes": [], "file_path": "./config_loader.py", "id": "a49b799fddb8"}
+{"symbols": ["app"], "purpose": "Runs a Uvicorn server for a RAG application with configurable environment settings.", "routes": [], "file_path": "./faxbot_rag.py", "id": "877afdbd76d1"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "a0deb11c70ac"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "78b7e6af82b0"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "86ffedd1a255"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "fc20f2ae9b82"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "a6bfb4486db6"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "e6552e597e9d"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "7ad428c3c6ef"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "d3cbc596b68b"}
+{"symbols": ["_get_embedding"], "purpose": "Generates embeddings for input text using different embedding models based on configuration.", "routes": [], "file_path": "./hybrid_search.py", "id": "d954fc7e7332"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "a7238838e86b"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "f2e22f179e84"}
+{"symbols": ["_load_cards_map"], "purpose": "Loads card data from a JSONL file and returns mappings between card indices and chunk IDs, and chunk IDs and card metadata.", "routes": [], "file_path": "./hybrid_search.py", "id": "a59b44a30be6"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "39f12b577867"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "728dd3ad0b3b"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "a1b2e2272215"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "cbf4485c9e6a"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./hybrid_search.py", "id": "2bb47e3d90bc"}
+{"symbols": ["search_routed_multi"], "purpose": "Searches for code snippets matching a query across multiple variants and reranks results.", "routes": [], "file_path": "./hybrid_search.py", "id": "2c3b1bedc6b4"}
+{"symbols": ["_should_index_file", "_prune_dirs_in_place"], "purpose": "Filter out unwanted files and directories for indexing.", "routes": [], "file_path": "./filtering.py", "id": "52d98b4f98cd"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./env_model.py", "id": "97ac48583078"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./env_model.py", "id": "0117120ec94b"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./env_model.py", "id": "fdd0b690f2a6"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./eval_loop.py", "id": "220a7ab6b861"}
+{"symbols": ["run_eval_with_results"], "purpose": "Runs evaluation and returns detailed results including accuracy metrics and hit information.", "routes": [], "file_path": "./eval_loop.py", "id": "31489168d06b"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./eval_loop.py", "id": "96aa81086abf"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./eval_loop.py", "id": "df4e7e4d073d"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./eval_loop.py", "id": "7a62691f2549"}
+{"symbols": ["main", "watch_mode", "run_eval_with_results", "save_baseline", "compare_with_baseline"], "purpose": "Runs an evaluation loop for RAG with optional baseline comparison and file watching capabilities.", "routes": [], "file_path": "./eval_loop.py", "id": "135079d64a2d"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./build_cards.py", "id": "2516b9191fad"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./build_cards.py", "id": "acb9e850c0d2"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./mcp_server_http.py", "id": "a979b0708cd0"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./mcp_server_http.py", "id": "347bbff48da1"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./mcp_server_http.py", "id": "8701bb6d84f4"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./sitecustomize.py", "id": "55ff8882f195"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./langgraph_app.py", "id": "aba920110252"}
+{"symbols": ["should_use_multi_query", "retrieve_node"], "purpose": "Determine if a multi-query approach should be used for retrieval and retrieve relevant documents based on the question and repository context.", "routes": [], "file_path": "./langgraph_app.py", "id": "82dee534374b"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./langgraph_app.py", "id": "78d5257d142b"}
+{"symbols": ["generate_node"], "purpose": "Generates a response to a question using code context and citations, with optional fallback retrieval.", "routes": [], "file_path": "./langgraph_app.py", "id": "3b8a6df43620"}
+{"symbols": ["fallback_node"], "purpose": "Provides a fallback response when local code confidence is low", "routes": [], "file_path": "./langgraph_app.py", "id": "e76a558ee73b"}
+{"symbols": ["build_graph", "retrieve_node", "rewrite_query", "generate_node", "fallback_node", "route_after_retrieval"], "purpose": "Builds and compiles a state graph for RAG-based question answering with conditional routing and Redis-based state persistence.", "routes": [], "file_path": "./langgraph_app.py", "id": "5a92b351509c"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./eval_rag.py", "id": "7f76a17bde40"}
+{"symbols": [], "purpose": "Evaluates search performance by comparing predicted paths against expected paths from a golden dataset.", "routes": [], "file_path": "./eval_rag.py", "id": "9646ff6e96f6"}
+{"symbols": [], "purpose": "Provides language-specific parsing utilities and configuration for code analysis.", "routes": [], "file_path": "./ast_chunker.py", "id": "6c36bc54ab2f"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./ast_chunker.py", "id": "4ee49ef3ac31"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./ast_chunker.py", "id": "e4d5d10a3acc"}
+{"symbols": ["collect_files"], "purpose": "Recursively collects file paths from given root directories while excluding specified patterns and directories.", "routes": [], "file_path": "./ast_chunker.py", "id": "55d6bbc6dafd"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./ast_chunker.py", "id": "0e1fae8f5bc0"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./ast_chunker.py", "id": "b4beb61b4d37"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./metadata_enricher.py", "id": "519dc99a8ca6"}{"symbols": [], "purpose": "", "routes": [], "file_path": "./ast_chunker.py", "id": "b4beb61b4d37"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./metadata_enricher.py", "id": "519dc99a8ca6"}
+{"symbols": ["enrich"], "purpose": "Enriches code content with summary and keywords using an external API.", "routes": [], "file_path": "./metadata_enricher.py", "id": "a6b40648adbc"}
+{"symbols": ["app"], "purpose": "Runs a Uvicorn server for a RAG application with configurable environment settings.", "routes": [], "file_path": "./vivified_rag.py", "id": "e974af23ffc0"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./chat_cli.py", "id": "674277983ec7"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./chat_cli.py", "id": "5609c0d57c41"}
+{"symbols": ["main", "ChatCLI"], "purpose": "Entry point for the CLI chat application that initializes dependencies and starts the chat interface.", "routes": [], "file_path": "./chat_cli.py", "id": "4ace7bb9ced7"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./qdrant_recreate_fallback.py", "id": "5427985db9df"}
+{"symbols": ["recreate_collection_safe", "QdrantClient"], "purpose": "Safely recreates a Qdrant collection with fallback error handling.", "routes": [], "file_path": "./qdrant_recreate_fallback.py", "id": "19f7f16cae54"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "8869e8b38f98"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "a444a881549f"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "5665133ed4b7"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "9c18af37b9fe"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "1f0ca1437b5f"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "816d0de4f4bc"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "6f401ade15d9"}
+{"symbols": ["embed_texts_voyage"], "purpose": "Generates embeddings for a list of texts using the Voyage AI API.", "routes": [], "file_path": "./index_repo.py", "id": "07158eab385e"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./index_repo.py", "id": "d492bcfee3d3"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./embed_cache.py", "id": "f051bb0b7722"}
+{"symbols": ["EmbeddingCache"], "purpose": "Caches and retrieves text embeddings to avoid recomputation.", "routes": [], "file_path": "./embed_cache.py", "id": "d2ee568f109b"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./mcp_server.py", "id": "53e7322aad13"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./mcp_server.py", "id": "15c6b7e18463"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./node_mcp/server.js", "id": "8fd21cb709e4"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./node_mcp/server.js", "id": "ce97083b5289"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./node_mcp/server.js", "id": "8221d0902ca4"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_token_test.py", "id": "9bd7ce5ba6d5"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_token_test.py", "id": "3dd65b23cebc"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_token_test.py", "id": "c974221bc5e1"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/netlify_deploy.py", "id": "c516abb5ab6f"}
+{"symbols": ["trigger"], "purpose": "Triggers a build for a given domain and returns build status information.", "routes": [], "file_path": "./scripts/netlify_deploy.py", "id": "a8e7d2bf53cd"}
+{"symbols": ["main", "trigger"], "purpose": "Deploy or list Netlify sites based on command-line arguments.", "routes": [], "file_path": "./scripts/netlify_deploy.py", "id": "ed55f812adfc"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/guard_legacy_api.py", "id": "4a9cbb80b88f"}
+{"symbols": ["main"], "purpose": "Scans codebase for legacy APIs/models and reports violations.", "routes": [], "file_path": "./scripts/guard_legacy_api.py", "id": "c24be9b59422"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/measure_overhead.py", "id": "ec3213b61183"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/measure_overhead.py", "id": "c3747b1dfd40"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_savings.py", "id": "37b8a98253d8"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_savings.py", "id": "228113c2d98e"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_savings.py", "id": "d864224af412"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_savings.py", "id": "df2ce42270d0"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_savings.py", "id": "3923149458e3"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/eval_gate_guard.py", "id": "dc8a11fc0789"}
+{"symbols": ["main"], "purpose": "Validates answers in a JSONL file to ensure they contain required headers or citations.", "routes": [], "file_path": "./scripts/eval_gate_guard.py", "id": "0d81cc40c5d6"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/analyze_keywords_v2.py", "id": "36e26d1d9cb2"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/analyze_keywords_v2.py", "id": "c80b09ea0144"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/analyze_keywords_v2.py", "id": "735eae1b2511"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_comparison.py", "id": "db6dd1bf7ffe"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_comparison.py", "id": "1322846946e9"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_comparison.py", "id": "95fbbe61cc8c"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_comparison.py", "id": "63f2dcedca21"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_comparison.py", "id": "6766622847f8"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_comparison.py", "id": "40daea73e3e7"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/test_token_comparison.py", "id": "704936506f88"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "193402616cb5"}
+{"symbols": ["write_repos_json"], "purpose": "Updates or creates a repositories configuration file with a new repository entry and optionally sets it as the default.", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "c2739d65c9ec"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "8a89cda417de"}
+{"symbols": ["ensure_venv_and_deps"], "purpose": "Creates a virtual environment and installs required dependencies for a RAG application.", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "7f40b9ef0b99"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "c38a67bbaebe"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "359fb8076266"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "4295c6662a78"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "0423aad20bee"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/quick_setup.py", "id": "266ba30cb106"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/measure_token_savings.py", "id": "2f2d0fe1fd0c"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/measure_token_savings.py", "id": "b69560a9ae13"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/measure_token_savings.py", "id": "a46e3df62af5"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/measure_token_savings.py", "id": "7b2e4adcd997"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/make_repos_json.py", "id": "ce057cce6658"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/make_repos_json.py", "id": "cc32e60a98fc"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/benchmark_improvements.py", "id": "d267e98ef2e9"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/benchmark_improvements.py", "id": "9f9f1b038d00"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/analyze_keywords.py", "id": "84623265e668"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/analyze_keywords.py", "id": "a54346cfef09"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/analyze_keywords.py", "id": "aeeead32fd65"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/full_comparison.py", "id": "09a586f2c02f"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/full_comparison.py", "id": "aec9b9686b11"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/full_comparison.py", "id": "c24862cdab00"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/full_comparison.py", "id": "97460d0b978c"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/full_comparison.py", "id": "42e6aca73871"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/full_comparison.py", "id": "41908c0d3f7c"}
+{"symbols": [], "purpose": "", "routes": [], "file_path": "./scripts/full_comparison.py", "id": "0cf2a58dfaae"}
