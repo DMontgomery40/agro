@@ -170,7 +170,7 @@ class MCPServer:
     def handle_netlify_deploy(self, domain: str) -> Dict[str, Any]:
         targets: list[str]
         if domain == "both":
-            targets = ["faxbot.net", "project.dev"]
+            targets = ["project.net", "project.dev"]
         else:
             targets = [domain]
         results = []
@@ -212,7 +212,7 @@ class MCPServer:
             return {"error": "url must start with http(s)"}
         if not self._is_allowed_url(url):
             return {"error": "host not allowlisted"}
-        req = urllib.request.Request(url, method="GET", headers={"User-Agent": "faxbot-rag-mcp/1.0"})
+        req = urllib.request.Request(url, method="GET", headers={"User-Agent": "project-rag-mcp/1.0"})
         try:
             with urllib.request.urlopen(req, timeout=20) as resp:
                 raw = resp.read(max_bytes + 1)
@@ -242,7 +242,7 @@ class MCPServer:
           "params": {
             "name": "rag.answer" | "rag.search",
             "arguments": {
-              "repo": "project" | "faxbot",
+              "repo": "project" | "project",
               "question": "...",
               "top_k": 10  # optional, search only
             }
@@ -261,14 +261,14 @@ class MCPServer:
                     "tools": [
                         {
                             "name": "rag_answer",
-                            "description": "Get RAG answer with citations for a question in a specific repo (project|faxbot)",
+                            "description": "Get RAG answer with citations for a question in a specific repo (project|project)",
                             "inputSchema": {
                                 "type": "object",
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'project' or 'faxbot'",
-                                        "enum": ["project", "faxbot"]
+                                        "description": "Repository name: 'project' or 'project'",
+                                        "enum": ["project", "project"]
                                     },
                                     "question": {
                                         "type": "string",
@@ -286,8 +286,8 @@ class MCPServer:
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'project' or 'faxbot'",
-                                        "enum": ["project", "faxbot"]
+                                        "description": "Repository name: 'project' or 'project'",
+                                        "enum": ["project", "project"]
                                     },
                                     "question": {
                                         "type": "string",
@@ -304,14 +304,14 @@ class MCPServer:
                         },
                         {
                             "name": "netlify_deploy",
-                            "description": "Trigger a Netlify build for faxbot.net, project.dev, or both (uses NETLIFY_API_KEY)",
+                            "description": "Trigger a Netlify build for project.net, project.dev, or both (uses NETLIFY_API_KEY)",
                             "inputSchema": {
                                 "type": "object",
                                 "properties": {
                                     "domain": {
                                         "type": "string",
                                         "description": "Target domain",
-                                        "enum": ["faxbot.net", "project.dev", "both"],
+                                        "enum": ["project.net", "project.dev", "both"],
                                         "default": "both"
                                     }
                                 }
@@ -401,7 +401,7 @@ class MCPServer:
                         "tools": {}
                     },
                     "serverInfo": {
-                        "name": "faxbot-rag-mcp",
+                        "name": "project-rag-mcp",
                         "version": "1.0.0"
                     }
                 }

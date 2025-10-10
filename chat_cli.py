@@ -9,7 +9,7 @@ Usage:
     python chat_cli.py
 
 Commands:
-    /repo <name>    - Switch repository (project or faxbot)
+    /repo <name>    - Switch repository (project or project)
     /save           - Save conversation checkpoint
     /clear          - Clear conversation history
     /help           - Show commands
@@ -18,7 +18,12 @@ Commands:
 import os
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv
+except Exception:
+    # Graceful fallback if python-dotenv is not installed yet
+    def load_dotenv(*args, **kwargs):
+        return False
 
 # Load environment
 load_dotenv(Path(__file__).parent / ".env")
@@ -86,8 +91,8 @@ class ChatCLI:
 
     def switch_repo(self, new_repo: str):
         """Switch to a different repository."""
-        if new_repo not in ['project', 'faxbot']:
-            console.print(f"[red]✗[/red] Invalid repo. Use 'project' or 'faxbot'")
+        if new_repo not in ['project', 'project']:
+            console.print(f"[red]✗[/red] Invalid repo. Use 'project' or 'project'")
             return
 
         self.repo = new_repo
@@ -98,7 +103,7 @@ class ChatCLI:
         help_text = """
 ## Commands
 
-- `/repo <name>` - Switch repository (project or faxbot)
+- `/repo <name>` - Switch repository (project or project)
 - `/save` - Save conversation checkpoint
 - `/clear` - Clear conversation history
 - `/help` - Show this help
@@ -113,7 +118,7 @@ Ask a question:
 
 Switch repo:
 ```
-> /repo faxbot
+> /repo project
 > How do we handle inbound faxes?
 ```
         """
@@ -163,7 +168,7 @@ Type your question or use `/help` for commands.
                         if len(parts) > 1:
                             self.switch_repo(parts[1].strip())
                         else:
-                            console.print("[red]Usage:[/red] /repo <project|faxbot>")
+                            console.print("[red]Usage:[/red] /repo <project|project>")
                         continue
 
                     elif cmd == '/save':

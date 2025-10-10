@@ -9,14 +9,14 @@ What you’ll measure
 
 Prereqs
 - MCP/infra running: `bash scripts/up.sh`
-- Re-index both repos: `REPO=project python index_repo.py && REPO=faxbot python index_repo.py`
+- Re-index both repos: `REPO=project python index_repo.py && REPO=project python index_repo.py`
 - For Qwen: `OLLAMA_URL=http://127.0.0.1:11434/api` and the model available (e.g., `qwen3-coder:30b`)
 - For OpenAI: `OPENAI_API_KEY` exported
 
 Recommended dataset
 - Start with the two high-signal queries used in `scripts/test_token_comparison.py`:
   - “Where is OAuth token validated” (project)
-  - “How are fax jobs created and dispatched” (faxbot)
+  - “How are fax jobs created and dispatched” (project)
 
 Run: Qwen 3 (local)
 ```bash

@@ -12,7 +12,7 @@
 - **MCP Server** (`mcp_server.py`) - 277 lines, full JSON-RPC 2.0 protocol
   - `rag.answer(repo, question)` → LangGraph pipeline with answer + citations
   - `rag.search(repo, question, top_k)` → retrieval-only for debugging
-- **Codex Integration** - Registered via `codex mcp add faxbot-rag`
+- **Codex Integration** - Registered via `codex mcp add project-rag`
 - **Claude Code Integration** - Config template provided for native tool use
 - **Tested & Working** - All protocol methods verified (initialize, tools/list, tools/call)
 
@@ -22,7 +22,7 @@
   - Watch mode (auto re-run on file changes)
   - Per-question regression analysis
   - JSON output for CI/CD integration
-- **`golden.json`** - 10 starter test cases (5 project, 5 faxbot)
+- **`golden.json`** - 10 starter test cases (5 project, 5 project)
 - **`eval_rag.py`** - Simple runner (kept for compatibility)
 
 ### 3. ✓ Comprehensive Documentation (1042+ lines)
@@ -78,11 +78,11 @@
 ### 1. Use MCP with Codex
 ```bash
 # Already registered!
-codex mcp list  # Verify faxbot-rag is listed
+codex mcp list  # Verify project-rag is listed
 
 # In Codex chat:
 # "Use rag.search to find OAuth code in project"
-# "Use rag.answer to explain how inbound faxes work in faxbot"
+# "Use rag.answer to explain how inbound faxes work in project"
 ```
 
 ### 2. Use MCP with Claude Code
@@ -90,9 +90,9 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "faxbot-rag": {
-      "command": "/opt/app/faxbot_folder/rag-service/.venv/bin/python",
-      "args": ["/opt/app/faxbot_folder/rag-service/mcp_server.py"],
+    "project-rag": {
+      "command": "/opt/app//rag-service/.venv/bin/python",
+      "args": ["/opt/app//rag-service/mcp_server.py"],
       "env": {"OPENAI_API_KEY": "sk-proj-..."}
     }
   }
@@ -176,7 +176,7 @@ rag-redis: Up 18 hours
 ```bash
 $ curl -s http://127.0.0.1:6333/collections | jq -r '.result.collections[].name'
 code_chunks
-code_chunks_faxbot
+code_chunks_project
 code_chunks_project
 ```
 
@@ -208,7 +208,7 @@ $ python -c "from mcp_server import MCPServer; resp = MCPServer().handle_request
 1. ✗ Never assume user is wrong about file paths
 2. ✓ Always call RAG tools first before claiming something doesn't exist
 3. ✗ Never hallucinate file paths
-4. ✓ Respect repo boundaries (project ≠ faxbot)
+4. ✓ Respect repo boundaries (project ≠ project)
 5. ✓ Trust RAG citations as authoritative
 
 ### Eval Features

@@ -29,7 +29,7 @@ def health():
 @app.get("/answer", response_model=Answer)
 def answer(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: project|faxbot")
+    repo: Optional[str] = Query(None, description="Repository override: project|project")
 ):
     """Answer a question using strict per-repo routing.
 
@@ -44,7 +44,7 @@ def answer(
 @app.get("/search")
 def search(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: project|faxbot"),
+    repo: Optional[str] = Query(None, description="Repository override: project|project"),
     top_k: int = Query(10, description="Number of results to return")
 ):
     """Search for relevant code locations without generation.

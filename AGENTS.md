@@ -1,12 +1,12 @@
 **MANDATORY: Use RAG (rag_search) first**
 
 - Always call `rag_search` to locate files and exact line ranges before proposing changes or answering. Do not guess; do not rely on memory or broad greps.
-- Route every query to the correct repo via the `repo` argument: `faxbot` or `project`. Never mix results.
+- Route every query to the correct repo via the `repo` argument: `project` or `project`. Never mix results.
 - After retrieval, you may call `rag_answer` for a synthesized answer with citations. Answers must include file paths and line ranges from retrieval.
 
 How to use RAG locally vs externally:
 - Local Python (preferred in-repo):
-  - `cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate`
+  - `cd path/to/your/rag-service && . .venv/bin/activate`
   - Run a quick search:
     ```bash
     python - <<'PY'
@@ -16,15 +16,15 @@ How to use RAG locally vs externally:
     PY
     ```
 - MCP tools (for agents/IDE/outside this repo):
-  - One-time: `codex mcp add rag-service -- python /opt/app/faxbot_folder/rag-service/mcp_server.py && codex mcp list`
+  - One-time: `codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && codex mcp list`
   - Then call `rag_search` / `rag_answer` with `repo` and `question`.
 - Bring up infra + MCP (always-on helper):
-  - `cd /opt/app/faxbot_folder/rag-service && bash scripts/up.sh`
+  - `cd path/to/your/rag-service && bash scripts/up.sh`
   - Health: `bash scripts/status.sh`
 - Index after code changes (required for fresh results):
-  - `cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && REPO=project python index_repo.py && REPO=faxbot python index_repo.py`
+  - `cd path/to/your/rag-service && . .venv/bin/activate && REPO=project python index_repo.py && REPO=project python index_repo.py`
 - Optional HTTP answers (no search endpoint):
-  - `cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
+  - `cd path/to/your/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
   - `curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=project"`
 
 
@@ -60,18 +60,18 @@ python -c "import fastapi, qdrant_client, bm25s; print('✓ fastapi, qdrant_clie
 1) Bring up Infra + MCP (always-on)
 bash
 Copy code
-cd /opt/app/faxbot_folder/rag-service && bash scripts/up.sh && bash scripts/status.sh
+cd path/to/your/rag-service && bash scripts/up.sh && bash scripts/status.sh
 2) Index (run after code changes)
 bash
 Copy code
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 echo "index project" && REPO=project python index_repo.py && \
-echo "index faxbot" && REPO=faxbot python index_repo.py && \
+echo "index project" && REPO=project python index_repo.py && \
 echo "verify collections" && curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
 3) Run the HTTP service (in its own terminal)
 bash
 Copy code
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 Smoke check (second terminal):
 
@@ -82,26 +82,26 @@ curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=proj
 4) MCP server (for agents)
 bash
 Copy code
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 python mcp_server.py
 Register with Codex CLI (one-time):
 
 bash
 Copy code
-codex mcp add rag-service -- python /opt/app/faxbot_folder/rag-service/mcp_server.py && \
+codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && \
 codex mcp list
 5) Eval loop (local)
 bash
 Copy code
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 echo "run evals" && python eval_loop.py && \
 echo "save baseline (optional)" && python eval_loop.py --baseline && \
 echo "compare vs baseline" && python eval_loop.py --compare
 6) Minimal CLI chat
 bash
 Copy code
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 export REPO=project && export THREAD_ID=my-session && \
 python chat_cli.py
 Architecture (ground truth)
@@ -124,11 +124,11 @@ Generation (OpenAI model; default small/fast for answers)
    ↓
 Answer + Citations (must include file paths + line ranges)
 Repository routing
-Routing is explicit via repo (project or faxbot).
+Routing is explicit via repo (project or project).
 
-Qdrant collections are separate (e.g., code_chunks_project, code_chunks_faxbot).
+Qdrant collections are separate (e.g., code_chunks_project, code_chunks_project).
 
-Every answer must begin with [repo: project] or [repo: faxbot].
+Every answer must begin with [repo: project] or [repo: project].
 
 Key Components
 Indexing (index_repo.py)
@@ -207,7 +207,7 @@ REDIS_URL (default redis://127.0.0.1:6379/0)
 
 RAG
 
-REPO (project | faxbot) for indexers/CLIs
+REPO (project | project) for indexers/CLIs
 
 RERANK_BACKEND (default local) and COHERE_RERANK_MODEL (default rerank-3.5); set RERANK_BACKEND=cohere + COHERE_API_KEY for Cohere; RERANKER_MODEL for local/HF model
 
@@ -248,7 +248,7 @@ Run local evals
 
 bash
 Copy code
-cd /opt/app/faxbot_folder/rag-service && . .venv/bin/activate && \
+cd path/to/your/rag-service && . .venv/bin/activate && \
 python eval_loop.py && python eval_loop.py --compare
 Tuning tips
 
@@ -271,13 +271,13 @@ bash
 Copy code
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name' && \
 echo "re-index project" && REPO=project python index_repo.py && \
-echo "re-index faxbot" && REPO=faxbot python index_repo.py
+echo "re-index project" && REPO=project python index_repo.py
 MCP not visible
 
 bash
 Copy code
 codex mcp list || true && \
-codex mcp add rag-service -- python /opt/app/faxbot_folder/rag-service/mcp_server.py
+codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py
 Low retrieval quality
 
 bash

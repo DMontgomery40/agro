@@ -4,6 +4,7 @@ import hashlib
 from typing import List, Dict
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
+from config_loader import get_repo_paths, out_dir
 from ast_chunker import lang_from_path, collect_files, chunk_code
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -64,12 +65,13 @@ if OPENAI_API_KEY and OPENAI_API_KEY.strip().upper() in {"SK-REPLACE", "REPLACE"
 QDRANT_URL = os.getenv('QDRANT_URL','http://127.0.0.1:6333')
 # Repo scoping
 REPO = os.getenv('REPO', 'project').strip()
-_BASES = {
-    'project': ['/opt/app/faxbot_folder/project'],
-    'faxbot': ['/opt/app/faxbot_folder/faxbot'],
-}
-BASES = _BASES.get(REPO, _BASES['project'])
-OUTDIR = f'/opt/app/faxbot_folder/rag-service/out/{REPO}'
+# Resolve repo paths and outdir from config (repos.json or env)
+try:
+    BASES = get_repo_paths(REPO)
+except Exception:
+    # Fallback to current directory when no config present (best-effort)
+    BASES = [str(Path(__file__).resolve().parent)]
+OUTDIR = out_dir(REPO)
 # Allow explicit collection override (for versioned collections per embedding config)
 COLLECTION = os.getenv('COLLECTION_NAME', f'code_chunks_{REPO}')
 
@@ -320,6 +322,11 @@ def main() -> None:
             f.write(json.dumps(c, ensure_ascii=False)+'\n')
     print('BM25 index saved.')
 
+    # Optionally skip dense embeddings/Qdrant for fast local-only BM25 indexing
+    if (os.getenv('SKIP_DENSE','0') or '0').strip() == '1':
+        print('Skipping dense embeddings and Qdrant upsert (SKIP_DENSE=1).')
+        return
+
     client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
     # Choose text for embedding (optionally enriched)
     texts = []
@@ -359,42 +366,46 @@ def main() -> None:
                 print(f'Embedding via OpenAI failed ({e}); falling back to local embeddings.')
         if not embs:
             embs = embed_texts_local(texts)
-    q = QdrantClient(url=QDRANT_URL)
-    q.recreate_collection(
-        collection_name=COLLECTION,
-        vectors_config={'dense': models.VectorParams(size=len(embs[0]), distance=models.Distance.COSINE)}
-    )
-    points = []
     point_ids: List[str] = []
-    for c, v in zip(chunks, embs):
-        # Derive a stable UUID from the chunk id string to satisfy Qdrant (expects int or UUID)
-        cid = str(c['id'])
-        pid = str(uuid.uuid5(uuid.NAMESPACE_DNS, cid))
-        # Create slim payload without code (code is stored locally in chunks.jsonl)
-        slim_payload = {
-            'id': c.get('id'),
-            'file_path': c.get('file_path'),
-            'start_line': c.get('start_line'),
-            'end_line': c.get('end_line'),
-            'layer': c.get('layer'),
-            'repo': c.get('repo'),
-            'origin': c.get('origin'),
-            'hash': c.get('hash'),
-            'language': c.get('language')
-        }
-        # Remove None values to keep payload minimal
-        slim_payload = {k: v for k, v in slim_payload.items() if v is not None}
-        points.append(models.PointStruct(id=pid, vector={'dense': v}, payload=slim_payload))
-        point_ids.append(pid)
-        if len(points) == 64:
+    try:
+        q = QdrantClient(url=QDRANT_URL)
+        q.recreate_collection(
+            collection_name=COLLECTION,
+            vectors_config={'dense': models.VectorParams(size=len(embs[0]), distance=models.Distance.COSINE)}
+        )
+        points = []
+        for c, v in zip(chunks, embs):
+            # Derive a stable UUID from the chunk id string to satisfy Qdrant (expects int or UUID)
+            cid = str(c['id'])
+            pid = str(uuid.uuid5(uuid.NAMESPACE_DNS, cid))
+            # Create slim payload without code (code is stored locally in chunks.jsonl)
+            slim_payload = {
+                'id': c.get('id'),
+                'file_path': c.get('file_path'),
+                'start_line': c.get('start_line'),
+                'end_line': c.get('end_line'),
+                'layer': c.get('layer'),
+                'repo': c.get('repo'),
+                'origin': c.get('origin'),
+                'hash': c.get('hash'),
+                'language': c.get('language')
+            }
+            # Remove None values to keep payload minimal
+            slim_payload = {k: v for k, v in slim_payload.items() if v is not None}
+            points.append(models.PointStruct(id=pid, vector={'dense': v}, payload=slim_payload))
+            point_ids.append(pid)
+            if len(points) == 64:
+                q.upsert(COLLECTION, points=points)
+                points = []
+        if points:
             q.upsert(COLLECTION, points=points)
-            points = []
-    if points:
-        q.upsert(COLLECTION, points=points)
-    # Persist point id mapping aligned to BM25 corpus order
-    import json as _json
-    _json.dump({str(i): pid for i, pid in enumerate(point_ids)}, open(os.path.join(OUTDIR,'bm25_index','bm25_point_ids.json'),'w'))
-    print(f'Indexed {len(chunks)} chunks to Qdrant (embeddings: {len(embs[0])} dims).')
+        # Persist point id mapping aligned to BM25 corpus order
+        import json as _json
+        _json.dump({str(i): pid for i, pid in enumerate(point_ids)}, open(os.path.join(OUTDIR,'bm25_index','bm25_point_ids.json'),'w'))
+        print(f'Indexed {len(chunks)} chunks to Qdrant (embeddings: {len(embs[0])} dims).')
+    except Exception as e:
+        # Allow offline usage (BM25-only search) when Qdrant is unavailable
+        print(f"Qdrant unavailable or failed to index ({e}); continuing with BM25-only index. Dense retrieval will be disabled.")
 
 if __name__ == '__main__':
     main()

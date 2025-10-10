@@ -601,7 +601,7 @@
       ]
     }
   ],
-  "faxbot": [
+  "project": [
     {
       "term": "node",
       "score": 36.43589743589744,
@@ -825,7 +825,7 @@
       "mentions": 74,
       "in_directories": true,
       "sample_files": [
-        "plugin-dev-kit/python/faxbot_plugin_dev/__init__.py",
+        "plugin-dev-kit/python/project_plugin_dev/__init__.py",
         ".worktrees/gh-pages/f9724da6/assets/javascripts/lunr/wordcut.js",
         ".worktrees/gh-pages/a9c1bbad/assets/javascripts/lunr/wordcut.js"
       ]

@@ -67,7 +67,7 @@ Dependencies: LangGraph, Qdrant client, BM25S, sentence-transformers, FastAPI
 ```bash
 export OPENAI_API_KEY=sk-proj-...
 REPO=project python index_repo.py
-REPO=faxbot python index_repo.py
+REPO=project python index_repo.py
 ```
 
 This:
@@ -199,7 +199,7 @@ I documented everything in my repo's `CLAUDE.md` so AI agents know how to use it
 **MANDATORY: Use RAG (rag_search) first**
 
 - Always call `rag_search` to locate files and exact line ranges before proposing changes
-- Route every query to the correct repo: `faxbot` or `project`
+- Route every query to the correct repo: `project` or `project`
 - After retrieval, you may call `rag_answer` for a synthesized answer with citations
 ```
 

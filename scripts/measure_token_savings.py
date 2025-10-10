@@ -58,7 +58,7 @@ def measure_traditional_tokens(question: str, repo: str, max_files: int = 10):
     """
     repo_paths = {
         'project': '/opt/app/project',
-        'faxbot': '/opt/app/faxbot_folder/faxbot'
+        'project': '/opt/app//project'
     }
 
     repo_path = repo_paths.get(repo)
@@ -155,9 +155,9 @@ if __name__ == '__main__':
     # Test queries
     test_cases = [
         ("Where is OAuth token validated", "project"),
-        ("How are fax jobs created and dispatched", "faxbot"),
-        ("EventStream component event types", "faxbot"),
-        ("provider health status implementation", "faxbot"),
+        ("How are fax jobs created and dispatched", "project"),
+        ("EventStream component event types", "project"),
+        ("provider health status implementation", "project"),
     ]
 
     results = []

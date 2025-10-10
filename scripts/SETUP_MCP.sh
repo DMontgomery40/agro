@@ -3,7 +3,9 @@
 
 set -e
 
-RAG_ROOT="/opt/app/faxbot_folder/rag-service"
+# Resolve repo root dynamically (no hardcoded paths)
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RAG_ROOT="${ROOT_DIR}"
 VENV_PYTHON="${RAG_ROOT}/.venv/bin/python"
 MCP_SERVER="${RAG_ROOT}/mcp_server.py"
 
@@ -13,7 +15,7 @@ echo ""
 # Check files exist
 if [ ! -f "$VENV_PYTHON" ]; then
     echo "❌ Error: Python venv not found at $VENV_PYTHON"
-    echo "   Run: cd $RAG_ROOT && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt"
+    echo "   Run: cd $RAG_ROOT && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements-rag.txt -r requirements.txt"
     exit 1
 fi
 
@@ -31,17 +33,17 @@ if command -v codex &> /dev/null; then
     echo "   Codex found: $(which codex)"
 
     # Check if already registered
-    if codex mcp list 2>/dev/null | grep -q "faxbot-rag"; then
-        echo "   ⚠️  faxbot-rag already registered"
+    if codex mcp list 2>/dev/null | grep -q "project-rag"; then
+        echo "   ⚠️  project-rag already registered"
         read -p "   Remove and re-register? (y/n) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            codex mcp remove faxbot-rag || true
-            codex mcp add faxbot-rag -- "$VENV_PYTHON" "$MCP_SERVER"
+            codex mcp remove project-rag || true
+            codex mcp add project-rag -- "$VENV_PYTHON" "$MCP_SERVER"
             echo "   ✅ Re-registered with Codex"
         fi
     else
-        codex mcp add faxbot-rag -- "$VENV_PYTHON" "$MCP_SERVER"
+        codex mcp add project-rag -- "$VENV_PYTHON" "$MCP_SERVER"
         echo "   ✅ Registered with Codex"
     fi
 
@@ -83,7 +85,7 @@ else
 
 {
   "mcpServers": {
-    "faxbot-rag": {
+    "project-rag": {
       "command": "$VENV_PYTHON",
       "args": ["$MCP_SERVER"],
       "env": {
@@ -103,7 +105,7 @@ EOF
             cat > "$CLAUDE_CONFIG" <<EOF
 {
   "mcpServers": {
-    "faxbot-rag": {
+    "project-rag": {
       "command": "$VENV_PYTHON",
       "args": ["$MCP_SERVER"],
       "env": {
@@ -120,7 +122,7 @@ EOF
     else
         echo "   Manual steps:"
         echo "   1. Open: $CLAUDE_CONFIG"
-        echo "   2. Add the 'faxbot-rag' entry shown above"
+        echo "   2. Add the 'project-rag' entry shown above"
         echo "   3. Replace 'your-api-key-here' with your OpenAI API key"
         echo "   4. Restart Claude Code"
     fi

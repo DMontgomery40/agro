@@ -74,7 +74,7 @@ if result['count'] > 0:
 "
 
 echo ""
-echo "4. Test rag.search (faxbot)..."
+echo "4. Test rag.search (project)..."
 python -c "
 import json, sys
 from mcp_server import MCPServer
@@ -86,14 +86,14 @@ req = {
     'params': {
         'name': 'rag_search',
         'arguments': {
-            'repo': 'faxbot',
+            'repo': 'project',
             'question': 'How do we handle inbound faxes?',
             'top_k': 5
         }
     }
 }
 
-print('Calling rag_search for faxbot...', file=sys.stderr)
+print('Calling rag_search for project...', file=sys.stderr)
 server = MCPServer()
 resp = server.handle_request(req)
 

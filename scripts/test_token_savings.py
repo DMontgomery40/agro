@@ -48,7 +48,7 @@ def measure_claude_alone(question: str, repo: str):
     """
     repo_paths = {
         'project': '/opt/app/project',
-        'faxbot': '/opt/app/faxbot_folder/faxbot'
+        'project': '/opt/app//project'
     }
 
     repo_path = repo_paths.get(repo)
@@ -272,8 +272,8 @@ if __name__ == '__main__':
     # Test cases
     tests = [
         ("Where is OAuth token validated", "project"),
-        ("How are fax jobs created and dispatched", "faxbot"),
-        ("EventStream component event types in dropdown", "faxbot"),
+        ("How are fax jobs created and dispatched", "project"),
+        ("EventStream component event types in dropdown", "project"),
     ]
 
     results = []

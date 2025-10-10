@@ -1,7 +1,7 @@
-Vivified=>PROJECT
-vivified=>project
-FaxBot=>PROJECT
-Faxbot=>PROJECT
+project=>PROJECT
+project=>project
+project=>PROJECT
+project=>PROJECT
 FactSpot=>PROJECT
 FactBot=>PROJECT
 /Users/davidmontgomery=>/opt/app

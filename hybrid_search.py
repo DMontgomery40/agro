@@ -36,7 +36,7 @@ def _project_layer_bonus(layer:str,intent:str)->float:
            'infra':{'infra':0.12,'kernel':0.04}}
     return table.get(intent_lower,{}).get(layer_lower,0.0)
 
-def _faxbot_layer_bonus(layer:str,intent:str)->float:
+def _project_layer_bonus(layer:str,intent:str)->float:
     layer_lower=(layer or '').lower()
     intent_lower=(intent or 'server').lower()
     table={'server':{'server':0.10,'integration':0.06,'fax':0.30,'admin console':0.10,'sdk':0.00,'infra':0.00,'docs':0.02},
@@ -91,11 +91,11 @@ def _path_bonus(fp: str) -> float:
     return bonus
 
 # Additional PROJECT-only path boosts (env-tunable)
-def _faxbot_path_boost(fp: str, repo_tag: str) -> float:
+def _project_path_boost(fp: str, repo_tag: str) -> float:
     import os as _os
-    if (repo_tag or '').lower() != 'faxbot':
+    if (repo_tag or '').lower() != 'project':
         return 0.0
-    cfg = _os.getenv('FAXBOT_PATH_BOOSTS', 'app/,lib/,config/,scripts/,server/,api/,api/app,app/services,app/routers,api/admin_ui,app/plugins')
+    cfg = _os.getenv('project_PATH_BOOSTS', 'app/,lib/,config/,scripts/,server/,api/,api/app,app/services,app/routers,api/admin_ui,app/plugins')
     tokens = [t.strip().lower() for t in cfg.split(',') if t.strip()]
     s = (fp or '').lower()
     bonus = 0.0
@@ -313,14 +313,14 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     # Apply path + layer intent + provider + feature + card + (optional) origin bonuses, then resort
     intent = _classify_query(query)
     for d in docs:
-        layer_bonus = _project_layer_bonus(d.get('layer',''), intent) if repo=='project' else _faxbot_layer_bonus(d.get('layer',''), intent)
+        layer_bonus = _project_layer_bonus(d.get('layer',''), intent) if repo=='project' else _project_layer_bonus(d.get('layer',''), intent)
         origin_bonus = _origin_bonus(d.get('origin',''), VENDOR_MODE) if 'VENDOR_MODE' in os.environ else 0.0
         repo_tag = d.get('repo', repo)
         chunk_id = str(d.get('id', ''))
         d['rerank_score'] = float(
             d.get('rerank_score', 0.0)
             + _path_bonus(d.get('file_path', ''))
-            + _faxbot_path_boost(d.get('file_path',''), repo_tag)
+            + _project_path_boost(d.get('file_path',''), repo_tag)
             + layer_bonus
             + _provider_plugin_hint(d.get('file_path', ''), d.get('code', '')[:1000])
             + _feature_bonus(query, d.get('file_path',''), d.get('code','')[:800])
@@ -377,20 +377,20 @@ def route_repo(query: str, default_repo: str | None = None) -> str:
     q = (query or '').lower()
     if q.startswith('project:') or ' project' in f' {q}':
         return 'project'
-    if q.startswith('faxbot:') or ' faxbot' in f' {q}':
-        return 'faxbot'
+    if q.startswith('project:') or ' project' in f' {q}':
+        return 'project'
     viv_hits = 0
     for k in ['provider setup wizard','providersetupwizard','pluginsetupwizard','admin_ui','plugin','plugins','kernel','apprise','pushover','hubspot','project']:
         if k in q:
             viv_hits += 1
     fax_hits = 0
-    for k in ['faxbot','sendfax','getfax','asterisk','ami','t.38','cloudflared','hipaa','phi','event log','diagnostic','signalwire','phaxio','documo','sinch']:
+    for k in ['project','sendfax','getfax','asterisk','ami','t.38','cloudflared','hipaa','phi','event log','diagnostic','signalwire','phaxio','documo','sinch']:
         if k in q:
             fax_hits += 1
     if viv_hits > fax_hits:
         return 'project'
     if fax_hits > viv_hits:
-        return 'faxbot'
+        return 'project'
     return (default_repo or os.getenv('REPO', 'project') or 'project').strip()
 
 def search_routed(query: str, repo_override: str | None = None, final_k: int = 10):

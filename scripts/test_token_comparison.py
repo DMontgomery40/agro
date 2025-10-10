@@ -12,6 +12,8 @@ Shows actual tokens sent to LLM in each scenario.
 
 import sys
 import os
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, ROOT_DIR)
 import json
 from pathlib import Path
 
@@ -47,8 +49,8 @@ def approach1_claude_alone(question: str, repo: str):
     - Read 5-10 FULL files
     """
     repo_paths = {
-        'project': '/opt/app/faxbot_folder/project',
-        'faxbot': '/opt/app/faxbot_folder/faxbot'
+        'project': os.getenv('PROJECT_PATH', '/abs/path/to/project'),
+        'project': os.getenv('project_PATH', '/abs/path/to/project')
     }
 
     repo_path = repo_paths.get(repo)
@@ -334,7 +336,7 @@ if __name__ == '__main__':
     # Test cases
     tests = [
         ("Where is OAuth token validated", "project"),
-        ("How are fax jobs created and dispatched", "faxbot"),
+        ("How are fax jobs created and dispatched", "project"),
     ]
 
     all_results = []
