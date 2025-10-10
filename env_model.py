@@ -14,6 +14,19 @@ _DEFAULT_MODEL = os.getenv("GEN_MODEL", os.getenv("ENRICH_MODEL", "gpt-4o-mini")
 
 _client = None
 
+# MLX backend (lazy-loaded for Apple Silicon)
+_mlx_model = None
+_mlx_tokenizer = None
+
+def _get_mlx_model():
+    """Lazy-load MLX model for Apple Silicon generation"""
+    global _mlx_model, _mlx_tokenizer
+    if _mlx_model is None:
+        from mlx_lm import load
+        model_name = os.getenv("GEN_MODEL", "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit")
+        _mlx_model, _mlx_tokenizer = load(model_name)
+    return _mlx_model, _mlx_tokenizer
+
 
 def client() -> OpenAI:
     global _client
@@ -76,6 +89,33 @@ def generate_text(
         kwargs["previous_response_id"] = previous_response_id
     if extra:
         kwargs.update(extra)
+
+    # Check for MLX backend (Apple Silicon, highest priority for local models)
+    ENRICH_BACKEND = os.getenv("ENRICH_BACKEND", "").lower()
+    is_mlx_model = mdl.startswith("mlx-community/") if mdl else False
+    prefer_mlx = (ENRICH_BACKEND == "mlx") or is_mlx_model
+
+    if prefer_mlx:
+        try:
+            from mlx_lm import generate
+            model, tokenizer = _get_mlx_model()
+
+            # Build prompt with system instructions if provided
+            sys_text = (system_instructions or "").strip()
+            prompt = (f"<system>{sys_text}</system>\n" if sys_text else "") + user_input
+
+            # Generate with MLX
+            text = generate(
+                model,
+                tokenizer,
+                prompt=prompt,
+                max_tokens=2048,  # More tokens for answer generation
+                verbose=False
+            )
+            return text, {"response": text, "backend": "mlx"}
+        except Exception as e:
+            # Fall through to Ollama/OpenAI on MLX failure
+            pass
 
     # If using local Qwen via Ollama, prefer its API first
     OLLAMA_URL = os.getenv("OLLAMA_URL")
