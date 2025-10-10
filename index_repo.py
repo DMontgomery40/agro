@@ -361,6 +361,10 @@ def main() -> None:
                 cache = EmbeddingCache(OUTDIR)
                 hashes = [c['hash'] for c in chunks]
                 embs = cache.embed_texts(client, texts, hashes, model='text-embedding-3-large', batch=64)
+                # Prune orphaned embeddings from deleted/changed files
+                pruned = cache.prune(set(hashes))
+                if pruned > 0:
+                    print(f'Pruned {pruned} orphaned embeddings from cache.')
                 cache.save()
             except Exception as e:
                 print(f'Embedding via OpenAI failed ({e}); falling back to local embeddings.')
