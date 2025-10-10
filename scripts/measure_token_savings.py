@@ -57,8 +57,8 @@ def measure_traditional_tokens(question: str, repo: str, max_files: int = 10):
     This is what you'd do WITHOUT RAG.
     """
     repo_paths = {
-        'project': '/opt/app/project',
-        'project': '/opt/app//project'
+        'project': os.getenv('PROJECT_PATH', '/abs/path/to/project'),
+        'faxbot': os.getenv('FAXBOT_PATH', '/abs/path/to/faxbot')
     }
 
     repo_path = repo_paths.get(repo)

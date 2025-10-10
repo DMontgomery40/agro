@@ -47,8 +47,8 @@ def measure_claude_alone(question: str, repo: str):
     - Read 5-10 full files
     """
     repo_paths = {
-        'project': '/opt/app/project',
-        'project': '/opt/app//project'
+        'project': os.getenv('PROJECT_PATH', '/abs/path/to/project'),
+        'faxbot': os.getenv('FAXBOT_PATH', '/abs/path/to/faxbot')
     }
 
     repo_path = repo_paths.get(repo)

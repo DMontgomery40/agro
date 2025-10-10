@@ -143,8 +143,8 @@ def analyze_repo_semantic(repo_path, repo_name):
 
 if __name__ == '__main__':
     repos = {
-        'project': '/opt/app//project',
-        'project': '/opt/app//project'
+        'project': os.getenv('PROJECT_PATH', '/abs/path/to/project'),
+        'faxbot': os.getenv('FAXBOT_PATH', '/abs/path/to/faxbot')
     }
     
     all_results = {}
