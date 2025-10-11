@@ -2,10 +2,6 @@
   "default_repo": "agro",
   "repos": [
     {
-      "name": "project",
-      "path": "."
-    },
-    {
       "name": "agro",
       "path": "/Users/davidmontgomery/agro",
       "keywords": [],

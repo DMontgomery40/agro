@@ -117,9 +117,9 @@ def generate_text(
             # Fall through to Ollama/OpenAI on MLX failure
             pass
 
-    # If using local Qwen via Ollama, prefer its API first
+    # If using a local model server (Ollama-compatible), prefer its API first when configured
     OLLAMA_URL = os.getenv("OLLAMA_URL")
-    prefer_ollama = bool(OLLAMA_URL) and ("qwen" in (mdl or "").lower())
+    prefer_ollama = bool(OLLAMA_URL)
     if prefer_ollama:
         try:
             import requests, json as _json, time

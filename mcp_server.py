@@ -21,6 +21,7 @@ from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
 import urllib.request, urllib.error, urllib.parse
 import json as _json
+from config_loader import list_repos
 
 
 class MCPServer:
@@ -62,6 +63,9 @@ class MCPServer:
             }
 
         try:
+            allowed = set(list_repos())
+            if repo not in allowed:
+                return {"error": f"invalid repo '{repo}', allowed={sorted(allowed)}", "answer": "", "citations": [], "repo": repo or "unknown"}
             cfg = {"configurable": {"thread_id": f"mcp-{repo or 'default'}"}}
             state = {
                 "question": question,
@@ -102,6 +106,9 @@ class MCPServer:
         Returns: {results: List[Dict], repo: str, count: int}
         """
         try:
+            allowed = set(list_repos())
+            if repo not in allowed:
+                return {"error": f"invalid repo '{repo}', allowed={sorted(allowed)}", "results": [], "repo": repo or "unknown", "count": 0}
             docs = search_routed_multi(
                 question,
                 repo_override=repo,
@@ -254,6 +261,7 @@ class MCPServer:
 
         if method == "tools/list":
             # Return available tools
+            repos = list_repos()
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
@@ -261,14 +269,14 @@ class MCPServer:
                     "tools": [
                         {
                             "name": "rag_answer",
-                            "description": "Get RAG answer with citations for a question in a specific repo (project|project)",
+                            "description": "Get RAG answer with citations for a configured repo",
                             "inputSchema": {
                                 "type": "object",
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'project' or 'project'",
-                                        "enum": ["project", "project"]
+                                        "description": "Repository name",
+                                        "enum": repos
                                     },
                                     "question": {
                                         "type": "string",
@@ -286,8 +294,8 @@ class MCPServer:
                                 "properties": {
                                     "repo": {
                                         "type": "string",
-                                        "description": "Repository name: 'project' or 'project'",
-                                        "enum": ["project", "project"]
+                                        "description": "Repository name",
+                                        "enum": repos
                                     },
                                     "question": {
                                         "type": "string",
