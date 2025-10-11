@@ -4,6 +4,8 @@
 - Route every query to the correct repo via the `repo` argument: `project` or `project`. Never mix results.
 - After retrieval, you may call `rag_answer` for a synthesized answer with citations. Answers must include file paths and line ranges from retrieval.
 
+ALL features, settings, variables, and parameters, must be put in the GUI.  **This is an accessiblity issue** the developer of this project is exremely dyslexic, and will break things with typos in code files, therefore, all settings must be in gui. If you don't know where to put it, put it in a 'Misc' tab in the gui. 
+
 How to use RAG locally vs externally:
 - Local Python (preferred in-repo):
   - `cd path/to/your/rag-service && . .venv/bin/activate`

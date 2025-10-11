@@ -254,22 +254,41 @@ def _find_price(provider: str, model: Optional[str]) -> Optional[Dict[str, Any]]
             return m
     return None
 
-def _estimate_cost(gen_provider: str, gen_model: Optional[str], tokens_in: int, tokens_out: int, embeds: int, reranks: int, requests_per_day: int) -> Dict[str, Any]:
-    price = _find_price(gen_provider, gen_model)
-    if not price:
-        return {"daily": 0.0, "monthly": 0.0, "breakdown": {}}
-    per_1k_in = float(price.get("input_per_1k", 0.0))
-    per_1k_out = float(price.get("output_per_1k", 0.0))
-    embed_per_1k = float(price.get("embed_per_1k", 0.0))
-    rerank_per_1k = float(price.get("rerank_per_1k", 0.0))
-    per_req = float(price.get("per_request", 0.0))
+def _estimate_cost(gen_provider: str, gen_model: Optional[str], tokens_in: int, tokens_out: int, embeds: int, reranks: int, requests_per_day: int,
+                   embed_provider: Optional[str] = None, embed_model: Optional[str] = None,
+                   rerank_provider: Optional[str] = None, rerank_model: Optional[str] = None) -> Dict[str, Any]:
+    # Generation
+    price_gen = _find_price(gen_provider, gen_model)
+    if not price_gen:
+        price_gen = {"input_per_1k": 0.0, "output_per_1k": 0.0, "per_request": 0.0}
+    per_1k_in = float(price_gen.get("input_per_1k", 0.0))
+    per_1k_out = float(price_gen.get("output_per_1k", 0.0))
+    per_req = float(price_gen.get("per_request", 0.0))
     daily = 0.0
     daily += (tokens_in/1000.0) * per_1k_in * max(1, requests_per_day)
     daily += (tokens_out/1000.0) * per_1k_out * max(1, requests_per_day)
-    daily += (embeds/1000.0) * embed_per_1k
-    daily += (reranks/1000.0) * rerank_per_1k
     daily += per_req * max(1, requests_per_day)
-    return {"daily": round(daily, 6), "monthly": round(daily*30.0, 4), "breakdown": price}
+
+    # Embeddings (separate provider/model)
+    if embeds > 0:
+        if embed_provider is None and gen_provider == 'openai':
+            embed_provider, embed_model = 'openai', (embed_model or 'text-embedding-3-small')
+        price_emb = _find_price(embed_provider or gen_provider, embed_model)
+        if price_emb:
+            daily += (embeds/1000.0) * float(price_emb.get("embed_per_1k", 0.0))
+
+    # Rerank
+    if reranks > 0:
+        price_rr = _find_price(rerank_provider or 'cohere', rerank_model or 'rerank-3.5')
+        if price_rr:
+            daily += (reranks/1000.0) * float(price_rr.get("rerank_per_1k", 0.0))
+
+    breakdown = {
+        "generation": price_gen,
+        "embeddings": _find_price(embed_provider or gen_provider, embed_model) if embeds>0 else None,
+        "rerank": _find_price(rerank_provider or 'cohere', rerank_model or 'rerank-3.5') if reranks>0 else None,
+    }
+    return {"daily": round(daily, 6), "monthly": round(daily*30.0, 4), "breakdown": breakdown}
 
 @app.post("/api/cost/estimate")
 def cost_estimate(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -280,7 +299,13 @@ def cost_estimate(payload: Dict[str, Any]) -> Dict[str, Any]:
     embeds = int(payload.get("embeds") or 0)
     reranks = int(payload.get("reranks") or 0)
     rpd = int(payload.get("requests_per_day") or 0)
-    return _estimate_cost(gen_provider, gen_model, tokens_in, tokens_out, embeds, reranks, rpd)
+    emb_prov = payload.get("embed_provider")
+    emb_model = payload.get("embed_model")
+    rr_prov = payload.get("rerank_provider")
+    rr_model = payload.get("rerank_model")
+    return _estimate_cost(gen_provider, gen_model, tokens_in, tokens_out, embeds, reranks, rpd,
+                          embed_provider=emb_prov, embed_model=emb_model,
+                          rerank_provider=rr_prov, rerank_model=rr_model)
 
 @app.post("/api/cost/estimate_pipeline")
 def cost_estimate_pipeline(payload: Dict[str, Any]) -> Dict[str, Any]:
