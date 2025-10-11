@@ -82,6 +82,23 @@
         box.addEventListener('keydown', (e)=>{ if (e.key==='Enter') run(box.value.trim(), true); });
     }
 
+    // ---------------- Git Hooks ----------------
+    async function refreshHooksStatus(){
+        try{
+            const d = await (await fetch(api('/api/git/hooks/status'))).json();
+            const el = $('#hooks-status'); if (el) el.textContent = (d.post_checkout && d.post_commit) ? `Installed @ ${d.dir}` : 'Not installed';
+        }catch{ const el=$('#hooks-status'); if(el) el.textContent='Status unavailable'; }
+    }
+
+    async function installHooks(){
+        try{
+            const r = await fetch(api('/api/git/hooks/install'), { method:'POST' });
+            const d = await r.json();
+            alert(d.message || 'Hooks installed');
+            await refreshHooksStatus();
+        }catch(e){ alert('Failed to install hooks: ' + e.message); }
+    }
+
     // ---------------- Health ----------------
     async function checkHealth() {
         try {
@@ -1024,6 +1041,7 @@
         bindActions();
         bindGlobalSearchLive();
         bindDropzone();
+        const hookBtn = document.getElementById('btn-install-hooks'); if (hookBtn) hookBtn.addEventListener('click', installHooks);
 
         await Promise.all([
             loadPrices(),
@@ -1035,6 +1053,7 @@
         await checkHealth();
         await refreshAutotune();
         await refreshDashboard();
+        await refreshHooksStatus();
         addHelpTooltips();
         // Note: comma formatting removed for cost-* fields since they are type="number" inputs
         wireDayConverters();
