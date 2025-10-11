@@ -854,6 +854,28 @@ python eval_loop.py --compare
 - After significant refactors
 - Daily/nightly via cron (optional)
 
+### Cross-Branch Indexing (Shared)
+
+Use a single shared index that works across branches to avoid stale/missing results:
+
+```bash
+# One-time build (BM25-only; fast; no APIs)
+. .venv/bin/activate
+REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
+  python index_repo.py
+
+# Ensure environment for tools and MCP
+source scripts/select_index.sh shared  # sets OUT_DIR_BASE & COLLECTION_NAME
+
+# Bring infra + MCP up with shared profile
+bash scripts/up.sh && bash scripts/status.sh
+```
+
+GUI path (accessibility):
+- Open the GUI at `/` (FastAPI serve) → Tab “Infrastructure”.
+- Set `Active Repository`, `Out Dir Base=./out.noindex-shared`, and optionally `Collection Name`.
+- Click “Apply All Changes” to persist to `.env` and `repos.json`.
+
 ### Debugging a Bad Answer
 
 ```bash
@@ -963,6 +985,29 @@ docker exec rag-redis redis-cli ping
 # Test graph initialization
 python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')"
 ```
+
+**MCP rag_search returns no results (count: 0):**
+1. Verify the index exists under the shared profile:
+   ```bash
+   ls -lh out.noindex-shared/agro/chunks.jsonl
+   ```
+2. Ensure the environment MCP sees includes the shared index path:
+   - EITHER run `source scripts/select_index.sh shared` before starting MCP
+   - OR set in GUI → Infrastructure tab → `Out Dir Base=./out.noindex-shared` → “Apply All Changes”
+3. Restart MCP: `bash scripts/up.sh` (this now sources the shared profile automatically).
+4. Retest search quickly:
+   ```bash
+   . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
+     python - <<'PY'
+   from hybrid_search import search_routed_multi
+   print(len(search_routed_multi('Where is OAuth validated', repo_override='agro', m=2, final_k=5)))
+   PY
+   ```
+5. If empty and chunks missing, re-index:
+   ```bash
+   . .venv/bin/activate && REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
+     python index_repo.py
+   ```
 
 ### Retrieval Quality Issues
 
@@ -1302,4 +1347,3 @@ python analyze_keywords_v2.py /path/to/repo-a
 | **Auth / SSO** | 🟨 | ✅ | ✅ | 🟨 | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
 | **Eval harness present** | ✅ | 🟨 | 🟨 | ❌ | 🟨 | 🟨 | 🟨 | ✅ | ❌ | ❌ |
 | **Active maintenance (≤12 mo)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-

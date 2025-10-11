@@ -23,6 +23,17 @@
   - Generation → Qwen 3 via Ollama (`GEN_MODEL` + `OLLAMA_URL`)
   - Rerank → Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
 
+Shared index across branches (recommended)
+- Use a single index so MCP and local tools always agree:
+  ```bash
+  . .venv/bin/activate
+  REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
+    python index_repo.py
+  # Export consistent env for MCP/tools
+  source scripts/select_index.sh shared
+  ```
+  The GUI can persist these via “Apply All Changes” (Infrastructure tab: set `Out Dir Base=./out.noindex-shared`).
+
 ## Quick Commands
 
 ### Check MCP Registration
@@ -134,8 +145,10 @@ These are now documented in `AGENTS.md`:
 - Note: Graph compiles without Redis if temporarily unavailable.
 
 **"No results"**
-- Index repos: `REPO=project python index_repo.py`
-- Verify collections: `curl -s http://127.0.0.1:6333/collections | jq`
+- Verify shared index exists: `ls -lh out.noindex-shared/agro/chunks.jsonl`
+- Ensure MCP sees shared env: `source scripts/select_index.sh shared` (or set in GUI → Apply All Changes)
+- Index repos (BM25-only fast path): `REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`
+- Verify collections (optional): `curl -s http://127.0.0.1:6333/collections | jq`
 
 **"Codex can't find tools"**
 - Re-register: `codex mcp remove project-rag && codex mcp add project-rag -- .venv/bin/python mcp_server.py`

@@ -3,6 +3,7 @@ Basic GUI Tests for AGRO Configuration Interface
 Tests core functionality and navigation
 """
 import pytest
+import re
 from playwright.sync_api import Page, expect
 
 
@@ -49,12 +50,12 @@ def test_tab_switching_works(page: Page):
     # Click Models tab
     page.click("button:has-text('Models')")
     expect(page.locator("#tab-generation")).to_be_visible()
-    expect(page.locator("button[data-tab='models']")).to_have_class(/active/)
+    expect(page.locator("button[data-tab='models']")).to_have_class(re.compile("active"))
     
     # Click Infrastructure tab
     page.click("button:has-text('Infrastructure')")
     expect(page.locator("#tab-infra")).to_be_visible()
-    expect(page.locator("button[data-tab='infra']")).to_have_class(/active/)
+    expect(page.locator("button[data-tab='infra']")).to_have_class(re.compile("active"))
 
 
 def test_health_button_works(page: Page):
