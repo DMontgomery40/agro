@@ -815,13 +815,23 @@
                                 <input type="number" id="budget" value="0" min="0" placeholder="0" style="font-size:16px;padding:12px;">
                             </div>
 
+                            <div class="input-row" style="margin-bottom: 8px;">
+                                <div class="input-group">
+                                    <label><span style="color:#ff9b5e;">Auto‑Profile Engine</span></label>
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <input type="checkbox" id="apv2-enabled" style="width:auto;">
+                                        <span style="font-size:12px;color:#aaa;">Use v2 engine (deterministic selector)</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <button class="small-button" id="btn-wizard-oneclick" style="background:#00ff88;color:#000;border:none;width:100%;padding:14px 20px;font-size:15px;font-weight:700;margin-bottom:16px;">
                                 Configure Automatically
                             </button>
 
                             <div id="scan-out" class="result-display" style="display:none;"></div>
 
-                            <div style="margin-top:20px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;">
+                            <div style="margin-top:12px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;">
                                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                                     <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Quick Options</span>
                                 </div>
@@ -838,6 +848,93 @@
                                     <button class="small-button" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;" onclick="document.getElementById('budget').value=200;document.getElementById('btn-wizard-oneclick').click();">
                                         Enterprise ($200/mo)
                                     </button>
+                                </div>
+                            </div>
+
+                            <!-- Advanced (v2) -->
+                            <div style="margin-top:12px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;cursor:pointer;" onclick="this.nextElementSibling.style.display = (this.nextElementSibling.style.display==='none'?'block':'none');">
+                                    <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Advanced (v2)</span>
+                                    <span style="font-size:12px;color:#666;">toggle</span>
+                                </div>
+                                <div id="apv2-advanced" style="display:none;">
+                                    <div class="input-row">
+                                        <div class="input-group">
+                                            <label>Objective</label>
+                                            <select id="apv2-mode">
+                                                <option value="balanced">Balanced</option>
+                                                <option value="cost">Cost</option>
+                                                <option value="performance">Performance</option>
+                                            </select>
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Monthly Budget (override)</label>
+                                            <input type="number" id="apv2-budget" placeholder="uses Budget if empty">
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-group full-width">
+                                            <label>Providers Allowed</label>
+                                            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="openai" class="apv2-prov" style="width:auto;"> openai</label>
+                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="anthropic" class="apv2-prov" style="width:auto;"> anthropic</label>
+                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="google" class="apv2-prov" style="width:auto;"> google</label>
+                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="voyage" class="apv2-prov" style="width:auto;"> voyage</label>
+                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="cohere" class="apv2-prov" style="width:auto;"> cohere</label>
+                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="local" class="apv2-prov" style="width:auto;"> local</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-group">
+                                            <label>Regions Allowed (CSV)</label>
+                                            <input type="text" id="apv2-regions" placeholder="us,eu">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Compliance (CSV)</label>
+                                            <input type="text" id="apv2-compliance" placeholder="soc2,hipaa">
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-group">
+                                            <label>Requests/Day</label>
+                                            <input type="number" id="apv2-rpd" placeholder="e.g. 100">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Tokens In / Request</label>
+                                            <input type="number" id="apv2-tin" placeholder="e.g. 600">
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-group">
+                                            <label>Tokens Out / Request</label>
+                                            <input type="number" id="apv2-tout" placeholder="e.g. 1200">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Multi‑Query Rewrites</label>
+                                            <input type="number" id="apv2-mq" placeholder="e.g. 4">
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-group">
+                                            <label>Embed Tokens / Request</label>
+                                            <input type="number" id="apv2-embt" placeholder="optional">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Rerank Tokens / Request</label>
+                                            <input type="number" id="apv2-rrt" placeholder="optional">
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-group">
+                                            <label>Latency Target (ms)</label>
+                                            <input type="number" id="apv2-latency" placeholder="optional">
+                                        </div>
+                                        <div class="input-group">
+                                            <label>Min Throughput (QPS)</label>
+                                            <input type="number" id="apv2-minqps" placeholder="optional">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1502,6 +1599,7 @@
     <script src="/gui/js/profile_logic.js"></script>
     <script src="/gui/js/tooltips.js"></script>
     <script src="/gui/js/profile_renderer.js"></script>
+    <script src="/gui/js/autoprofile_v2.js"></script>
     <script src="/gui/js/cost_logic.js"></script>
     <script src="/gui/app.js"></script>
   </body>

@@ -7,7 +7,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
 from config_loader import load_repos
+from index_stats import get_index_stats as _get_index_stats
 import os, json
+from typing import Any, Dict
 
 app = FastAPI(title="AGRO RAG + GUI")
 
@@ -102,6 +104,10 @@ def _read_json(path: Path, default: Any) -> Any:
 def _write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2))
+
+# ---- Prices helper for auto-profile
+def _read_prices() -> Dict[str, Any]:
+    return _read_json(GUI_DIR / "prices.json", {"models": []})
 
 @app.post("/api/env/reload")
 def api_env_reload() -> Dict[str, Any]:
@@ -407,153 +413,37 @@ def profiles_apply(payload: Dict[str, Any]) -> Dict[str, Any]:
         applied.append(str(k))
     return {"ok": True, "applied_keys": applied}
 
+# --- Auto-profile v2
+try:
+    from autoprofile import autoprofile as _ap_select
+except Exception:
+    _ap_select = None
+
+@app.post("/api/profile/autoselect")
+def api_profile_autoselect(payload: Dict[str, Any]):
+    if _ap_select is None:
+        raise HTTPException(status_code=500, detail="autoprofile module not available")
+    prices = _read_prices()
+    env, reason = _ap_select(payload, prices)
+    if not env:
+        raise HTTPException(status_code=422, detail=reason)
+    return {"env": env, "reason": reason}
+
+@app.post("/api/checkpoint/config")
+def checkpoint_config() -> Dict[str, Any]:
+    """Write a timestamped checkpoint of current env + repos to gui/profiles."""
+    cfg = get_config()
+    from datetime import datetime
+    ts = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
+    out_dir = GUI_DIR / "profiles"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / f"checkpoint-{ts}.json"
+    _write_json(path, cfg)
+    return {"ok": True, "path": str(path)}
+
 # --- Index + Cards: comprehensive status with all metrics ---
 _INDEX_STATUS: List[str] = []
 _INDEX_METADATA: Dict[str, Any] = {}
-
-def _get_index_stats() -> Dict[str, Any]:
-    """Gather comprehensive indexing statistics with storage calculator integration."""
-    import subprocess
-    from datetime import datetime
-
-    # Get embedding configuration
-    embedding_type = os.getenv("EMBEDDING_TYPE", "openai").lower()
-    embedding_dim = int(os.getenv("EMBEDDING_DIM", "3072" if embedding_type == "openai" else "512"))
-
-    stats = {
-        "timestamp": datetime.utcnow().isoformat() + 'Z',
-        "repos": [],
-        "total_storage": 0,
-        "embedding_config": {
-            "provider": embedding_type,
-            "model": "text-embedding-3-large" if embedding_type == "openai" else f"local-{embedding_type}",
-            "dimensions": embedding_dim,
-            "precision": "float32"  # Default from index_repo.py
-        },
-        "keywords_count": 0,
-        "storage_breakdown": {
-            "chunks_json": 0,
-            "bm25_index": 0,
-            "cards": 0,
-            "embeddings_raw": 0,
-            "qdrant_overhead": 0,
-            "reranker_cache": 0,
-            "redis": 419430400,  # 400 MiB default
-        },
-        "costs": {
-            "total_tokens": 0,
-            "embedding_cost": 0.0,
-        }
-    }
-
-    # Get current repo and branch
-    try:
-        repo = os.getenv("REPO", "agro")
-        branch_result = subprocess.run(["git", "branch", "--show-current"],
-                                      capture_output=True, text=True, cwd=ROOT)
-        branch = branch_result.stdout.strip() if branch_result.returncode == 0 else "unknown"
-
-        stats["current_repo"] = repo
-        stats["current_branch"] = branch
-    except:
-        stats["current_repo"] = "agro"
-        stats["current_branch"] = "unknown"
-
-    total_chunks = 0
-
-    # Check all index profiles
-    base_paths = ["out.noindex-shared", "out.noindex-gui", "out.noindex-devclean"]
-    for base in base_paths:
-        base_path = ROOT / base
-        if base_path.exists():
-            profile_name = base.replace("out.noindex-", "")
-            repo_dirs = [d for d in base_path.iterdir() if d.is_dir()]
-
-            for repo_dir in repo_dirs:
-                repo_name = repo_dir.name
-                chunks_file = repo_dir / "chunks.jsonl"
-                bm25_dir = repo_dir / "bm25_index"
-                cards_file = repo_dir / "cards.jsonl"
-
-                repo_stats = {
-                    "name": repo_name,
-                    "profile": profile_name,
-                    "paths": {
-                        "chunks": str(chunks_file) if chunks_file.exists() else None,
-                        "bm25": str(bm25_dir) if bm25_dir.exists() else None,
-                        "cards": str(cards_file) if cards_file.exists() else None,
-                    },
-                    "sizes": {},
-                    "chunk_count": 0,
-                    "has_cards": cards_file.exists() if cards_file else False,
-                }
-
-                # Get file sizes
-                if chunks_file.exists():
-                    size = chunks_file.stat().st_size
-                    repo_stats["sizes"]["chunks"] = size
-                    stats["total_storage"] += size
-                    stats["storage_breakdown"]["chunks_json"] += size
-
-                    # Count chunks
-                    try:
-                        with open(chunks_file, 'r') as f:
-                            chunk_count = sum(1 for _ in f)
-                            repo_stats["chunk_count"] = chunk_count
-                            total_chunks += chunk_count
-                    except:
-                        pass
-
-                if bm25_dir.exists():
-                    bm25_size = sum(f.stat().st_size for f in bm25_dir.rglob('*') if f.is_file())
-                    repo_stats["sizes"]["bm25"] = bm25_size
-                    stats["total_storage"] += bm25_size
-                    stats["storage_breakdown"]["bm25_index"] += bm25_size
-
-                if cards_file.exists():
-                    card_size = cards_file.stat().st_size
-                    repo_stats["sizes"]["cards"] = card_size
-                    stats["total_storage"] += card_size
-                    stats["storage_breakdown"]["cards"] += card_size
-
-                stats["repos"].append(repo_stats)
-
-    # Calculate embedding storage (formula from storage calculator)
-    if total_chunks > 0:
-        bytes_per_float = 4  # float32
-        embeddings_raw = total_chunks * embedding_dim * bytes_per_float
-        qdrant_overhead_multiplier = 1.5
-        qdrant_total = embeddings_raw * qdrant_overhead_multiplier
-        reranker_cache = embeddings_raw * 0.5
-
-        stats["storage_breakdown"]["embeddings_raw"] = embeddings_raw
-        stats["storage_breakdown"]["qdrant_overhead"] = int(qdrant_total - embeddings_raw)
-        stats["storage_breakdown"]["reranker_cache"] = int(reranker_cache)
-
-        # Add to total storage
-        stats["total_storage"] += qdrant_total + reranker_cache + stats["storage_breakdown"]["redis"]
-
-        # Calculate costs (OpenAI text-embedding-3-large: $0.13 per 1M tokens)
-        # Rough estimate: ~750 tokens per chunk (conservative)
-        if embedding_type == "openai":
-            est_tokens_per_chunk = 750
-            total_tokens = total_chunks * est_tokens_per_chunk
-            cost_per_million = 0.13
-            embedding_cost = (total_tokens / 1_000_000) * cost_per_million
-
-            stats["costs"]["total_tokens"] = total_tokens
-            stats["costs"]["embedding_cost"] = round(embedding_cost, 4)
-
-    # Try to get keywords count
-    keywords_file = ROOT / "data" / f"keywords_{stats['current_repo']}.json"
-    if keywords_file.exists():
-        try:
-            kw_data = json.loads(keywords_file.read_text())
-            stats["keywords_count"] = len(kw_data) if isinstance(kw_data, list) else len(kw_data.get("keywords", []))
-        except:
-            pass
-
-    return stats
 
 @app.post("/api/index/start")
 def index_start() -> Dict[str, Any]:
