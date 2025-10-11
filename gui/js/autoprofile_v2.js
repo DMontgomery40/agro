@@ -21,6 +21,7 @@
       .filter(cb => cb.checked).map(cb => cb.value);
     const regions = csvToList(document.getElementById('apv2-regions')?.value||'');
     const compliance = csvToList(document.getElementById('apv2-compliance')?.value||'');
+    const heur = !!document.getElementById('apv2-heuristics')?.checked;
     const wl = {
       requests_per_day: parseInt(document.getElementById('apv2-rpd')?.value||'')||undefined,
       tokens_in_per_req: parseInt(document.getElementById('apv2-tin')?.value||'')||undefined,
@@ -33,7 +34,7 @@
       latency_target_ms: parseInt(document.getElementById('apv2-latency')?.value||'')||undefined,
       min_qps: parseFloat(document.getElementById('apv2-minqps')?.value||'')||undefined,
     };
-    return { mode, budgetOverride, prov, regions, compliance, workload: wl, slo };
+    return { mode, budgetOverride, prov, regions, compliance, heur, workload: wl, slo };
   }
   function setPlaceholderLoading(){
     const placeholder = document.getElementById('profile-placeholder');
@@ -66,6 +67,20 @@
         const html = window.ProfileRenderer.renderProfileResults(env, scan, budget);
         results.innerHTML = html;
         if (window.ProfileRenderer.bindTooltips) window.ProfileRenderer.bindTooltips(results);
+        // Append diagnostics accordion
+        try{
+          const details = document.createElement('details');
+          details.style.marginTop = '12px';
+          const sum = document.createElement('summary');
+          sum.textContent = 'Diagnostics';
+          sum.style.cursor = 'pointer';
+          sum.style.color = '#999';
+          const pre = document.createElement('pre');
+          pre.style.color = '#777'; pre.style.whiteSpace = 'pre-wrap'; pre.style.fontSize = '12px'; pre.style.padding = '10px'; pre.style.border = '1px solid #2a2a2a'; pre.style.borderRadius = '6px'; pre.style.background = '#0a0a0a';
+          pre.textContent = JSON.stringify({ objective: reason?.objective, budget: reason?.budget, weights: reason?.weights, candidates_total: reason?.candidates_total, policy_relaxed: reason?.policy_relaxed, diag: reason?.diag }, null, 2);
+          details.appendChild(sum); details.appendChild(pre);
+          results.appendChild(details);
+        }catch{}
         if (placeholder) placeholder.style.display='none';
         results.style.display='block';
       }catch(err){
@@ -92,6 +107,24 @@
     const scan = await ensureScan();
     const budget = parseFloat(document.getElementById('budget')?.value||'0');
     const adv = readAdvanced();
+
+    // Fallbacks from cost panel when Advanced fields are blank
+    function numOrUndef(v){ const n = Number(v); return Number.isFinite(n) ? n : undefined; }
+    const costIn   = numOrUndef(document.getElementById('cost-in')?.value);
+    const costOut  = numOrUndef(document.getElementById('cost-out')?.value);
+    const costEmb  = numOrUndef(document.getElementById('cost-embeds')?.value);
+    const costRR   = numOrUndef(document.getElementById('cost-rerank')?.value);
+    const costRPD  = numOrUndef(document.getElementById('cost-rpd')?.value);
+    if (adv.workload.requests_per_day === undefined && costRPD !== undefined) adv.workload.requests_per_day = costRPD;
+    if (adv.workload.tokens_in_per_req === undefined && costIn !== undefined) adv.workload.tokens_in_per_req = costIn;
+    if (adv.workload.tokens_out_per_req === undefined && costOut !== undefined) adv.workload.tokens_out_per_req = costOut;
+    if (adv.workload.embed_tokens_per_req === undefined && costEmb !== undefined) adv.workload.embed_tokens_per_req = costEmb;
+    if (adv.workload.rerank_tokens_per_req === undefined && costRR !== undefined) adv.workload.rerank_tokens_per_req = costRR;
+    // MQ default from current env if not provided
+    if (adv.workload.mq_rewrites === undefined) {
+      const mq = parseInt(env.MQ_REWRITES || '');
+      adv.workload.mq_rewrites = Number.isFinite(mq) && mq>0 ? mq : undefined; // leave undefined so server can recommend
+    }
     const payload = {
       hardware: { runtimes: (scan && scan.runtimes) || {}, meta: (scan && scan.info) || {} },
       policy: { providers_allowed: adv.prov.length? adv.prov : undefined, regions_allowed: adv.regions.length? adv.regions: undefined, compliance: adv.compliance.length? adv.compliance: undefined },
@@ -102,6 +135,7 @@
         latency_target_ms: adv.slo.latency_target_ms,
         min_qps: adv.slo.min_qps,
       },
+      tuning: { use_heuristic_quality: !!adv.heur },
       defaults: { gen_model: env.GEN_MODEL || '' }
     };
     try{
@@ -111,6 +145,35 @@
       setPhase('Rendering result...');
       const data = await r.json();
       renderResult(data.env, data.reason, scan, payload.objective.monthly_budget_usd || budget);
+
+      // Optional: show an estimated cost banner using current cost panel inputs and selected providers
+      try{
+        const genProvider = (data.env.GEN_MODEL && data.env.GEN_MODEL.includes(':')) ? 'local' : 'openai';
+        const genModel = data.env.GEN_MODEL || 'gpt-4o-mini';
+        const cp = {
+          gen_provider: genProvider,
+          gen_model: genModel,
+          tokens_in: (costIn || 0),
+          tokens_out: (costOut || 0),
+          embeds: (costEmb || 0),
+          reranks: (costRR || 0),
+          requests_per_day: (costRPD || 0),
+          embed_provider: data.env.EMBEDDING_TYPE || undefined,
+          rerank_provider: data.env.RERANK_BACKEND || undefined,
+          rerank_model: data.env.COHERE_RERANK_MODEL || undefined,
+        };
+        const er = await fetchWithTimeout(api('/api/cost/estimate'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(cp), timeout: 10000 });
+        if (er.ok){
+          const est = await er.json();
+          const results = document.getElementById('profile-results-content');
+          if (results){
+            const div = document.createElement('div');
+            div.style.cssText = 'margin-top:10px;padding:10px;border:1px solid #2a2a2a;border-radius:6px;background:#0a0a0a;color:#aaa;font-size:12px;';
+            div.innerHTML = `<strong style="color:#00ff88;">Estimated Cost</strong> — Daily: $${Number(est.daily||0).toFixed(4)} • Monthly: $${Number(est.monthly||0).toFixed(2)}`;
+            results.prepend(div);
+          }
+        }
+      }catch{}
     }catch(err){
       const results = document.getElementById('profile-results-content');
       const placeholder = document.getElementById('profile-placeholder');

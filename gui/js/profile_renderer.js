@@ -17,9 +17,21 @@
     },
     RERANK_BACKEND: {
       name: 'Reranking Engine',
-      description: 'Re-scores retrieved results for precision. This is your quality filter that ensures the best results rise to the top.',
+      description: 'Re-scores retrieved results for precision. This is your quality filter that ensures the best results rise to the top. Shows backend and model when applicable.',
       category: 'Retrieval',
       icon: '⚡'
+    },
+    COHERE_RERANK_MODEL: {
+      name: 'Rerank Model',
+      description: 'Specific Cohere reranker model used when backend = cohere (e.g., rerank-3.5).',
+      category: 'Retrieval',
+      icon: '⚙️'
+    },
+    RERANKER_MODEL: {
+      name: 'Rerank Model',
+      description: 'Local/HF reranker model used when backend = local or hf (e.g., BAAI/bge-reranker-v2-m3).',
+      category: 'Retrieval',
+      icon: '⚙️'
     },
     MQ_REWRITES: {
       name: 'Multi-Query Expansion',
@@ -105,7 +117,14 @@
       html += '<div style="display:flex;flex-direction:column;gap:12px;">';
 
       settings.forEach(({ key, value, info }) => {
-        const displayValue = info.valueExplainer ? info.valueExplainer(value) : value;
+        let displayValue = info.valueExplainer ? info.valueExplainer(value) : value;
+        if (key === 'RERANK_BACKEND') {
+          if (String(value) === 'cohere' && profile.COHERE_RERANK_MODEL) {
+            displayValue = `${value}: ${profile.COHERE_RERANK_MODEL}`;
+          } else if ((String(value) === 'hf' || String(value) === 'local') && profile.RERANKER_MODEL) {
+            displayValue = `${value}: ${profile.RERANKER_MODEL}`;
+          }
+        }
         html += '<div style="display:flex;gap:12px;">';
         html += '<div style="font-size:20px;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:#1a1a1a;border-radius:6px;">';
         html += info.icon + '</div>';

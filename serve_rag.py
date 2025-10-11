@@ -56,7 +56,7 @@ def health():
 @app.get("/answer", response_model=Answer)
 def answer(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: project|project")
+    repo: Optional[str] = Query(None, description="Repository override: agro|agro")
 ):
     """Answer a question using strict per-repo routing.
 
@@ -71,7 +71,7 @@ def answer(
 @app.get("/search")
 def search(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: project|project"),
+    repo: Optional[str] = Query(None, description="Repository override: agro|agro"),
     top_k: int = Query(10, description="Number of results to return")
 ):
     """Search for relevant code locations without generation.
@@ -254,8 +254,8 @@ def get_keywords() -> Dict[str, Any]:
                                 out.append(it[key])
                                 break
             elif isinstance(obj, dict):
-                # prefer "agro" or "project" buckets, else flatten all lists
-                for bucket in ("agro", "project"):
+                # prefer "agro" or "agro" buckets, else flatten all lists
+                for bucket in ("agro", "agro"):
                     if bucket in obj and isinstance(obj[bucket], list):
                         out.extend(extract_terms(obj[bucket]))
                         return out
@@ -310,7 +310,6 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         # Run discriminative keyword extraction (TF-IDF based)
-        logger.info(f"Running discriminative keyword extraction for repo: {repo}")
         discr_result = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "analyze_keywords.py")],
             env={**os.environ, "REPO": repo},
@@ -320,7 +319,6 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         if discr_result.returncode != 0:
-            logger.error(f"Discriminative keyword extraction failed: {discr_result.stderr}")
             results["discriminative"]["error"] = discr_result.stderr
         else:
             # Count keywords in generated file
@@ -329,10 +327,8 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
             if isinstance(discr_data, dict) and repo in discr_data:
                 discr_keywords = discr_data[repo] if isinstance(discr_data[repo], list) else []
             results["discriminative"]["count"] = len(discr_keywords)
-            logger.info(f"Generated {len(discr_keywords)} discriminative keywords")
 
         # Run semantic keyword extraction (business/domain terms)
-        logger.info(f"Running semantic keyword extraction for repo: {repo}")
         sema_result = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "analyze_keywords_v2.py")],
             env={**os.environ, "REPO": repo},
@@ -342,7 +338,6 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
         )
 
         if sema_result.returncode != 0:
-            logger.error(f"Semantic keyword extraction failed: {sema_result.stderr}")
             results["semantic"]["error"] = sema_result.stderr
         else:
             # Count keywords in generated file
@@ -351,7 +346,6 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
             if isinstance(sema_data, dict) and repo in sema_data:
                 sema_keywords = sema_data[repo] if isinstance(sema_data[repo], list) else []
             results["semantic"]["count"] = len(sema_keywords)
-            logger.info(f"Generated {len(sema_keywords)} semantic keywords")
 
         results["total_count"] = results["discriminative"]["count"] + results["semantic"]["count"]
         results["duration_seconds"] = round(time.time() - start_time, 2)
@@ -362,7 +356,6 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
     except Exception as e:
         results["ok"] = False
         results["error"] = str(e)
-        logger.error(f"Keyword generation failed: {e}")
 
     return results
 

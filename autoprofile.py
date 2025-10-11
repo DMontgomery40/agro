@@ -63,15 +63,13 @@ def _meets_policy_maps(candidate: Dict[str, Any], policy: Dict[str, Any]) -> boo
     return True
 
 
-def _decorate_row(m: Dict[str, Any], comp_type: str) -> Dict[str, Any]:
+def _decorate_row(m: Dict[str, Any], comp_type: str, use_heuristics: bool = False) -> Dict[str, Any]:
     out = dict(m)
     out["comp"] = comp_type.upper()
     out["provider"] = (out.get("provider") or "").lower()
     qs = out.get("quality_score")
     if qs is None:
-        # Nudge defaults to prefer cloud rows in performance mode tie-breaks
-        # Non-local rows default slightly higher; local stubs slightly lower.
-        out["quality_score"] = 0.55 if out["provider"] != "local" else 0.45
+        out["quality_score"] = _infer_quality_score(out, comp_type) if use_heuristics else 0.5
     else:
         out["quality_score"] = _safe_num(qs, 0.5)
     if out.get("latency_p95_ms") is not None:
@@ -81,11 +79,79 @@ def _decorate_row(m: Dict[str, Any], comp_type: str) -> Dict[str, Any]:
     return out
 
 
+def _infer_quality_score(row: Dict[str, Any], comp_type: str) -> Number:
+    """Heuristic quality when not provided in prices.json.
+    Tries to be sensible for performance mode ranking.
+    """
+    prov = (row.get("provider") or "").lower()
+    fam = (row.get("family") or "").lower()
+    model = (row.get("model") or "").lower()
+    c = comp_type.upper()
+
+    if c == "GEN":
+        # OpenAI / o-series / GPT-4 family hierarchy
+        if prov == "openai":
+            if model.startswith("o1"):
+                return 0.95
+            if model.startswith("o3"):
+                return 0.90
+            if "gpt-4o" in model and "mini" not in model:
+                return 0.88
+            if "gpt-4-turbo" in model:
+                return 0.86
+            if model.startswith("gpt-4"):
+                return 0.85
+            if "gpt-4o-mini" in model:
+                return 0.78
+        if prov == "anthropic":
+            if "opus" in model:
+                return 0.98
+            if "3-5-sonnet" in model or "3.5-sonnet" in model or "sonnet" in model:
+                return 0.92
+            if "3-5-haiku" in model or "3.5-haiku" in model or "haiku" in model:
+                return 0.82
+        if prov == "google":
+            if "gemini-1.5-pro" in model:
+                return 0.87
+            if "gemini-1.5-flash" in model:
+                return 0.78
+        if prov == "meta" and "70b" in model:
+            return 0.83
+        if prov == "mistral" and "large" in model:
+            return 0.82
+        if prov == "cohere" and "command-r-plus" in model:
+            return 0.84
+        # local or unknown
+        return 0.72 if prov != "local" else 0.60
+
+    if c == "EMB":
+        if prov == "openai":
+            if "3-large" in model:
+                return 0.90
+            if "3-small" in model:
+                return 0.82
+        if prov == "voyage":
+            return 0.86
+        if prov == "cohere":
+            return 0.78
+        return 0.70 if prov != "local" else 0.60
+
+    if c == "RERANK":
+        if prov == "cohere" and ("3.5" in model or "rerank-3.5" in model):
+            return 0.90
+        if prov in ("hf", "local") and ("bge-reranker" in model or "reranker" in model):
+            return 0.82
+        return 0.75 if prov != "local" else 0.65
+
+    return 0.5
+
+
 def _component_rows(
     comp_type: str,
     ALLOW: set,
     prices: Dict[str, Any],
     include_local: bool = False,
+    use_heuristics: bool = False,
 ) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     models = prices.get("models") or []
@@ -102,13 +168,13 @@ def _component_rows(
             if unit == "1k_tokens" and (
                 _safe_num(m.get("input_per_1k")) > 0 or _safe_num(m.get("output_per_1k")) > 0
             ):
-                rows.append(_decorate_row(m, comp))
+                rows.append(_decorate_row(m, comp, use_heuristics))
         elif comp == "EMB":
             if _safe_num(m.get("embed_per_1k")) > 0:
-                rows.append(_decorate_row(m, comp))
+                rows.append(_decorate_row(m, comp, use_heuristics))
         elif comp == "RERANK":
             if _safe_num(m.get("rerank_per_1k")) > 0 or unit == "request":
-                rows.append(_decorate_row(m, comp))
+                rows.append(_decorate_row(m, comp, use_heuristics))
 
     if include_local and ((not ALLOW) or ("local" in ALLOW)):
         local_stub = dict(
@@ -119,7 +185,7 @@ def _component_rows(
             latency_p95_ms=None,
             throughput_qps=None,
         )
-        rows.insert(0, _decorate_row(local_stub, comp))
+        rows.insert(0, _decorate_row(local_stub, comp, use_heuristics))
 
     rows.sort(key=lambda r: r["quality_score"], reverse=True)
     cap = 4 if comp == "GEN" else 3
@@ -268,15 +334,18 @@ def autoprofile(request: Dict[str, Any], prices: Dict[str, Any]) -> Tuple[Dict[s
     slo = {"latency_target_ms": obj.get("latency_target_ms"), "min_qps": obj.get("min_qps")}
 
     W = _weights(wl)
+    tuning = request.get("tuning", {}) or {}
+    use_heuristics = bool(tuning.get("use_heuristic_quality"))
 
     # Diagnostics: available rows under current provider policy
     diag = {
         "providers_allowed": sorted(list(ALLOW)) if ALLOW else None,
         "local_cap": bool(local_cap),
+        "use_heuristic_quality": use_heuristics,
         "rows": {
-            "gen": len(_component_rows("GEN", ALLOW, prices, include_local=False)),
-            "emb": len(_component_rows("EMB", ALLOW, prices, include_local=local_cap)),
-            "rerank": len(_component_rows("RERANK", ALLOW, prices, include_local=local_cap)),
+            "gen": len(_component_rows("GEN", ALLOW, prices, include_local=False, use_heuristics=use_heuristics)),
+            "emb": len(_component_rows("EMB", ALLOW, prices, include_local=local_cap, use_heuristics=use_heuristics)),
+            "rerank": len(_component_rows("RERANK", ALLOW, prices, include_local=local_cap, use_heuristics=use_heuristics)),
         }
     }
 
@@ -284,14 +353,14 @@ def autoprofile(request: Dict[str, Any], prices: Dict[str, Any]) -> Tuple[Dict[s
         C: List[Dict[str, Any]] = []
         if local_cap:
             gen_local = defaults.get("gen_model") if _looks_local(defaults.get("gen_model")) else None
-            top_cloud_gen = _component_rows("GEN", AL, prices, include_local=False)
+            top_cloud_gen = _component_rows("GEN", AL, prices, include_local=False, use_heuristics=use_heuristics)
             GENs = [{"provider": "local", "model": gen_local}] if gen_local else top_cloud_gen
-            EMBs = _component_rows("EMB", AL, prices, include_local=True)
-            RRs = _component_rows("RERANK", AL, prices, include_local=True)
+            EMBs = _component_rows("EMB", AL, prices, include_local=True, use_heuristics=use_heuristics)
+            RRs = _component_rows("RERANK", AL, prices, include_local=True, use_heuristics=use_heuristics)
             C.extend(_pair_limited(GENs, EMBs, RRs, limit=60))
-        GENs = _component_rows("GEN", AL, prices, include_local=False)
-        EMBs = _component_rows("EMB", AL, prices, include_local=local_cap)
-        RRs = _component_rows("RERANK", AL, prices, include_local=local_cap)
+        GENs = _component_rows("GEN", AL, prices, include_local=False, use_heuristics=use_heuristics)
+        EMBs = _component_rows("EMB", AL, prices, include_local=local_cap, use_heuristics=use_heuristics)
+        RRs = _component_rows("RERANK", AL, prices, include_local=local_cap, use_heuristics=use_heuristics)
         C.extend(_pair_limited(GENs, EMBs, RRs, limit=60))
         C = [c for c in C if _valid_pipeline(c)]
         C = [c for c in C if _meets_slos(c, slo)]
@@ -323,9 +392,31 @@ def autoprofile(request: Dict[str, Any], prices: Dict[str, Any]) -> Tuple[Dict[s
     else:
         winner = _select_balanced(C, B)
 
+    # Recommend MQ_REWRITES when not provided (derive from objective + budget + workload size)
+    def recommend_mq(mode: str, B: Optional[Number], wl: Dict[str, Number]) -> int:
+        tin = wl.get("Tin", 0.0); tout = wl.get("Tout", 0.0)
+        size = tin + tout
+        B = (B or 0.0)
+        if mode == "performance":
+            if B >= 1000 or size >= 50000:  # heavy usage or large prompts/answers
+                return 6
+            if B >= 100 or size >= 5000:
+                return 4
+            return 3
+        if mode == "cost":
+            if B < 10 and size < 2000:
+                return 1
+            return 2
+        # balanced
+        if B >= 50 or size >= 5000:
+            return 4
+        return 3
+
+    mq = int(wl["MQ"]) if wl["MQ"] > 0 else recommend_mq(mode, B, wl)
+
     env: Dict[str, str] = {
         "HYDRATION_MODE": "lazy",
-        "MQ_REWRITES": str(int(wl["MQ"]) if wl["MQ"] > 0 else 1),
+        "MQ_REWRITES": str(mq),
         "GEN_MODEL": winner["GEN"]["model"],
         "EMBEDDING_TYPE": "local" if winner["EMB"]["provider"] == "local" else winner["EMB"]["provider"],
         "RERANK_BACKEND": "local" if winner["RERANK"]["provider"] == "local" else winner["RERANK"]["provider"],
