@@ -26,6 +26,23 @@ class EmbeddingCache:
             for h, v in self.cache.items():
                 f.write(json.dumps({"hash": h, "vec": v}) + "\n")
 
+    def prune(self, valid_hashes: set):
+        """Remove cached embeddings for chunks that no longer exist.
+
+        Args:
+            valid_hashes: Set of hashes for chunks that currently exist
+
+        Returns:
+            Number of entries pruned
+        """
+        before = len(self.cache)
+        self.cache = {h: v for h, v in self.cache.items() if h in valid_hashes}
+        after = len(self.cache)
+        pruned = before - after
+        if pruned > 0:
+            self.save()
+        return pruned
+
     def embed_texts(self, client, texts, hashes, model="text-embedding-3-large", batch=64):
         embs = [None] * len(texts)
         to_embed, idx_map = [], []
