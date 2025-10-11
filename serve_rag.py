@@ -360,3 +360,58 @@ def cards_build() -> Dict[str, Any]:
 @app.get("/api/cards")
 def cards_list() -> Dict[str, Any]:
     return {"cards": []}
+
+# ---------------- Git hooks helpers ----------------
+def _git_hooks_dir() -> Path:
+    # repo root assumed to be same as this file's parent
+    root = ROOT
+    return root / ".git" / "hooks"
+
+_HOOK_POST_CHECKOUT = """#!/usr/bin/env bash
+# Auto-index on branch changes when AUTO_INDEX=1
+[ "${AUTO_INDEX:-0}" != "1" ] && exit 0
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root" || exit 0
+if [ -d .venv ]; then . .venv/bin/activate; fi
+export REPO=agro EMBEDDING_TYPE=local SKIP_DENSE=1
+export OUT_DIR_BASE="./out.noindex-shared"
+python index_repo.py >/dev/null 2>&1 || true
+"""
+
+_HOOK_POST_COMMIT = """#!/usr/bin/env bash
+# Auto-index on commit when AUTO_INDEX=1
+[ "${AUTO_INDEX:-0}" != "1" ] && exit 0
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root" || exit 0
+if [ -d .venv ]; then . .venv/bin/activate; fi
+export REPO=agro EMBEDDING_TYPE=local SKIP_DENSE=1
+export OUT_DIR_BASE="./out.noindex-shared"
+python index_repo.py >/dev/null 2>&1 || true
+"""
+
+@app.get("/api/git/hooks/status")
+def git_hooks_status() -> Dict[str, Any]:
+    d = _git_hooks_dir()
+    pc = d / "post-checkout"
+    pm = d / "post-commit"
+    return {
+        "dir": str(d),
+        "post_checkout": pc.exists(),
+        "post_commit": pm.exists(),
+        "enabled_hint": "export AUTO_INDEX=1"
+    }
+
+@app.post("/api/git/hooks/install")
+def git_hooks_install() -> Dict[str, Any]:
+    d = _git_hooks_dir()
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+        pc = d / "post-checkout"
+        pm = d / "post-commit"
+        pc.write_text(_HOOK_POST_CHECKOUT)
+        pm.write_text(_HOOK_POST_COMMIT)
+        os.chmod(pc, 0o755)
+        os.chmod(pm, 0o755)
+        return {"ok": True, "message": "Installed git hooks. Enable with: export AUTO_INDEX=1"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

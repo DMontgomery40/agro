@@ -686,6 +686,26 @@
                         </div>
                     </div>
                 </div>
+                <div class="settings-section">
+                    <h3>Git Hooks (Auto-Index)</h3>
+                    <p class="small">Install local git hooks to auto-run BM25 indexing on branch changes and commits. Enable it with <code>AUTO_INDEX=1</code>.</p>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Install Hooks</label>
+                            <button class="small-button" id="btn-install-hooks">Install</button>
+                        </div>
+                        <div class="input-group">
+                            <label>Status</label>
+                            <div id="hooks-status" class="mono">—</div>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group full-width">
+                            <label>Enable</label>
+                            <input type="text" readonly value="export AUTO_INDEX=1" onclick="this.select();document.execCommand('copy');" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Tab: Generation -->
