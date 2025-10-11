@@ -120,6 +120,19 @@ export REPO=project && export THREAD_ID=my-session && \
 python chat_cli.py
 ```
 
+### Cross-Branch Indexing (Shared Profile)
+
+- Goal: One shared index usable from any branch without touching code.
+- Create a fast BM25-only index (no external APIs):
+  - `REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`
+- Retrieval picks the index from `OUT_DIR_BASE`. Dense/Qdrant is optional; `hybrid_search.py` falls back cleanly when missing.
+- Helper: `source scripts/select_index.sh shared` to set `OUT_DIR_BASE` and `COLLECTION_NAME` consistently.
+
+Index profiles in `scripts/select_index.sh`:
+- `shared` → `OUT_DIR_BASE=./out.noindex-shared`, `COLLECTION_NAME=code_chunks_agro_shared`
+- `gui` → `OUT_DIR_BASE=./out.noindex-gui`, `COLLECTION_NAME=code_chunks_agro_gui`
+- `devclean` → `OUT_DIR_BASE=./out.noindex-devclean`, `COLLECTION_NAME=code_chunks_agro_devclean`
+
 ---
 
 ## Architecture (ground truth)
