@@ -407,18 +407,209 @@ def profiles_apply(payload: Dict[str, Any]) -> Dict[str, Any]:
         applied.append(str(k))
     return {"ok": True, "applied_keys": applied}
 
-# --- Index + Cards: minimal stubs to keep GUI functional ---
+# --- Index + Cards: comprehensive status with all metrics ---
 _INDEX_STATUS: List[str] = []
+_INDEX_METADATA: Dict[str, Any] = {}
+
+def _get_index_stats() -> Dict[str, Any]:
+    """Gather comprehensive indexing statistics with storage calculator integration."""
+    import subprocess
+    from datetime import datetime
+
+    # Get embedding configuration
+    embedding_type = os.getenv("EMBEDDING_TYPE", "openai").lower()
+    embedding_dim = int(os.getenv("EMBEDDING_DIM", "3072" if embedding_type == "openai" else "512"))
+
+    stats = {
+        "timestamp": datetime.utcnow().isoformat() + 'Z',
+        "repos": [],
+        "total_storage": 0,
+        "embedding_config": {
+            "provider": embedding_type,
+            "model": "text-embedding-3-large" if embedding_type == "openai" else f"local-{embedding_type}",
+            "dimensions": embedding_dim,
+            "precision": "float32"  # Default from index_repo.py
+        },
+        "keywords_count": 0,
+        "storage_breakdown": {
+            "chunks_json": 0,
+            "bm25_index": 0,
+            "cards": 0,
+            "embeddings_raw": 0,
+            "qdrant_overhead": 0,
+            "reranker_cache": 0,
+            "redis": 419430400,  # 400 MiB default
+        },
+        "costs": {
+            "total_tokens": 0,
+            "embedding_cost": 0.0,
+        }
+    }
+
+    # Get current repo and branch
+    try:
+        repo = os.getenv("REPO", "agro")
+        branch_result = subprocess.run(["git", "branch", "--show-current"],
+                                      capture_output=True, text=True, cwd=ROOT)
+        branch = branch_result.stdout.strip() if branch_result.returncode == 0 else "unknown"
+
+        stats["current_repo"] = repo
+        stats["current_branch"] = branch
+    except:
+        stats["current_repo"] = "agro"
+        stats["current_branch"] = "unknown"
+
+    total_chunks = 0
+
+    # Check all index profiles
+    base_paths = ["out.noindex-shared", "out.noindex-gui", "out.noindex-devclean"]
+    for base in base_paths:
+        base_path = ROOT / base
+        if base_path.exists():
+            profile_name = base.replace("out.noindex-", "")
+            repo_dirs = [d for d in base_path.iterdir() if d.is_dir()]
+
+            for repo_dir in repo_dirs:
+                repo_name = repo_dir.name
+                chunks_file = repo_dir / "chunks.jsonl"
+                bm25_dir = repo_dir / "bm25_index"
+                cards_file = repo_dir / "cards.jsonl"
+
+                repo_stats = {
+                    "name": repo_name,
+                    "profile": profile_name,
+                    "paths": {
+                        "chunks": str(chunks_file) if chunks_file.exists() else None,
+                        "bm25": str(bm25_dir) if bm25_dir.exists() else None,
+                        "cards": str(cards_file) if cards_file.exists() else None,
+                    },
+                    "sizes": {},
+                    "chunk_count": 0,
+                    "has_cards": cards_file.exists() if cards_file else False,
+                }
+
+                # Get file sizes
+                if chunks_file.exists():
+                    size = chunks_file.stat().st_size
+                    repo_stats["sizes"]["chunks"] = size
+                    stats["total_storage"] += size
+                    stats["storage_breakdown"]["chunks_json"] += size
+
+                    # Count chunks
+                    try:
+                        with open(chunks_file, 'r') as f:
+                            chunk_count = sum(1 for _ in f)
+                            repo_stats["chunk_count"] = chunk_count
+                            total_chunks += chunk_count
+                    except:
+                        pass
+
+                if bm25_dir.exists():
+                    bm25_size = sum(f.stat().st_size for f in bm25_dir.rglob('*') if f.is_file())
+                    repo_stats["sizes"]["bm25"] = bm25_size
+                    stats["total_storage"] += bm25_size
+                    stats["storage_breakdown"]["bm25_index"] += bm25_size
+
+                if cards_file.exists():
+                    card_size = cards_file.stat().st_size
+                    repo_stats["sizes"]["cards"] = card_size
+                    stats["total_storage"] += card_size
+                    stats["storage_breakdown"]["cards"] += card_size
+
+                stats["repos"].append(repo_stats)
+
+    # Calculate embedding storage (formula from storage calculator)
+    if total_chunks > 0:
+        bytes_per_float = 4  # float32
+        embeddings_raw = total_chunks * embedding_dim * bytes_per_float
+        qdrant_overhead_multiplier = 1.5
+        qdrant_total = embeddings_raw * qdrant_overhead_multiplier
+        reranker_cache = embeddings_raw * 0.5
+
+        stats["storage_breakdown"]["embeddings_raw"] = embeddings_raw
+        stats["storage_breakdown"]["qdrant_overhead"] = int(qdrant_total - embeddings_raw)
+        stats["storage_breakdown"]["reranker_cache"] = int(reranker_cache)
+
+        # Add to total storage
+        stats["total_storage"] += qdrant_total + reranker_cache + stats["storage_breakdown"]["redis"]
+
+        # Calculate costs (OpenAI text-embedding-3-large: $0.13 per 1M tokens)
+        # Rough estimate: ~750 tokens per chunk (conservative)
+        if embedding_type == "openai":
+            est_tokens_per_chunk = 750
+            total_tokens = total_chunks * est_tokens_per_chunk
+            cost_per_million = 0.13
+            embedding_cost = (total_tokens / 1_000_000) * cost_per_million
+
+            stats["costs"]["total_tokens"] = total_tokens
+            stats["costs"]["embedding_cost"] = round(embedding_cost, 4)
+
+    # Try to get keywords count
+    keywords_file = ROOT / "data" / f"keywords_{stats['current_repo']}.json"
+    if keywords_file.exists():
+        try:
+            kw_data = json.loads(keywords_file.read_text())
+            stats["keywords_count"] = len(kw_data) if isinstance(kw_data, list) else len(kw_data.get("keywords", []))
+        except:
+            pass
+
+    return stats
 
 @app.post("/api/index/start")
 def index_start() -> Dict[str, Any]:
-    global _INDEX_STATUS
-    _INDEX_STATUS = ["Prepared 123 chunks", "BM25 index saved", "Indexed 123 chunks to Qdrant"]
-    return {"ok": True}
+    """Start indexing with real subprocess execution."""
+    global _INDEX_STATUS, _INDEX_METADATA
+    import subprocess
+    import threading
+
+    _INDEX_STATUS = ["Indexing started..."]
+    _INDEX_METADATA = {}
+
+    def run_index():
+        global _INDEX_STATUS, _INDEX_METADATA
+        try:
+            repo = os.getenv("REPO", "agro")
+            _INDEX_STATUS.append(f"Indexing repository: {repo}")
+
+            # Run the actual indexer
+            result = subprocess.run(
+                ["python", "index_repo.py"],
+                capture_output=True,
+                text=True,
+                cwd=ROOT,
+                env={**os.environ, "REPO": repo}
+            )
+
+            if result.returncode == 0:
+                _INDEX_STATUS.append("✓ Indexing completed successfully")
+                _INDEX_METADATA = _get_index_stats()
+            else:
+                _INDEX_STATUS.append(f"✗ Indexing failed: {result.stderr[:200]}")
+        except Exception as e:
+            _INDEX_STATUS.append(f"✗ Error: {str(e)}")
+
+    # Run in background
+    thread = threading.Thread(target=run_index, daemon=True)
+    thread.start()
+
+    return {"ok": True, "message": "Indexing started in background"}
 
 @app.get("/api/index/status")
 def index_status() -> Dict[str, Any]:
-    return {"lines": _INDEX_STATUS}
+    """Return comprehensive indexing status with all metrics."""
+    if not _INDEX_METADATA:
+        # Return basic status if no metadata yet
+        return {
+            "lines": _INDEX_STATUS,
+            "running": len(_INDEX_STATUS) > 0 and not any("completed" in s or "failed" in s for s in _INDEX_STATUS),
+            "metadata": _get_index_stats()  # Always provide current stats
+        }
+
+    return {
+        "lines": _INDEX_STATUS,
+        "running": False,
+        "metadata": _INDEX_METADATA
+    }
 
 @app.post("/api/cards/build")
 def cards_build() -> Dict[str, Any]:
