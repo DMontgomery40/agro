@@ -149,4 +149,21 @@
   }
 
   window.ProfileRenderer = { renderProfileResults: renderProfileResults };
+  window.ProfileRenderer.bindTooltips = function bindTooltips(root){
+    if (!root) return;
+    const icons = root.querySelectorAll('.help-icon');
+    icons.forEach(icon => {
+      const wrap = icon.parentElement;
+      const bubble = wrap && wrap.querySelector('.tooltip-bubble');
+      if (!wrap || !bubble) return;
+      function show(){ bubble.classList.add('tooltip-visible'); }
+      function hide(){ bubble.classList.remove('tooltip-visible'); }
+      icon.addEventListener('mouseenter', show);
+      icon.addEventListener('mouseleave', hide);
+      icon.addEventListener('focus', show);
+      icon.addEventListener('blur', hide);
+      icon.addEventListener('click', (e)=>{ e.stopPropagation(); bubble.classList.toggle('tooltip-visible'); });
+      document.addEventListener('click', (evt)=>{ if (!wrap.contains(evt.target)) bubble.classList.remove('tooltip-visible'); });
+    });
+  }
 })();

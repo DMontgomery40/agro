@@ -866,6 +866,8 @@
             try {
                 const html = window.ProfileRenderer.renderProfileResults(winner.env, scan, budget);
                 resultsContent.innerHTML = html;
+                // Bind tooltips inside the rendered preview
+                if (window.ProfileRenderer.bindTooltips) window.ProfileRenderer.bindTooltips(resultsContent);
 
                 // Hide placeholder, show results
                 if (placeholder) placeholder.style.display = 'none';
@@ -1146,6 +1148,200 @@
         }
     }
 
+    // ---------------- Quick Action Helpers ----------------
+    function setButtonState(btn, state) {
+        if (!btn) return;
+        btn.classList.remove('loading', 'success', 'error');
+        if (state === 'loading') btn.classList.add('loading');
+        else if (state === 'success') btn.classList.add('success');
+        else if (state === 'error') btn.classList.add('error');
+    }
+
+    function showStatus(message, type = 'info') {
+        const status = document.getElementById('dash-index-status');
+        const bar = document.getElementById('dash-index-bar');
+        if (!status) return;
+
+        const timestamp = new Date().toLocaleTimeString();
+        const color = type === 'success' ? '#00ff88' : type === 'error' ? '#ff6b6b' : '#5b9dff';
+        const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : '•';
+
+        status.innerHTML = `<span style="color:${color};">${icon}</span> <span style="color:#666;">[${timestamp}]</span> ${message}`;
+
+        if (bar) {
+            if (type === 'loading') {
+                bar.style.width = '50%';
+                bar.style.opacity = '0.6';
+            } else if (type === 'success') {
+                bar.style.width = '100%';
+                bar.style.opacity = '1';
+                setTimeout(() => { bar.style.width = '0%'; }, 2000);
+            } else if (type === 'error') {
+                bar.style.width = '100%';
+                bar.style.background = '#ff6b6b';
+                bar.style.opacity = '1';
+                setTimeout(() => {
+                    bar.style.width = '0%';
+                    bar.style.background = 'linear-gradient(90deg, #ff9b5e 0%, #ff6b9d 100%)';
+                }, 2000);
+            }
+        }
+    }
+
+    function bindQuickAction(btnId, handler) {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            setButtonState(btn, 'loading');
+
+            try {
+                await handler();
+                setButtonState(btn, 'success');
+                setTimeout(() => setButtonState(btn, null), 1500);
+            } catch (err) {
+                console.error(`[${btnId}] Error:`, err);
+                setButtonState(btn, 'error');
+                setTimeout(() => setButtonState(btn, null), 2000);
+            }
+        });
+    }
+
+    // ---------------- Quick Actions ----------------
+    async function changeRepo() {
+        showStatus('Loading repositories...', 'loading');
+
+        try {
+            const response = await fetch(api('/api/config'));
+            const data = await response.json();
+            const repos = data.repos || [];
+            const currentRepo = data.config?.REPO || 'agro';
+
+            if (repos.length === 0) {
+                showStatus('No repositories configured', 'error');
+                return;
+            }
+
+            // Create a dialog-like selection UI
+            const repoHtml = repos.map((repo, idx) => {
+                const isActive = repo.slug === currentRepo;
+                return `
+                    <button
+                        class="small-button"
+                        data-repo="${repo.slug}"
+                        style="
+                            margin-bottom: 8px;
+                            background: ${isActive ? '#00ff88' : '#1a1a1a'};
+                            color: ${isActive ? '#000' : '#aaa'};
+                            border: 1px solid ${isActive ? '#00ff88' : '#2a2a2a'};
+                            width: 100%;
+                            text-align: left;
+                            padding: 12px;
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        "
+                    >
+                        <span>${repo.slug}</span>
+                        ${isActive ? '<span>✓ ACTIVE</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+
+            const status = document.getElementById('dash-index-status');
+            if (status) {
+                status.innerHTML = `
+                    <div style="padding: 8px;">
+                        <div style="margin-bottom: 12px; color: #00ff88; font-weight: 600;">Select Repository:</div>
+                        ${repoHtml}
+                    </div>
+                `;
+
+                // Bind click handlers
+                repos.forEach(repo => {
+                    const btn = status.querySelector(`[data-repo="${repo.slug}"]`);
+                    if (btn && repo.slug !== currentRepo) {
+                        btn.addEventListener('click', async () => {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.6';
+                            showStatus(`Switching to ${repo.slug}...`, 'loading');
+
+                            try {
+                                const updateResponse = await fetch(api('/api/env/update'), {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ REPO: repo.slug })
+                                });
+
+                                if (updateResponse.ok) {
+                                    showStatus(`Switched to ${repo.slug}`, 'success');
+                                    setTimeout(() => refreshDashboard(), 500);
+                                } else {
+                                    showStatus(`Failed to switch to ${repo.slug}`, 'error');
+                                }
+                            } catch (err) {
+                                showStatus(`Error switching repo: ${err.message}`, 'error');
+                            }
+                        });
+                    }
+                });
+            }
+        } catch (err) {
+            showStatus(`Error loading repos: ${err.message}`, 'error');
+        }
+    }
+
+    async function createKeywords() {
+        showStatus('Creating keywords...', 'loading');
+
+        try {
+            const response = await fetch(api('/api/config'));
+            const data = await response.json();
+            const repo = data.config?.REPO || 'agro';
+
+            // Call the keywords generation endpoint
+            const createResponse = await fetch(api('/api/keywords/generate'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repo })
+            });
+
+            if (createResponse.ok) {
+                const result = await createResponse.json();
+                const count = result.count || 0;
+                showStatus(`Created ${count} keywords for ${repo}`, 'success');
+                await loadKeywords();
+            } else {
+                const error = await createResponse.text();
+                showStatus(`Failed to create keywords: ${error}`, 'error');
+            }
+        } catch (err) {
+            showStatus(`Error creating keywords: ${err.message}`, 'error');
+        }
+    }
+
+    async function reloadConfig() {
+        showStatus('Reloading configuration...', 'loading');
+
+        try {
+            const response = await fetch(api('/api/env/reload'), {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                showStatus('Configuration reloaded successfully', 'success');
+                await loadConfig();
+                await refreshDashboard();
+            } else {
+                const error = await response.text();
+                showStatus(`Failed to reload config: ${error}`, 'error');
+            }
+        } catch (err) {
+            showStatus(`Error reloading config: ${err.message}`, 'error');
+        }
+    }
+
     // ---------------- Bindings ----------------
     function bindActions() {
         const btnHealth = $('#btn-health'); if (btnHealth) btnHealth.addEventListener('click', checkHealth);
@@ -1184,13 +1380,13 @@
         if (btnCardsBuild) btnCardsBuild.addEventListener('click', buildCards);
         const btnCardsRefresh = document.getElementById('btn-cards-refresh');
         if (btnCardsRefresh) btnCardsRefresh.addEventListener('click', refreshCards);
-        // Dashboard button bindings
-        const dashIndex = document.getElementById('dash-index-start');
-        if (dashIndex) dashIndex.addEventListener('click', startIndexing);
-        const dashCardsBuild = document.getElementById('dash-cards-build');
-        if (dashCardsBuild) dashCardsBuild.addEventListener('click', buildCards);
-        const dashCardsRefresh = document.getElementById('dash-cards-refresh');
-        if (dashCardsRefresh) dashCardsRefresh.addEventListener('click', refreshCards);
+        // Dashboard button bindings with enhanced feedback
+        bindQuickAction('dash-index-start', startIndexing);
+        bindQuickAction('dash-cards-build', buildCards);
+        bindQuickAction('dash-cards-refresh', refreshCards);
+        bindQuickAction('dash-change-repo', changeRepo);
+        bindQuickAction('dash-create-keywords', createKeywords);
+        bindQuickAction('dash-reload-config', reloadConfig);
         // Keep cost panel in sync with wizard selections
         const map = [
             ['wizard-gen-model','cost-model'],
@@ -1337,6 +1533,11 @@
             const port = env.MCP_HTTP_PORT || '8013';
             const path = env.MCP_HTTP_PATH || '/mcp';
             const dm = document.getElementById('dash-mcp'); if (dm) dm.textContent = `${host}:${port}${path}`;
+        } catch {}
+
+        // Load initial index status to show metadata
+        try {
+            await pollIndexStatus();
         } catch {}
     }
 
@@ -1490,37 +1691,141 @@
 
     async function startIndexing() {
         try {
+            showStatus('Starting indexer...', 'loading');
             await fetch(api('/api/index/start'), { method: 'POST' });
             if (indexPoll) clearInterval(indexPoll);
             indexPoll = setInterval(pollIndexStatus, 800);
             await pollIndexStatus();
-        } catch (e) { alert('Failed to start index: ' + e.message); }
+        } catch (e) {
+            showStatus('Failed to start indexer: ' + e.message, 'error');
+            throw e;
+        }
     }
 
-    function formatIndexStatus(lines) {
-        if (!lines || !lines.length) return 'Ready to index...';
-        const text = lines.join('\n');
-        const parts = [];
+    function formatBytes(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    }
 
-        // Extract key info from log lines
-        if (/Prepared (\d+) chunks/i.test(text)) {
-            const m = text.match(/Prepared (\d+) chunks/i);
-            parts.push(`<div class="section"><span class="key">Chunks prepared:</span> <span class="value">${m[1]}</span></div>`);
-        }
-        if (/BM25 index saved/i.test(text)) {
-            parts.push(`<div class="section"><span class="key">BM25 index:</span> <span class="value">✓ Saved</span></div>`);
-        }
-        if (/Indexed (\d+) chunks to Qdrant/i.test(text)) {
-            const m = text.match(/Indexed (\d+) chunks to Qdrant/i);
-            parts.push(`<div class="section"><span class="key">Vector index:</span> <span class="value">✓ ${m[1]} chunks</span></div>`);
+    function formatIndexStatus(lines, metadata) {
+        if (!metadata) {
+            if (!lines || !lines.length) return '<div style="color:#666;font-size:13px;">Ready to index...</div>';
+            return `<div style="color:#aaa;font-size:12px;">${lines.join('<br>')}</div>`;
         }
 
-        if (parts.length === 0) {
-            // Show last few lines if no structured info
-            return `<div style="color:#aaa;">${text.split('\n').slice(-3).join('<br>')}</div>`;
+        // Enterprise-grade comprehensive display
+        const html = [];
+
+        // Header with repo/branch
+        html.push(`
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #2a2a2a;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:6px;height:6px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;"></div>
+                    <div>
+                        <div style="font-size:16px;font-weight:600;color:#fff;letter-spacing:-0.3px;">${metadata.current_repo}</div>
+                        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">
+                            Branch: <span style="color:#5b9dff;">${metadata.current_branch}</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align:right;font-size:10px;color:#666;">
+                    ${new Date(metadata.timestamp).toLocaleString()}
+                </div>
+            </div>
+        `);
+
+        // Configuration section
+        html.push(`
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid #2a2a2a;">
+                    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Embedding Model</div>
+                    <div style="font-size:14px;font-weight:600;color:#b794f6;font-family:'SF Mono',monospace;">${metadata.embedding_model}</div>
+                </div>
+                <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid #2a2a2a;">
+                    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Keywords</div>
+                    <div style="font-size:14px;font-weight:600;color:#ff9b5e;font-family:'SF Mono',monospace;">${metadata.keywords_count.toLocaleString()}</div>
+                </div>
+            </div>
+        `);
+
+        // Index profiles section
+        if (metadata.repos && metadata.repos.length > 0) {
+            html.push(`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:#00ff88;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Index Profiles</div>`);
+
+            metadata.repos.forEach(repo => {
+                const totalSize = (repo.sizes.chunks || 0) + (repo.sizes.bm25 || 0) + (repo.sizes.cards || 0);
+
+                html.push(`
+                    <div style="background:#0f0f0f;border:1px solid ${repo.has_cards ? '#006622' : '#2a2a2a'};border-radius:6px;padding:12px;margin-bottom:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;">
+                                    ${repo.name} <span style="font-size:10px;color:#666;font-weight:400;">/ ${repo.profile}</span>
+                                </div>
+                                <div style="font-size:11px;color:#666;">
+                                    ${repo.chunk_count.toLocaleString()} chunks
+                                    ${repo.has_cards ? ' • <span style="color:#00ff88;">✓ Cards</span>' : ' • <span style="color:#666;">No cards</span>'}
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:14px;font-weight:600;color:#00ff88;font-family:'SF Mono',monospace;">
+                                    ${formatBytes(totalSize)}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:10px;">
+                            ${repo.paths.chunks ? `
+                                <div style="background:#0a0a0a;padding:6px 8px;border-radius:4px;border:1px solid #1a1a1a;">
+                                    <div style="color:#888;margin-bottom:2px;">Chunks</div>
+                                    <div style="color:#5b9dff;font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.chunks)}</div>
+                                </div>
+                            ` : ''}
+                            ${repo.paths.bm25 ? `
+                                <div style="background:#0a0a0a;padding:6px 8px;border-radius:4px;border:1px solid #1a1a1a;">
+                                    <div style="color:#888;margin-bottom:2px;">BM25 Index</div>
+                                    <div style="color:#ff9b5e;font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.bm25)}</div>
+                                </div>
+                            ` : ''}
+                            ${repo.paths.cards ? `
+                                <div style="background:#0a0a0a;padding:6px 8px;border-radius:4px;border:1px solid #1a1a1a;">
+                                    <div style="color:#888;margin-bottom:2px;">Cards</div>
+                                    <div style="color:#00ff88;font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.cards)}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${repo.paths.chunks ? `
+                            <details style="margin-top:8px;">
+                                <summary style="cursor:pointer;font-size:10px;color:#666;padding:4px 0;">
+                                    <span style="color:#5b9dff;">▸</span> File Paths
+                                </summary>
+                                <div style="margin-top:6px;padding:8px;background:#0a0a0a;border-radius:4px;font-size:10px;font-family:'SF Mono',monospace;color:#888;">
+                                    ${repo.paths.chunks ? `<div style="margin-bottom:2px;">📄 ${repo.paths.chunks}</div>` : ''}
+                                    ${repo.paths.bm25 ? `<div style="margin-bottom:2px;">📁 ${repo.paths.bm25}</div>` : ''}
+                                    ${repo.paths.cards ? `<div>🎴 ${repo.paths.cards}</div>` : ''}
+                                </div>
+                            </details>
+                        ` : ''}
+                    </div>
+                `);
+            });
+
+            html.push(`</div>`);
         }
 
-        return parts.join('');
+        // Total storage footer
+        html.push(`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #2a2a2a;">
+                <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Total Index Storage</div>
+                <div style="font-size:18px;font-weight:700;color:#00ff88;font-family:'SF Mono',monospace;">
+                    ${formatBytes(metadata.total_storage)}
+                </div>
+            </div>
+        `);
+
+        return html.join('');
     }
 
     async function pollIndexStatus() {
@@ -1531,36 +1836,49 @@
             const bar1 = document.getElementById('index-bar');
             const box2 = document.getElementById('dash-index-status');
             const bar2 = document.getElementById('dash-index-bar');
-            const formatted = formatIndexStatus(d.lines);
-            const pct = progressFromLog(d.lines);
+
+            // Use the new comprehensive display if available
+            const formatted = (typeof window.formatIndexStatusDisplay === 'function')
+                ? window.formatIndexStatusDisplay(d.lines, d.metadata)
+                : formatIndexStatus(d.lines, d.metadata);
+
+            const pct = d.running ? 50 : (d.metadata ? 100 : 0);
             if (box1) box1.innerHTML = formatted;
             if (bar1) bar1.style.width = pct + '%';
             if (box2) box2.innerHTML = formatted;
             if (bar2) bar2.style.width = pct + '%';
-            if (!d.running && indexPoll) { clearInterval(indexPoll); indexPoll = null; }
+            if (!d.running && indexPoll) {
+                clearInterval(indexPoll);
+                indexPoll = null;
+                // Final complete animation
+                if (bar2) {
+                    setTimeout(() => { bar2.style.width = '0%'; }, 2000);
+                }
+            }
         } catch (e) { /* ignore */ }
     }
 
     async function buildCards() {
-        try { await fetch(api('/api/cards/build'), { method: 'POST' }); await refreshCards(); }
-        catch (e) { alert('Failed to build cards: ' + e.message); }
+        try {
+            showStatus('Building cards...', 'loading');
+            await fetch(api('/api/cards/build'), { method: 'POST' });
+            await refreshCards();
+            showStatus('Cards built successfully', 'success');
+        } catch (e) {
+            showStatus('Failed to build cards: ' + e.message, 'error');
+            throw e;
+        }
     }
 
     async function refreshCards() {
         try {
-            const r = await fetch(api('/api/cards'));
-            const d = await r.json();
-            const el = document.getElementById('cards-list');
-            if (!el) return;
-            el.innerHTML = '';
-            if (!d.cards || d.cards.length === 0) { el.textContent = 'No cards found.'; return; }
-            d.cards.forEach(c => {
-                const div = document.createElement('div');
-                div.style.cssText = 'border-bottom:1px solid #1a1a1a; padding:6px 2px;';
-                div.innerHTML = `<div style="color:#00ff88;">${c.title || '(untitled)'}<\/div><div class="small">${c.path || ''}<\/div><div class="mono" style="white-space:pre-wrap;">${(c.summary||'').slice(0,240)}<\/div>`;
-                el.appendChild(div);
-            });
-        } catch (e) { console.warn('cards refresh failed', e); }
+            showStatus('Refreshing dashboard...', 'loading');
+            await refreshDashboard();
+            showStatus('Dashboard refreshed', 'success');
+        } catch (e) {
+            showStatus('Failed to refresh: ' + e.message, 'error');
+            throw e;
+        }
     }
 
     // ---------------- Add Model Flows ----------------
