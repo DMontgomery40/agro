@@ -517,6 +517,64 @@
         .tooltip-bubble .tt-badge.warn { color: #ffcf66; border-color: #654; background: #201a0e; }
         .tooltip-bubble .tt-badge.info { color: #7db3ff; border-color: #234; background: #0f141e; }
         .tooltip-bubble .tt-badge.reindex { color: #ff9b5e; border-color: #633; background: #1f130e; }
+
+        /* Keyword Manager - Custom select styling */
+        select[id^="kw-all-"],
+        select[id^="kw-repo-"] {
+            background: #0e0e0e;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 13px;
+            color: #ddd;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            scrollbar-width: thin;
+            scrollbar-color: #333 #0e0e0e;
+        }
+
+        select[id^="kw-all-"]::-webkit-scrollbar,
+        select[id^="kw-repo-"]::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        select[id^="kw-all-"]::-webkit-scrollbar-track,
+        select[id^="kw-repo-"]::-webkit-scrollbar-track {
+            background: #0e0e0e;
+            border-radius: 4px;
+        }
+
+        select[id^="kw-all-"]::-webkit-scrollbar-thumb,
+        select[id^="kw-repo-"]::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+            border: 2px solid #0e0e0e;
+        }
+
+        select[id^="kw-all-"]::-webkit-scrollbar-thumb:hover,
+        select[id^="kw-repo-"]::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+
+        select[id^="kw-all-"] option,
+        select[id^="kw-repo-"] option {
+            padding: 6px 8px;
+            background: #0e0e0e;
+            color: #ddd;
+        }
+
+        select[id^="kw-all-"] option:checked,
+        select[id^="kw-repo-"] option:checked {
+            background: #00ff88;
+            color: #000;
+            font-weight: 600;
+        }
+
+        select[id^="kw-all-"]:focus,
+        select[id^="kw-repo-"]:focus {
+            outline: none;
+            border-color: #00ff88;
+            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+        }
     </style>
     <link rel="stylesheet" href="/gui/css/storage-calculator.css">
     <style>
@@ -921,6 +979,15 @@
                                             <input type="number" id="apv2-minqps" placeholder="optional">
                                         </div>
                                     </div>
+                                    <div class="input-row">
+                                        <div class="input-group full-width">
+                                            <label>Heuristic Quality Fallback</label>
+                                            <div style="display:flex;align-items:center;gap:10px;">
+                                                <input type="checkbox" id="apv2-heuristics" style="width:auto;">
+                                                <span style="font-size:12px;color:#888;">Use heuristics when prices.json lacks quality_score (advanced)</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1318,7 +1385,12 @@
             <!-- Tab: Repositories -->
             <div id="tab-repos" class="tab-content">
                 <div class="settings-section">
-                    <h3>Repository Configuration</h3>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h3>Repository Configuration</h3>
+                        <button id="btn-generate-keywords" class="action-button" style="background:#b794f6;padding:10px 18px;font-size:13px;">
+                            <span style="margin-right:6px;">✨</span>Generate Keywords
+                        </button>
+                    </div>
                     <div id="repos-section"></div>
                 </div>
             </div>

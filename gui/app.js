@@ -1297,7 +1297,7 @@
     }
 
     async function createKeywords() {
-        showStatus('Creating keywords...', 'loading');
+        showStatus('Generating keywords (this may take 2-5 minutes)...', 'loading');
 
         try {
             const response = await fetch(api('/api/config'));
@@ -1313,15 +1313,48 @@
 
             if (createResponse.ok) {
                 const result = await createResponse.json();
-                const count = result.count || 0;
-                showStatus(`Created ${count} keywords for ${repo}`, 'success');
-                await loadKeywords();
+
+                if (result.ok) {
+                    const discr = result.discriminative?.count || 0;
+                    const sema = result.semantic?.count || 0;
+                    const total = result.total_count || 0;
+                    const duration = result.duration_seconds || 0;
+
+                    // Build detailed status message
+                    const status = `
+                        <div style="font-size:14px;font-weight:600;color:#00ff88;margin-bottom:8px;">
+                            ✓ Generated ${total} keywords for repo: ${repo}
+                        </div>
+                        <div style="font-size:12px;color:#ddd;margin-bottom:4px;">
+                            <span style="color:#b794f6;">Discriminative:</span> ${discr} keywords
+                        </div>
+                        <div style="font-size:12px;color:#ddd;margin-bottom:4px;">
+                            <span style="color:#5b9dff;">Semantic:</span> ${sema} keywords
+                        </div>
+                        <div style="font-size:11px;color:#999;margin-top:8px;">
+                            Completed in ${duration}s
+                        </div>
+                        <div style="font-size:11px;color:#666;margin-top:6px;">
+                            → View keywords in <span style="color:#00ff88;font-weight:600;">Repos & Indexing</span> tab
+                        </div>
+                    `;
+
+                    const statusDiv = document.getElementById('dash-index-status');
+                    if (statusDiv) {
+                        statusDiv.innerHTML = status;
+                    }
+
+                    // Reload keywords to populate the UI
+                    await loadKeywords();
+                } else {
+                    showStatus(`Failed to generate keywords: ${result.error || 'Unknown error'}`, 'error');
+                }
             } else {
                 const error = await createResponse.text();
-                showStatus(`Failed to create keywords: ${error}`, 'error');
+                showStatus(`Failed to generate keywords: ${error}`, 'error');
             }
         } catch (err) {
-            showStatus(`Error creating keywords: ${err.message}`, 'error');
+            showStatus(`Error generating keywords: ${err.message}`, 'error');
         }
     }
 
@@ -1406,6 +1439,7 @@
         bindGlobalSearchLive();
         bindDropzone();
         const hookBtn = document.getElementById('btn-install-hooks'); if (hookBtn) hookBtn.addEventListener('click', installHooks);
+        const genKwBtn = document.getElementById('btn-generate-keywords'); if (genKwBtn) genKwBtn.addEventListener('click', createKeywords);
 
         await Promise.all([
             loadPrices(),
