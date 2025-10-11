@@ -1,12 +1,13 @@
 from __future__ import annotations
 import os, json
-from typing import Literal, Dict, Any
+from typing import Dict, Any
 
 from fastmcp import FastMCP
 
 # Reuse internal pipeline
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
+from config_loader import list_repos
 
 
 mcp = FastMCP("rag-service")
@@ -21,9 +22,12 @@ def _get_graph():
 
 
 @mcp.tool()
-def answer(repo: Literal["project", "project"], question: str) -> Dict[str, Any]:
+def answer(repo: str, question: str) -> Dict[str, Any]:
     """Answer a codebase question using local LangGraph (retrieval+generation). Returns text + citations."""
     g = _get_graph()
+    allowed = set(list_repos())
+    if repo not in allowed:
+        return {"error": f"invalid repo '{repo}', allowed={sorted(allowed)}"}
     cfg = {"configurable": {"thread_id": f"http-{repo}"}}
     state = {
         "question": question,
@@ -45,8 +49,11 @@ def answer(repo: Literal["project", "project"], question: str) -> Dict[str, Any]
 
 
 @mcp.tool()
-def search(repo: Literal["project", "project"], question: str, top_k: int = 10) -> Dict[str, Any]:
+def search(repo: str, question: str, top_k: int = 10) -> Dict[str, Any]:
     """Retrieve relevant code locations without generation."""
+    allowed = set(list_repos())
+    if repo not in allowed:
+        return {"error": f"invalid repo '{repo}', allowed={sorted(allowed)}"}
     docs = search_routed_multi(question, repo_override=repo, m=4, final_k=top_k)
     results = [
         {
