@@ -268,30 +268,49 @@ def autoprofile(request: Dict[str, Any], prices: Dict[str, Any]) -> Tuple[Dict[s
     slo = {"latency_target_ms": obj.get("latency_target_ms"), "min_qps": obj.get("min_qps")}
 
     W = _weights(wl)
-    C: List[Dict[str, Any]] = []
 
-    if local_cap:
-        gen_local = defaults.get("gen_model") if _looks_local(defaults.get("gen_model")) else None
-        top_cloud_gen = _component_rows("GEN", ALLOW, prices, include_local=False)
-        GENs = [{"provider": "local", "model": gen_local}] if gen_local else top_cloud_gen
-        EMBs = _component_rows("EMB", ALLOW, prices, include_local=True)
-        RRs = _component_rows("RERANK", ALLOW, prices, include_local=True)
+    # Diagnostics: available rows under current provider policy
+    diag = {
+        "providers_allowed": sorted(list(ALLOW)) if ALLOW else None,
+        "local_cap": bool(local_cap),
+        "rows": {
+            "gen": len(_component_rows("GEN", ALLOW, prices, include_local=False)),
+            "emb": len(_component_rows("EMB", ALLOW, prices, include_local=local_cap)),
+            "rerank": len(_component_rows("RERANK", ALLOW, prices, include_local=local_cap)),
+        }
+    }
+
+    def build_candidates(AL: set) -> List[Dict[str, Any]]:
+        C: List[Dict[str, Any]] = []
+        if local_cap:
+            gen_local = defaults.get("gen_model") if _looks_local(defaults.get("gen_model")) else None
+            top_cloud_gen = _component_rows("GEN", AL, prices, include_local=False)
+            GENs = [{"provider": "local", "model": gen_local}] if gen_local else top_cloud_gen
+            EMBs = _component_rows("EMB", AL, prices, include_local=True)
+            RRs = _component_rows("RERANK", AL, prices, include_local=True)
+            C.extend(_pair_limited(GENs, EMBs, RRs, limit=60))
+        GENs = _component_rows("GEN", AL, prices, include_local=False)
+        EMBs = _component_rows("EMB", AL, prices, include_local=local_cap)
+        RRs = _component_rows("RERANK", AL, prices, include_local=local_cap)
         C.extend(_pair_limited(GENs, EMBs, RRs, limit=60))
+        C = [c for c in C if _valid_pipeline(c)]
+        C = [c for c in C if _meets_slos(c, slo)]
+        try:
+            C = [c for c in C if _meets_policy_maps(c, policy)]
+        except Exception:
+            pass
+        return C
 
-    GENs = _component_rows("GEN", ALLOW, prices, include_local=False)
-    EMBs = _component_rows("EMB", ALLOW, prices, include_local=local_cap)
-    RRs = _component_rows("RERANK", ALLOW, prices, include_local=local_cap)
-    C.extend(_pair_limited(GENs, EMBs, RRs, limit=60))
+    C = build_candidates(ALLOW)
 
-    C = [c for c in C if _valid_pipeline(c)]
-    C = [c for c in C if _meets_slos(c, slo)]
-    try:
-        C = [c for c in C if _meets_policy_maps(c, policy)]
-    except Exception:
-        pass
+    # Fallback: if providers_allowed is non-empty and produced no candidates, relax provider filter once.
+    relaxed = False
+    if not C and ALLOW:
+        C = build_candidates(set())
+        relaxed = bool(C)
 
     if not C:
-        return {}, {"error": "no_viable_candidate", "why": "after building/filters"}
+        return {}, {"error": "no_viable_candidate", "why": "after building/filters", "providers_allowed": list(ALLOW), "diag": diag}
 
     for c in C:
         c["monthly"] = _monthly_cost(c, wl)
@@ -319,6 +338,7 @@ def autoprofile(request: Dict[str, Any], prices: Dict[str, Any]) -> Tuple[Dict[s
         "budget": B,
         "workload": wl,
         "weights": W,
+        "candidates_total": len(C),
         "selected": {
             "gen": winner["GEN"],
             "embed": winner["EMB"],
@@ -326,5 +346,7 @@ def autoprofile(request: Dict[str, Any], prices: Dict[str, Any]) -> Tuple[Dict[s
             "monthly": winner["monthly"],
             "utility": winner["utility"],
         },
+        "policy_relaxed": relaxed,
+        "diag": diag,
     }
     return env, reason

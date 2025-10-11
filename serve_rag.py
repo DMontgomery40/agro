@@ -8,7 +8,7 @@ from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
 from config_loader import load_repos
 from index_stats import get_index_stats as _get_index_stats
-import os, json
+import os, json, sys
 from typing import Any, Dict
 
 app = FastAPI(title="AGRO RAG + GUI")
@@ -106,8 +106,30 @@ def _write_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, indent=2))
 
 # ---- Prices helper for auto-profile
+def _default_prices() -> Dict[str, Any]:
+    return {
+        "last_updated": "2025-10-10",
+        "currency": "USD",
+        "models": [
+            {"provider": "openai", "family": "gpt-4o-mini", "model": "gpt-4o-mini",
+             "unit": "1k_tokens", "input_per_1k": 0.005, "output_per_1k": 0.015,
+             "embed_per_1k": 0.0001, "rerank_per_1k": 0.0, "notes": "EXAMPLE"},
+            {"provider": "cohere", "family": "rerank-english-v3.0", "model": "rerank-english-v3.0",
+             "unit": "1k_tokens", "input_per_1k": 0.0, "output_per_1k": 0.0,
+             "embed_per_1k": 0.0, "rerank_per_1k": 0.30, "notes": "EXAMPLE"},
+            {"provider": "voyage", "family": "voyage-3-large", "model": "voyage-3-large",
+             "unit": "1k_tokens", "input_per_1k": 0.0, "output_per_1k": 0.0,
+             "embed_per_1k": 0.12, "rerank_per_1k": 0.0, "notes": "EXAMPLE"},
+            {"provider": "local", "family": "qwen3-coder", "model": "qwen3-coder:14b",
+             "unit": "request", "per_request": 0.0, "notes": "Local inference assumed $0; electricity optional"}
+        ]
+    }
+
 def _read_prices() -> Dict[str, Any]:
-    return _read_json(GUI_DIR / "prices.json", {"models": []})
+    data = _read_json(GUI_DIR / "prices.json", {"models": []})
+    if not data or not isinstance(data, dict) or not data.get("models"):
+        return _default_prices()
+    return data
 
 @app.post("/api/env/reload")
 def api_env_reload() -> Dict[str, Any]:
@@ -196,25 +218,8 @@ def set_config(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 @app.get("/api/prices")
 def get_prices():
-    default_prices = {
-        "last_updated": "2025-10-10",
-        "currency": "USD",
-        "models": [
-            {"provider": "openai", "family": "gpt-4o-mini", "model": "gpt-4o-mini",
-             "unit": "1k_tokens", "input_per_1k": 0.005, "output_per_1k": 0.015,
-             "embed_per_1k": 0.0001, "rerank_per_1k": 0.0, "notes": "EXAMPLE"},
-            {"provider": "cohere", "family": "rerank-english-v3.0", "model": "rerank-english-v3.0",
-             "unit": "1k_tokens", "input_per_1k": 0.0, "output_per_1k": 0.0,
-             "embed_per_1k": 0.0, "rerank_per_1k": 0.30, "notes": "EXAMPLE"},
-            {"provider": "voyage", "family": "voyage-3-large", "model": "voyage-3-large",
-             "unit": "1k_tokens", "input_per_1k": 0.0, "output_per_1k": 0.0,
-             "embed_per_1k": 0.12, "rerank_per_1k": 0.0, "notes": "EXAMPLE"},
-            {"provider": "local", "family": "qwen3-coder", "model": "qwen3-coder:14b",
-             "unit": "request", "per_request": 0.0, "notes": "Local inference assumed $0; electricity optional"}
-        ]
-    }
     prices_path = GUI_DIR / "prices.json"
-    data = _read_json(prices_path, default_prices)
+    data = _read_json(prices_path, _default_prices())
     return JSONResponse(data)
 
 @app.post("/api/prices/upsert")
@@ -281,6 +286,85 @@ def get_keywords() -> Dict[str, Any]:
     repo_k = uniq(repo_k)
     allk = uniq((discr or []) + (sema or []) + (repo_k or []))
     return {"discriminative": discr, "semantic": sema, "repos": repo_k, "keywords": allk}
+
+@app.post("/api/keywords/generate")
+def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
+    """Generate discriminative and semantic keywords for specified repo(s)."""
+    import subprocess
+    import time
+
+    repo = body.get("repo")
+    if not repo:
+        return {"error": "repo parameter required", "ok": False}
+
+    results = {
+        "ok": True,
+        "repo": repo,
+        "discriminative": {"count": 0, "file": "discriminative_keywords.json"},
+        "semantic": {"count": 0, "file": "semantic_keywords.json"},
+        "total_count": 0,
+        "duration_seconds": 0
+    }
+
+    start_time = time.time()
+
+    try:
+        # Run discriminative keyword extraction (TF-IDF based)
+        logger.info(f"Running discriminative keyword extraction for repo: {repo}")
+        discr_result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "analyze_keywords.py")],
+            env={**os.environ, "REPO": repo},
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        if discr_result.returncode != 0:
+            logger.error(f"Discriminative keyword extraction failed: {discr_result.stderr}")
+            results["discriminative"]["error"] = discr_result.stderr
+        else:
+            # Count keywords in generated file
+            discr_data = _read_json(ROOT / "discriminative_keywords.json", {})
+            discr_keywords = []
+            if isinstance(discr_data, dict) and repo in discr_data:
+                discr_keywords = discr_data[repo] if isinstance(discr_data[repo], list) else []
+            results["discriminative"]["count"] = len(discr_keywords)
+            logger.info(f"Generated {len(discr_keywords)} discriminative keywords")
+
+        # Run semantic keyword extraction (business/domain terms)
+        logger.info(f"Running semantic keyword extraction for repo: {repo}")
+        sema_result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "analyze_keywords_v2.py")],
+            env={**os.environ, "REPO": repo},
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        if sema_result.returncode != 0:
+            logger.error(f"Semantic keyword extraction failed: {sema_result.stderr}")
+            results["semantic"]["error"] = sema_result.stderr
+        else:
+            # Count keywords in generated file
+            sema_data = _read_json(ROOT / "semantic_keywords.json", {})
+            sema_keywords = []
+            if isinstance(sema_data, dict) and repo in sema_data:
+                sema_keywords = sema_data[repo] if isinstance(sema_data[repo], list) else []
+            results["semantic"]["count"] = len(sema_keywords)
+            logger.info(f"Generated {len(sema_keywords)} semantic keywords")
+
+        results["total_count"] = results["discriminative"]["count"] + results["semantic"]["count"]
+        results["duration_seconds"] = round(time.time() - start_time, 2)
+
+    except subprocess.TimeoutExpired:
+        results["ok"] = False
+        results["error"] = "Keyword generation timed out (300s limit)"
+    except Exception as e:
+        results["ok"] = False
+        results["error"] = str(e)
+        logger.error(f"Keyword generation failed: {e}")
+
+    return results
 
 @app.post("/api/scan-hw")
 def scan_hw() -> Dict[str, Any]:
