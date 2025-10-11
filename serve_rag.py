@@ -25,10 +25,16 @@ class Answer(BaseModel):
 
 ROOT = Path(__file__).resolve().parent
 GUI_DIR = ROOT / "gui"
+DOCS_DIR = ROOT / "docs"
 
 # Serve static GUI assets
 if GUI_DIR.exists():
     app.mount("/gui", StaticFiles(directory=str(GUI_DIR), html=True), name="gui")
+
+# Serve local docs and repo files for in-GUI links
+if DOCS_DIR.exists():
+    app.mount("/docs", StaticFiles(directory=str(DOCS_DIR), html=True), name="docs")
+app.mount("/files", StaticFiles(directory=str(ROOT), html=True), name="files")
 
 @app.get("/", include_in_schema=False)
 def serve_index():

@@ -492,6 +492,27 @@
             color: #000;
         }
 
+        /* Tooltips (inline to guarantee availability) */
+        .tooltip-wrap { position: relative; display: inline-block; }
+        .help-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 14px; height: 14px; margin-left: 6px; border-radius: 50%;
+            background: #333; color: #9ad1ff; font-size: 10px; line-height: 14px;
+            cursor: help; border: 1px solid #444; user-select: none; font-weight: 700;
+        }
+        .help-icon:hover { background: #00ff88; color: #000; border-color: #00ff88; }
+        .tooltip-bubble {
+            position: absolute; z-index: 1000; top: 22px; left: 0; min-width: 260px; max-width: 460px;
+            padding: 8px 12px; background: #0b0b0b; color: #ddd; border: 1px solid #2a2a2a; border-radius: 6px;
+            font-size: 12px; line-height: 1.45; box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+            display: none;
+        }
+        .tooltip-bubble .tt-title { font-weight: 700; color: #fff; display:block; margin-bottom: 6px; }
+        .tooltip-bubble .tt-links { margin-top: 8px; opacity: 0.9; }
+        .tooltip-bubble .tt-links a { color: #5b9dff; text-decoration: none; margin-right: 10px; }
+        .tooltip-bubble .tt-links a:hover { text-decoration: underline; }
+        .tooltip-visible { display: block !important; }
+
         .dash-two {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -619,7 +640,6 @@
                     </div>
                 </div>
 
-                <div class="dash-two">
                 <div class="settings-section wizard">
                     <h3><span class="accent-blue">●</span> Auto-Profile</h3>
                     <p class="small" style="margin-bottom:20px; color:#aaa; line-height: 1.6; font-size: 14px;">
@@ -627,29 +647,55 @@
                         We analyze your hardware and budget to configure the optimal RAG automatically.
                     </p>
 
-                    <div class="input-row" style="margin-bottom: 20px;">
-                        <div class="input-group">
-                            <label>Monthly Budget ($)</label>
-                            <input type="number" id="budget" value="0" min="0" placeholder="0" style="font-size:16px;padding:12px;">
+                    <div style="display: grid; grid-template-columns: 400px 1fr; gap: 24px;">
+                        <!-- Left: Input Panel -->
+                        <div>
+                            <div class="input-group" style="margin-bottom: 20px;">
+                                <label>Monthly Budget ($)</label>
+                                <input type="number" id="budget" value="0" min="0" placeholder="0" style="font-size:16px;padding:12px;">
+                            </div>
+
+                            <button class="small-button" id="btn-wizard-oneclick" style="background:#00ff88;color:#000;border:none;width:100%;padding:14px 20px;font-size:15px;font-weight:700;margin-bottom:16px;">
+                                Configure Automatically
+                            </button>
+
+                            <div id="scan-out" class="result-display" style="display:none;"></div>
+
+                            <div style="margin-top:20px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                                    <span style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Quick Options</span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                    <button class="small-button" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;" onclick="document.getElementById('budget').value=0;document.getElementById('btn-wizard-oneclick').click();">
+                                        Free Tier (Local Only)
+                                    </button>
+                                    <button class="small-button" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;" onclick="document.getElementById('budget').value=10;document.getElementById('btn-wizard-oneclick').click();">
+                                        Starter ($10/mo)
+                                    </button>
+                                    <button class="small-button" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;" onclick="document.getElementById('budget').value=50;document.getElementById('btn-wizard-oneclick').click();">
+                                        Professional ($50/mo)
+                                    </button>
+                                    <button class="small-button" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;" onclick="document.getElementById('budget').value=200;document.getElementById('btn-wizard-oneclick').click();">
+                                        Enterprise ($200/mo)
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="input-group">
-                            <label style="opacity:0;">Action</label>
-                            <button class="small-button" id="btn-wizard-oneclick" style="background:#00ff88;color:#000;border:none;width:100%;padding:12px 20px;font-size:14px;font-weight:700;">Configure Automatically</button>
+
+                        <!-- Right: Results Panel -->
+                        <div id="profile-results-panel" style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:24px;min-height:500px;">
+                            <div id="profile-placeholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#666;text-align:center;">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:16px;opacity:0.3;">
+                                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    <path d="M9 12h6m-6 4h6"/>
+                                </svg>
+                                <p style="font-size:14px;line-height:1.6;max-width:300px;">
+                                    Click "Configure Automatically" or select a quick option to generate your optimized RAG profile based on your hardware and budget.
+                                </p>
+                            </div>
+                            <div id="profile-results-content" style="display:none;"></div>
                         </div>
                     </div>
-
-                    <div id="scan-out" class="result-display" style="display:none;"></div>
-
-                    <div style="margin-top:20px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:16px;">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                            <span style="font-size:13px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Recommended Options</span>
-                            <span style="font-size:11px;color:#666;">(auto-ranked by cost & performance)</span>
-                        </div>
-                        <pre id="tri-out" class="mono" style="background:#000;border:1px solid #1a1a1a;border-radius:6px;padding:12px;margin:0;font-size:13px;line-height:1.8;color:#bbb;max-height:180px;overflow:auto;">(Press button above to generate)</pre>
-                    </div>
-
-                    <div id="profile-preview" class="result-display" style="display:none;margin-top:16px;"></div>
-                </div>
                 </div>
             </div>
 
@@ -1290,6 +1336,8 @@
 
     <datalist id="keywords-list"></datalist>
     <script src="/gui/js/profile_logic.js"></script>
+    <script src="/gui/js/tooltips.js"></script>
+    <script src="/gui/js/profile_renderer.js"></script>
     <script src="/gui/js/cost_logic.js"></script>
     <script src="/gui/app.js"></script>
   </body>

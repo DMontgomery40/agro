@@ -110,12 +110,15 @@ def get_repo_paths(name: str) -> List[str]:
 
 
 def _out_base_dir() -> Path:
-    """Resolve the base output directory, preferring out.noindex if present.
+    """Resolve base output directory for indices.
 
     Order of precedence:
       1) ENV OUT_DIR_BASE or RAG_OUT_BASE (absolute or relative to repo)
-      2) ./out.noindex
-      3) ./out
+      2) ./out.noindex-shared (cross-branch shared)
+      3) ./out.noindex-gui
+      4) ./out.noindex-devclean
+      5) ./out.noindex
+      6) ./out
     """
     root = Path(__file__).resolve().parent
     env_base = os.getenv("OUT_DIR_BASE") or os.getenv("RAG_OUT_BASE")
@@ -124,8 +127,9 @@ def _out_base_dir() -> Path:
         if not p.is_absolute():
             p = (root / p)
         return p
-    if (root / "out.noindex").exists():
-        return root / "out.noindex"
+    for cand in ("out.noindex-shared", "out.noindex-gui", "out.noindex-devclean", "out.noindex"):
+        if (root / cand).exists():
+            return root / cand
     return root / "out"
 
 

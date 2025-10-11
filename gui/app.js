@@ -49,6 +49,9 @@
         });
     }
 
+    // ---------------- Tooltips (modular) ----------------
+    // Delegates to external module /gui/js/tooltips.js
+
     // ---------------- Global Search ----------------
     function clearHighlights() { $$('.hl').forEach(m => { const t=document.createTextNode(m.textContent); m.replaceWith(t); }); }
     function highlightMatches(root, q) {
@@ -301,6 +304,9 @@
                 if (state.keywordsCatalog) paintSource();
             });
         }
+
+        // Attach tooltips after DOM is populated
+        try { window.Tooltips && window.Tooltips.attachTooltips && window.Tooltips.attachTooltips(); } catch {}
     }
 
     function gatherConfigForm() {
@@ -760,18 +766,120 @@
     }
 
     async function triChooseAndApply() {
-        const { winner } = await triCostSelect();
-        const r = await fetch(api('/api/profiles/apply'), {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json' },
-            body: JSON.stringify({ profile: winner.env })
-        });
-        if (!r.ok) { alert('Apply failed'); return; }
-        alert(`Applied: ${winner.name} ($${winner.monthly.toFixed(2)}/mo)`);
+        console.log('[AUTO-PROFILE] Button clicked - starting triChooseAndApply');
 
-        // Show applied profile in preview
-        $('#profile-preview').innerHTML = formatProfile(winner.env);
-        await loadConfig();
+        // Show loading state
+        const placeholder = $('#profile-placeholder');
+        const resultsContent = $('#profile-results-content');
+        console.log('[AUTO-PROFILE] Elements found:', { placeholder: !!placeholder, resultsContent: !!resultsContent });
+
+        if (placeholder) placeholder.style.display = 'flex';
+        if (resultsContent) resultsContent.style.display = 'none';
+
+        // Add loading spinner to placeholder
+        if (placeholder) {
+            placeholder.innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <div style="width:48px;height:48px;border:3px solid #2a2a2a;border-top-color:#00ff88;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;"></div>
+                    <p style="font-size:14px;color:#666;">Analyzing hardware and generating profile...</p>
+                </div>
+                <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+            `;
+        }
+
+        const { winner, ranked } = await triCostSelect();
+        const budget = Number($('#budget')?.value || 0);
+
+        // Scan hardware if not already done
+        let scan = state.hwScan;
+        if (!scan) {
+            try {
+                const r = await fetch(api('/api/scan-hw'), { method: 'POST' });
+                scan = await r.json();
+                state.hwScan = scan;
+            } catch (e) {
+                console.error('HW scan failed:', e);
+                scan = null;
+            }
+        }
+
+        // Render rich profile display using ProfileRenderer
+        if (window.ProfileRenderer && resultsContent) {
+            try {
+                const html = window.ProfileRenderer.renderProfileResults(winner.env, scan, budget);
+                resultsContent.innerHTML = html;
+
+                // Hide placeholder, show results
+                if (placeholder) placeholder.style.display = 'none';
+                resultsContent.style.display = 'block';
+            } catch (err) {
+                console.error('ProfileRenderer error:', err);
+                // Fallback to simple display
+                if (resultsContent) {
+                    resultsContent.innerHTML = '<pre style="color:#ff6b6b;padding:20px;">Error rendering profile: ' + err.message + '</pre>';
+                    resultsContent.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                }
+            }
+        } else {
+            console.error('ProfileRenderer not available:', { hasRenderer: !!window.ProfileRenderer, hasContent: !!resultsContent });
+            // Fallback to old method
+            if (resultsContent) {
+                resultsContent.innerHTML = '<pre style="padding:20px;color:#aaa;">' + JSON.stringify(winner.env, null, 2) + '</pre>';
+                resultsContent.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+            }
+        }
+
+        // Wire up action buttons (always, regardless of renderer)
+        const applyBtn = document.getElementById('apply-profile-btn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', async () => {
+                const r = await fetch(api('/api/profiles/apply'), {
+                    method: 'POST',
+                    headers: { 'Content-Type':'application/json' },
+                    body: JSON.stringify({ profile: winner.env })
+                });
+                if (!r.ok) {
+                    alert('Apply failed');
+                    return;
+                }
+                alert(`✓ Applied: ${winner.name} ($${winner.monthly.toFixed(2)}/mo)\n\nSettings are now active. Refresh the page to see updated values.`);
+                await loadConfig();
+            });
+        }
+
+        const exportBtn = document.getElementById('export-profile-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(winner.env, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `profile-${winner.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        const saveBtn = document.getElementById('save-profile-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', async () => {
+                const name = prompt('Profile name:', winner.name.toLowerCase().replace(/[^a-z0-9]/g, '-'));
+                if (!name) return;
+                const r = await fetch(api('/api/profiles/save'), {
+                    method: 'POST',
+                    headers: { 'Content-Type':'application/json' },
+                    body: JSON.stringify({ name, profile: winner.env })
+                });
+                if (r.ok) {
+                    alert(`✓ Saved as "${name}"`);
+                    await loadProfiles();
+                } else {
+                    alert('Save failed');
+                }
+            });
+        }
     }
 
     // Wizard helpers

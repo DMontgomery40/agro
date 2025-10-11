@@ -115,6 +115,33 @@ Cross-Branch Indexing (Shared Profile)
 - Retrieval picks the index from `OUT_DIR_BASE`. Dense/Qdrant is optional; `hybrid_search.py` falls back cleanly when missing.
 - Helper: `source scripts/select_index.sh shared` to set `OUT_DIR_BASE` and `COLLECTION_NAME` consistently.
 
+Shared index guardrails (agents)
+- Always ensure `OUT_DIR_BASE=./out.noindex-shared` is active before running MCP or evals.
+- `bash scripts/up.sh` now sources `scripts/select_index.sh shared` automatically, exporting:
+  - `OUT_DIR_BASE=./out.noindex-shared`
+  - `COLLECTION_NAME=code_chunks_agro_shared`
+  - `REPO=agro`
+- You can also persist these via the GUI:
+  - Open `/` → Tab “Infrastructure” → set `Out Dir Base` to `./out.noindex-shared`, select `Active Repository`, optionally set `Collection Name`.
+  - Click “Apply All Changes” — this writes `.env` and `repos.json` (POST `/api/config`).
+
+MCP “no results” quick fix
+- Symptom: `rag_search` returns `{count: 0}` even though `out.noindex-shared/agro/chunks.jsonl` exists.
+- Fix checklist:
+  1) Confirm index path: `ls -lh out.noindex-shared/agro/chunks.jsonl`
+  2) Ensure env seen by MCP: set `OUT_DIR_BASE=./out.noindex-shared` (via GUI Apply or `source scripts/select_index.sh shared`).
+  3) Restart MCP: `bash scripts/up.sh` then `bash scripts/status.sh`.
+  4) Reindex if missing: `. .venv/bin/activate && REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`.
+  5) Sanity test (Python):
+     ```bash
+     . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
+       python - <<'PY'
+     from hybrid_search import search_routed_multi
+     for d in search_routed_multi('Where is OAuth validated', repo_override='agro', m=2, final_k=5):
+         print(d['file_path'], d['start_line'], d['end_line'])
+     PY
+     ```
+
 Index profiles in `scripts/select_index.sh`:
 - `shared` → `OUT_DIR_BASE=./out.noindex-shared`, `COLLECTION_NAME=code_chunks_agro_shared`
 - `gui` → `OUT_DIR_BASE=./out.noindex-gui`, `COLLECTION_NAME=code_chunks_agro_gui`
