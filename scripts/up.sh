@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Ensure index profile env is set (default: shared)
+if [ -f "$ROOT_DIR/scripts/select_index.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$ROOT_DIR/scripts/select_index.sh" shared || true
+fi
+
 echo "[up] Starting infra (Qdrant + Redis) ..."
 (
   cd "$ROOT_DIR/infra"
