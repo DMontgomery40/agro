@@ -121,6 +121,67 @@ def get_config() -> Dict[str, Any]:
         "repos": repos,
     }
 
+@app.post("/api/config")
+def set_config(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Persist environment variables and repos.json edits coming from the GUI.
+
+    Shape: { env: {KEY: VALUE, ...}, repos: [{name, path, keywords, path_boosts, layer_bonuses}, ...] }
+
+    - Writes env keys to .env in repo root (idempotent upsert)
+    - Writes repos to repos.json
+    - Also applies env to current process so the running server reflects changes immediately
+    """
+    root = ROOT
+    env_updates: Dict[str, Any] = dict(payload.get("env") or {})
+    repos_updates: List[Dict[str, Any]] = list(payload.get("repos") or [])
+
+    # 1) Upsert .env
+    env_path = root / ".env"
+    existing: Dict[str, str] = {}
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            if not line.strip() or line.strip().startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            existing[k.strip()] = v.strip()
+    for k, v in env_updates.items():
+        existing[str(k)] = str(v)
+        os.environ[str(k)] = str(v)
+    # Write back
+    lines = [f"{k}={existing[k]}" for k in sorted(existing.keys())]
+    env_path.write_text("\n".join(lines) + "\n")
+
+    # 2) Upsert repos.json
+    repos_path = root / "repos.json"
+    cfg = _read_json(repos_path, {"default_repo": None, "repos": []})
+    # Keep default_repo if provided in env
+    default_repo = env_updates.get("REPO") or cfg.get("default_repo")
+    # Merge repos by name
+    by_name: Dict[str, Dict[str, Any]] = {str(r.get("name")): r for r in cfg.get("repos", []) if r.get("name")}
+    for r in repos_updates:
+        name = str(r.get("name") or "").strip()
+        if not name:
+            continue
+        cur = by_name.get(name, {"name": name})
+        # Only accept expected keys
+        if "path" in r:
+            cur["path"] = r["path"]
+        if "keywords" in r and isinstance(r["keywords"], list):
+            cur["keywords"] = [str(x) for x in r["keywords"]]
+        if "path_boosts" in r and isinstance(r["path_boosts"], list):
+            cur["path_boosts"] = [str(x) for x in r["path_boosts"]]
+        if "layer_bonuses" in r and isinstance(r["layer_bonuses"], dict):
+            cur["layer_bonuses"] = r["layer_bonuses"]
+        by_name[name] = cur
+    new_cfg = {
+        "default_repo": default_repo,
+        "repos": sorted(by_name.values(), key=lambda x: str(x.get("name")))
+    }
+    _write_json(repos_path, new_cfg)
+
+    return {"status": "success", "applied_env_keys": sorted(existing.keys()), "repos_count": len(new_cfg["repos"]) }
+
 @app.get("/api/prices")
 def get_prices():
     default_prices = {
