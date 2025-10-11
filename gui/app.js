@@ -1356,7 +1356,7 @@
         const applyWizard = document.getElementById('btn-apply-wizard');
         if (applyWizard) applyWizard.addEventListener('click', applyProfileWizard);
         const oneClick = document.getElementById('btn-wizard-oneclick');
-        if (oneClick) oneClick.addEventListener('click', triChooseAndApply);
+        if (oneClick) oneClick.addEventListener('click', onWizardOneClick);
         const loadCur = document.getElementById('btn-wizard-load-cur');
         if (loadCur) loadCur.addEventListener('click', loadWizardFromEnv);
 
@@ -1422,6 +1422,19 @@
     }
 
     window.addEventListener('DOMContentLoaded', init);
+
+    // Decide v1 (client) vs v2 (server) auto-profile
+    async function onWizardOneClick(e){
+        try{
+            const v2 = document.getElementById('apv2-enabled');
+            if (v2 && v2.checked && window.AutoProfileV2 && typeof window.AutoProfileV2.run === 'function'){
+                e.preventDefault();
+                await window.AutoProfileV2.run();
+                return;
+            }
+        }catch{}
+        return triChooseAndApply();
+    }
 
     // ---------------- Global Search (live) ----------------
     function bindGlobalSearchLive() {
