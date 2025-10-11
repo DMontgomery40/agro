@@ -5,7 +5,7 @@
       const q = new URLSearchParams(u.search);
       const override = q.get('api');
       if (override) return override.replace(/\/$/, '');
-      if (u.port === '8012') return u.origin;
+      if (u.protocol.startsWith('http')) return u.origin;
       return 'http://127.0.0.1:8012';
     }catch{ return 'http://127.0.0.1:8012'; }
   }
@@ -43,11 +43,20 @@
       placeholder.innerHTML = `
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
           <div style=\"width:48px;height:48px;border:3px solid #2a2a2a;border-top-color:#00ff88;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;\"></div>
-          <p style=\"font-size:14px;color:#666;\">Selecting profile with v2 engine...</p>
+          <p id=\"apv2-phase\" style=\"font-size:14px;color:#666;\">Selecting profile with v2 engine...</p>
         </div>
         <style>@keyframes spin { to { transform: rotate(360deg); } }</style>`;
     }
     if (results) results.style.display='none';
+  }
+  function setPhase(msg){ try{ const el=document.getElementById('apv2-phase'); if (el) el.textContent=msg; }catch{}
+  }
+  function fetchWithTimeout(resource, opts){
+    const { timeout=12000, ...rest } = (opts||{});
+    return new Promise((resolve, reject)=>{
+      const id = setTimeout(()=> reject(new Error('request timeout')), timeout);
+      fetch(resource, rest).then((res)=>{ clearTimeout(id); resolve(res); }, (err)=>{ clearTimeout(id); reject(err); });
+    });
   }
   function renderResult(env, reason, scan, budget){
     const results = document.getElementById('profile-results-content');
@@ -76,8 +85,10 @@
 
   async function run(){
     setPlaceholderLoading();
+    setPhase('Loading configuration...');
     const cfg = await getConfig();
     const env = (cfg && cfg.env) || {};
+    setPhase('Scanning hardware...');
     const scan = await ensureScan();
     const budget = parseFloat(document.getElementById('budget')?.value||'0');
     const adv = readAdvanced();
@@ -94,14 +105,21 @@
       defaults: { gen_model: env.GEN_MODEL || '' }
     };
     try{
-      const r = await fetch(api('/api/profile/autoselect'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      setPhase('Calling selector...');
+      const r = await fetchWithTimeout(api('/api/profile/autoselect'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), timeout: 15000 });
       if (!r.ok){ const txt = await r.text(); throw new Error(txt || 'autoselect failed'); }
+      setPhase('Rendering result...');
       const data = await r.json();
       renderResult(data.env, data.reason, scan, payload.objective.monthly_budget_usd || budget);
     }catch(err){
       const results = document.getElementById('profile-results-content');
       const placeholder = document.getElementById('profile-placeholder');
-      if (results){ results.innerHTML = '<pre style="color:#ff6b6b;padding:20px;">'+(err?.message||String(err))+'</pre>'; results.style.display='block'; }
+      const payloadStr = JSON.stringify(payload, null, 2);
+      if (results){ results.innerHTML = '<div style="padding:20px;">'+
+        '<div style="color:#ff6b6b; font-weight:600; margin-bottom:8px;">Auto‑Profile v2 error</div>'+
+        '<pre style="color:#aaa; white-space:pre-wrap;">'+(err?.message||String(err))+'</pre>'+
+        '<details style="margin-top:12px;"><summary style="cursor:pointer; color:#999;">Payload</summary><pre style="color:#777; white-space:pre-wrap;">'+payloadStr+'</pre></details>'+
+        '</div>'; results.style.display='block'; }
       if (placeholder) placeholder.style.display='none';
     }
   }

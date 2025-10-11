@@ -7,10 +7,14 @@
             const q = new URLSearchParams(u.search);
             const override = q.get('api');
             if (override) return override.replace(/\/$/, '');
-            if (u.port === '8012') return u.origin;
+            // Prefer same-origin whenever we were served over HTTP(S)
+            if (u.protocol.startsWith('http')) return u.origin;
+            // Fallback to local default
             return 'http://127.0.0.1:8012';
         } catch { return 'http://127.0.0.1:8012'; }
     })();
+    // Expose the resolved API base for diagnostics
+    try { window.API_BASE = API_BASE; } catch {}
     const api = (p) => `${API_BASE}${p}`;
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -1382,10 +1386,8 @@
         if (btnCardsRefresh) btnCardsRefresh.addEventListener('click', refreshCards);
         // Dashboard button bindings with enhanced feedback
         bindQuickAction('dash-index-start', startIndexing);
-        bindQuickAction('dash-cards-build', buildCards);
         bindQuickAction('dash-cards-refresh', refreshCards);
         bindQuickAction('dash-change-repo', changeRepo);
-        bindQuickAction('dash-create-keywords', createKeywords);
         bindQuickAction('dash-reload-config', reloadConfig);
         // Keep cost panel in sync with wizard selections
         const map = [
