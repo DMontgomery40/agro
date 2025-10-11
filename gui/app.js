@@ -588,17 +588,11 @@
         }
         if (!scan) scan = await scanHardware();
         const budget = parseFloat($('#budget').value || '0');
-        const prof = buildWizardProfile(scan, budget);
+        const prof = (window.ProfileLogic && window.ProfileLogic.buildWizardProfile) ? window.ProfileLogic.buildWizardProfile(scan, budget) : {};
 
         // Try a pipeline cost preview
-        const payload = {
-            gen_provider: ($('#cost-provider')?.value || 'openai').trim(),
-            gen_model: ($('#cost-model')?.value || ($('#wizard-gen-model')?.value || 'gpt-4o-mini')).trim(),
-            tokens_in: parseInt($('#cost-in').value || '0', 10) || 0,
-            tokens_out: parseInt($('#cost-out').value || '0', 10) || 0,
-            embeds: parseInt($('#cost-embeds').value || '0', 10) || 0,
-            reranks: parseInt($('#cost-rerank').value || '0', 10) || 0,
-            requests_per_day: parseInt($('#cost-rpd').value || '0', 10) || 0,
+        const payload = (window.CostLogic && window.CostLogic.buildPayloadFromUI) ? window.CostLogic.buildPayloadFromUI() : {
+            gen_provider:'openai', gen_model:'gpt-4o-mini', tokens_in:0, tokens_out:0, embeds:0, reranks:0, requests_per_day:0
         };
         try {
             const r = await fetch(api('/api/cost/estimate_pipeline'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -691,7 +685,8 @@
             // Decide provider/model from env for cost call
             const provider = (c.env.GEN_MODEL || '').match(/:/) ? 'local' : 'openai';
             const model = c.env.GEN_MODEL || 'gpt-4o-mini';
-            const payload = { provider, model, ...base };
+            const payload = (window.CostLogic && window.CostLogic.buildPayloadFromUI) ? window.CostLogic.buildPayloadFromUI() : { gen_provider: provider, gen_model: model, ...base };
+            payload.gen_provider = provider; payload.gen_model = model;
 
             // local electricity optional if provider==local
             if (provider === 'local') {
