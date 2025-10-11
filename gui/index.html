@@ -512,7 +512,14 @@
         .tooltip-bubble .tt-links a { color: #5b9dff; text-decoration: none; margin-right: 10px; }
         .tooltip-bubble .tt-links a:hover { text-decoration: underline; }
         .tooltip-visible { display: block !important; }
-
+        .tooltip-bubble .tt-badges { margin: 6px 0 4px 0; display:flex; gap:6px; flex-wrap:wrap; }
+        .tooltip-bubble .tt-badge { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; padding: 2px 6px; border-radius: 4px; border: 1px solid #333; color: #ccc; background: #121212; }
+        .tooltip-bubble .tt-badge.warn { color: #ffcf66; border-color: #654; background: #201a0e; }
+        .tooltip-bubble .tt-badge.info { color: #7db3ff; border-color: #234; background: #0f141e; }
+        .tooltip-bubble .tt-badge.reindex { color: #ff9b5e; border-color: #633; background: #1f130e; }
+    </style>
+    <link rel="stylesheet" href="/gui/css/storage-calculator.css">
+    <style>
         .dash-two {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -587,6 +594,7 @@
                 <button data-tab="retrieval">Retrieval</button>
                 <button data-tab="repos">Repos & Indexing</button>
                 <button data-tab="infra">Infrastructure</button>
+                <button data-tab="storage">Storage Calculator</button>
                 <button data-tab="tools">Tools</button>
             </div>
 
@@ -700,9 +708,10 @@
             </div>
 
             <!-- Tab: Storage Calculator -->
-            <div id="tab-calculator" class="tab-content">
-                <iframe id="calc-frame" src="/gui/rag-calculator.html"></iframe>
+            <div id="tab-storage" class="tab-content">
+                <div id="storage-calculator-container"></div>
             </div>
+
             <div id="tab-tools" class="tab-content">
                 <div class="settings-section">
                     <h3>MCP & Channels</h3>
@@ -1335,6 +1344,8 @@
     </div>
 
     <datalist id="keywords-list"></datalist>
+    <script src="/gui/js/storage-calculator-template.js"></script>
+    <script src="/gui/js/storage-calculator.js"></script>
     <script src="/gui/js/profile_logic.js"></script>
     <script src="/gui/js/tooltips.js"></script>
     <script src="/gui/js/profile_renderer.js"></script>

@@ -23,6 +23,26 @@
     };
 
     // ---------------- Tabs ----------------
+    let storageCalculatorLoaded = false;
+
+    function loadStorageCalculator() {
+        if (storageCalculatorLoaded) return;
+        const container = document.getElementById('storage-calculator-container');
+        if (!container) return;
+
+        // Load the HTML template
+        if (typeof getStorageCalculatorHTML === 'function') {
+            container.innerHTML = getStorageCalculatorHTML();
+
+            // Initialize the calculator
+            if (typeof initStorageCalculator === 'function') {
+                initStorageCalculator();
+            }
+
+            storageCalculatorLoaded = true;
+        }
+    }
+
     function switchTab(tabName) {
         const groups = {
             models: ['generation','embeddings','reranking'],
@@ -30,7 +50,8 @@
             repos: ['repos','indexing'],
             tools: ['calculator','eval','misc'],
             infra: ['infra'],
-            dashboard: ['dashboard']
+            dashboard: ['dashboard'],
+            storage: ['storage']
         };
         const show = groups[tabName] || [tabName];
         $$('.tab-content').forEach(el => el.classList.remove('active'));
@@ -38,6 +59,11 @@
         $$('.tab-bar button').forEach(el => el.classList.remove('active'));
         const btn = document.querySelector(`.tab-bar button[data-tab="${tabName}"]`);
         if (btn) btn.classList.add('active');
+
+        // Load storage calculator when the tab is opened
+        if (tabName === 'storage') {
+            loadStorageCalculator();
+        }
     }
 
     function bindTabs() {
@@ -574,6 +600,13 @@
         return prof;
     }
 
+    function _tooltipHtmlForKey(k){
+        try{
+            const map = (window.Tooltips && window.Tooltips.buildTooltipMap && window.Tooltips.buildTooltipMap()) || {};
+            return map[k] || `<span class="tt-title">${k}</span><div>No detailed tooltip available yet. See our docs.</div><div class="tt-links"><a href="/files/README.md" target="_blank" rel="noopener">Main README</a> <a href="/docs/README.md" target="_blank" rel="noopener">Docs Index</a></div>`;
+        }catch{return `<span class="tt-title">${k}</span><div>No details found.</div>`}
+    }
+
     function formatProfile(prof) {
         if (!prof || typeof prof !== 'object') return '(Preview will appear here)';
         const parts = [];
@@ -586,9 +619,15 @@
         };
 
         for (const [group, keys] of Object.entries(keyGroups)) {
-            const groupItems = keys.filter(k => prof[k] !== undefined).map(k =>
-                `<div><span class="key">${k}:</span> <span class="value">${prof[k]}</span></div>`
-            );
+            const groupItems = keys.filter(k => prof[k] !== undefined).map(k => {
+                const tip = _tooltipHtmlForKey(k);
+                const val = String(prof[k]);
+                return `<div class="kv">
+                    <span class="key">${k}:</span>
+                    <span class="value">${val}</span>
+                    <span class="tooltip-wrap"><span class="help-icon" tabindex="0" aria-label="Help: ${k}">?</span><div class="tooltip-bubble">${tip}</div></span>
+                </div>`;
+            });
             if (groupItems.length) {
                 parts.push(`<div class="section"><strong style="color:#5b9dff;">${group}</strong>${groupItems.join('')}</div>`);
             }
@@ -600,6 +639,24 @@
         }
 
         return parts.join('');
+    }
+
+    function bindPreviewTooltips(){
+        const root = document.getElementById('profile-preview');
+        if (!root) return;
+        root.querySelectorAll('.kv .help-icon').forEach(icon => {
+            const wrap = icon.parentElement;
+            const bubble = wrap && wrap.querySelector('.tooltip-bubble');
+            if (!wrap || !bubble) return;
+            function show(){ bubble.classList.add('tooltip-visible'); }
+            function hide(){ bubble.classList.remove('tooltip-visible'); }
+            icon.addEventListener('mouseenter', show);
+            icon.addEventListener('mouseleave', hide);
+            icon.addEventListener('focus', show);
+            icon.addEventListener('blur', hide);
+            icon.addEventListener('click', (e)=>{ e.stopPropagation(); bubble.classList.toggle('tooltip-visible'); });
+            document.addEventListener('click', (evt)=>{ if (!wrap.contains(evt.target)) bubble.classList.remove('tooltip-visible'); });
+        });
     }
 
     async function generateProfileWizard() {
@@ -623,6 +680,7 @@
             prof.__estimate__ = d;
         } catch {}
         $('#profile-preview').innerHTML = formatProfile(prof);
+        bindPreviewTooltips();
         $('#profile-preview').dataset.profileData = JSON.stringify(prof);
         updateWizardSummary();
         return prof;
