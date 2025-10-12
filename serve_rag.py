@@ -455,8 +455,28 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
         _write_json(sem_path, sem_data)
         results["semantic"]["count"] = len(sem_list)
 
+        # Emergency fallback: still zero? derive from file and directory names
+        if (results["discriminative"]["count"] or 0) == 0 and (results["semantic"]["count"] or 0) == 0:
+            base_terms: Counter[str] = Counter()
+            for fp in files:
+                parts = Path(fp).parts
+                for part in parts:
+                    part = re.sub(r'[^a-zA-Z0-9_]+', ' ', part)
+                    for w in part.split():
+                        w = w.lower()
+                        if len(w) > 2 and w not in stop:
+                            base_terms[w] += 1
+            emer = [k for k, _ in base_terms.most_common(40)]
+            if emer:
+                discr_data[str(repo)] = emer[:20]
+                sem_data[str(repo)] = emer[:20]
+                _write_json(discr_path, discr_data)
+                _write_json(sem_path, sem_data)
+                results["discriminative"]["count"] = len(discr_data[str(repo)])
+                results["semantic"]["count"] = len(sem_data[str(repo)])
+
     # LLM pipeline (new)
-    def run_llm() -> None:
+    def run_llm(backend_override: str | None = None, model_override: str | None = None) -> None:
         nonlocal results
         try:
             from metadata_enricher import enrich  # uses MLX or Ollama based on env
@@ -489,18 +509,35 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
 
         counts: Counter[str] = Counter()
         per_file_limit = int(os.getenv("KEYWORDS_PER_FILE", "10") or 10)
-        for fp in files:
-            try:
-                text = fp.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
-                continue
-            # clip to manageable size
-            text = text[:8000]
-            meta = enrich(str(fp), Path(fp).suffix.lstrip('.'), text) or {}
-            kws = [str(k).strip().lower() for k in (meta.get("keywords") or []) if isinstance(k, str)]
-            for k in kws[:per_file_limit]:
-                if k:
-                    counts[k] += 1
+        # Temporarily override enrich backend/model if provided
+        old_env = {"ENRICH_BACKEND": os.environ.get("ENRICH_BACKEND"), "ENRICH_MODEL_OPENAI": os.environ.get("ENRICH_MODEL_OPENAI"), "GEN_MODEL": os.environ.get("GEN_MODEL")}
+        if backend_override:
+            os.environ["ENRICH_BACKEND"] = backend_override
+        if model_override:
+            # prefer specific openai enrich model, else set GEN_MODEL used by openai client
+            os.environ["ENRICH_MODEL_OPENAI"] = model_override
+            os.environ["GEN_MODEL"] = model_override
+        try:
+            for fp in files:
+                try:
+                    text = fp.read_text(encoding="utf-8", errors="ignore")
+                except Exception:
+                    continue
+                # clip to manageable size
+                text = text[:8000]
+                meta = enrich(str(fp), Path(fp).suffix.lstrip('.'), text) or {}
+                kws = [str(k).strip().lower() for k in (meta.get("keywords") or []) if isinstance(k, str)]
+                for k in kws[:per_file_limit]:
+                    if k:
+                        counts[k] += 1
+        finally:
+            # restore environment
+            for k, v in old_env.items():
+                if v is None:
+                    if k in os.environ:
+                        del os.environ[k]
+                else:
+                    os.environ[k] = v
         # Persist results
         top_total = int(os.getenv("KEYWORDS_MAX_TOTAL", "200") or 200)
         ranked = [k for k, _ in counts.most_common(top_total)]
@@ -514,7 +551,11 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
 
     try:
         if mode == "llm":
-            run_llm()
+            backend = (body.get("backend") or os.getenv("ENRICH_BACKEND") or "openai").strip().lower()
+            model_override = None
+            if backend == "openai":
+                model_override = body.get("openai_model") or os.getenv("ENRICH_MODEL_OPENAI") or os.getenv("GEN_MODEL")
+            run_llm(backend_override=backend, model_override=model_override)
             # If LLM produced nothing, fall back to heuristics for useful output
             if (results.get("llm", {}).get("count") or 0) == 0:
                 run_heuristic()

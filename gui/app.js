@@ -52,7 +52,9 @@
             models: ['generation','embeddings','reranking'],
             retrieval: ['retrieval','confidence','cards'],
             repos: ['repos','indexing'],
-            tools: ['calculator','eval','misc'],
+            // Show full Tools group: base panel + eval + misc
+            // Note: there is no 'tab-calculator' anymore; storage has its own tab
+            tools: ['tools','eval','misc'],
             infra: ['infra'],
             dashboard: ['dashboard'],
             storage: ['storage']
@@ -1350,8 +1352,9 @@
             const mode = modeSel ? (modeSel.value || 'llm') : 'llm';
             const maxFilesEl = document.querySelector('[name="KEYWORDS_MAX_FILES"]');
             const max_files = maxFilesEl && maxFilesEl.value ? Number(maxFilesEl.value) : undefined;
-            const backend = (env.ENRICH_BACKEND || 'mlx').toLowerCase();
-            const model = backend === 'ollama' ? (env.ENRICH_MODEL_OLLAMA || 'qwen3-coder:30b') : (env.ENRICH_MODEL || 'mlx-community/Qwen3-Coder-30B');
+            // Force OpenAI 4o for this on-click run (per request)
+            const backend = 'openai';
+            let model = 'gpt-4o';
             const tips = [
                 'After keywords, build Semantic Cards in Repos → Indexing',
                 'Add Path Boosts to steer retrieval (Repos tab)',
@@ -1368,7 +1371,7 @@
             const createResponse = await fetch(api('/api/keywords/generate'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repo, mode, max_files })
+                body: JSON.stringify({ repo, mode, max_files, backend, openai_model: (backend==='openai'?model:undefined) })
             });
 
             if (createResponse.ok) {
