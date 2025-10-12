@@ -1331,6 +1331,16 @@
                     </div>
                     <div class="input-row">
                         <div class="input-group">
+                            <label>Repo Root</label>
+                            <input type="text" name="REPO_ROOT" placeholder="Override project root (optional)">
+                        </div>
+                        <div class="input-group">
+                            <label>Files Root</label>
+                            <input type="text" name="FILES_ROOT" placeholder="/files mount root (optional)">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
                             <label>Active Repository</label>
                             <select name="REPO" id="repo-select"></select>
                         </div>
@@ -1347,6 +1357,24 @@
                         <div class="input-group">
                             <label>Repo Path (fallback)</label>
                             <input type="text" name="REPO_PATH" placeholder="/path/to/repo">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>GUI Directory</label>
+                            <input type="text" name="GUI_DIR" placeholder="./gui">
+                        </div>
+                        <div class="input-group">
+                            <label>Docs Directory</label>
+                            <input type="text" name="DOCS_DIR" placeholder="./docs">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Data Directory</label>
+                            <input type="text" name="DATA_DIR" placeholder="./data">
+                        </div>
+                        <div class="input-group">
                         </div>
                     </div>
                     <div class="input-row">
@@ -1385,11 +1413,22 @@
             <!-- Tab: Repositories -->
             <div id="tab-repos" class="tab-content">
                 <div class="settings-section">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                        <h3>Repository Configuration</h3>
-                        <button id="btn-generate-keywords" class="action-button" style="background:#b794f6;padding:10px 18px;font-size:13px;">
-                            <span style="margin-right:6px;">✨</span>Generate Keywords
-                        </button>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
+                        <h3 style="margin:0;">Repository Configuration</h3>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <label style="font-size:12px;color:#aaa;">Keywords Backend</label>
+                            <select id="kw-gen-mode" style="height:32px;">
+                                <option value="heuristic">Heuristic</option>
+                                <option value="llm">LLM</option>
+                            </select>
+                            <div class="input-group" style="margin:0;">
+                                <label style="font-size:12px;">Max Files</label>
+                                <input type="number" name="KEYWORDS_MAX_FILES" value="60" style="width:90px;">
+                            </div>
+                            <button id="btn-generate-keywords" class="action-button" style="background:#b794f6;padding:10px 18px;font-size:13px;">
+                                <span style="margin-right:6px;">✨</span>Generate Keywords
+                            </button>
+                        </div>
                     </div>
                     <div id="repos-section"></div>
                 </div>
