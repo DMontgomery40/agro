@@ -85,20 +85,21 @@ replace what you don’t. The docs show one happy path; you can rewire models an
 
 ---
 
-## Package Layout and Shims (Non‑breaking Reorg)
+## Package Layout
 
-Canonical code now lives under `server/`, `retrieval/`, and `indexer/` to make navigation sane. Root‑level files remain as tiny shims so existing commands keep working (e.g., `python index_repo.py`, imports like `from hybrid_search import ...`).
+Code is organized into modules with backward-compatible shims at root level:
 
-- Canonical modules
-  - `server/` → API/graph/model/stats, plus `server/mcp/` for MCP
-  - `retrieval/` → `hybrid_search.py`, `rerank.py`, `ast_chunker.py`, `embed_cache.py`
-  - `indexer/` → `index_repo.py`, `build_cards.py`
-- Root shims (compat): `index_repo.py`, `build_cards.py`, `hybrid_search.py`, `env_model.py`, `langgraph_app.py`, `index_stats.py`, `mcp_server.py`, `mcp_server_http.py`
-- MCP has moved to `server/mcp/` with root shims left in place
+- **Core modules**
+  - `server/` → FastAPI app, LangGraph orchestration, model wrappers, MCP servers
+  - `retrieval/` → Hybrid search, reranking, AST chunking, embedding cache
+  - `indexer/` → Repository indexing, card building
+  - `common/` → Shared utilities (config, paths, filtering, metadata)
+- **Root shims** → Maintain compatibility with existing imports and commands
+- **GUI** → Web interface in `gui/` with config persistence to `.env` and `repos.json`
 
-All knobs are GUI‑first. Use the GUI’s Infrastructure/Models/Retrieval tabs and click “Apply All Changes” to persist to `.env` and `repos.json`. Backend endpoints are implemented in `serve_rag.py` (see serve_rag.py:160-220).
+The GUI provides tabs for Infrastructure, Models, Retrieval, Repos & Indexing, Eval, and Misc settings. Changes are persisted via the backend API in `server/app.py`.
 
-See MIGRATION.md for the old→new path mapping and rationale.
+See MIGRATION.md for detailed path mappings.
 
 ## Imports Cheatsheet (Canonical)
 
@@ -222,20 +223,22 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 
 | Component | Purpose | File |
 |-----------|---------|------|
-| **MCP Server (stdio)** | Tool server for local agents | `mcp_server.py` |
-| **MCP Server (HTTP)** | Tool server for remote agents | `mcp_server_http.py` |
-| **FastAPI** | HTTP REST API (`/health`, `/search`, `/answer`) | `serve_rag.py` |
-| **LangGraph** | Iterative retrieval pipeline with Redis checkpoints | `langgraph_app.py` |
-| **Hybrid Search** | BM25 + dense + rerank with repo routing | `hybrid_search.py` |
-| **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `index_repo.py` |
+| **MCP Server (stdio)** | Tool server for local agents | `server/mcp/server.py` |
+| **MCP Server (HTTP)** | Tool server for remote agents | `server/mcp/http.py` |
+| **FastAPI** | HTTP REST API and GUI (`/health`, `/search`, `/answer`, `/api/*`) | `server/app.py` |
+| **LangGraph** | Iterative retrieval pipeline with Redis checkpoints | `server/langgraph_app.py` |
+| **Hybrid Search** | BM25 + dense + rerank with repo routing | `retrieval/hybrid_search.py` |
+| **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `indexer/index_repo.py` |
 | **CLI Chat** | Interactive terminal chat with memory | `chat_cli.py` |
 | **Eval Harness** | Golden tests with regression tracking | `eval_loop.py` |
-| **Cards Builder** | Summarizes chunks into `cards.jsonl` and builds BM25 over cards for high‑level retrieval | `build_cards.py` |
-| **Reranker** | Cross‑encoder re‑ranking (Cohere rerank‑3.5 or local), plus filename/path/card/feature bonuses | `rerank.py` |
-| **Embedding Cache** | Caches OpenAI embeddings to avoid re‑embedding unchanged chunks | `embed_cache.py` |
-| **AST Chunker** | Language‑aware code chunking across ecosystems | `ast_chunker.py` |
-| **Filtering** | Centralized file/dir pruning and source gating | `filtering.py` |
-| **Generation Shim** | OpenAI Responses/Chat or local Qwen via Ollama with resilient fallbacks | `env_model.py` |
+| **Cards Builder** | Summarizes chunks and builds card-level BM25 index | `indexer/build_cards.py` |
+| **Reranker** | Cross-encoder reranking with path and layer bonuses | `retrieval/rerank.py` |
+| **Embedding Cache** | Caches embeddings to avoid recomputation | `retrieval/embed_cache.py` |
+| **AST Chunker** | Language-aware code chunking | `retrieval/ast_chunker.py` |
+| **Filtering** | File and directory exclusion rules | `common/filtering.py` |
+| **Config Loader** | Repository paths and settings management | `common/config_loader.py` |
+| **Tracing** | Capture retrieval and generation traces | `server/tracing.py` |
+| **Generation** | OpenAI API wrapper with fallbacks | `server/env_model.py` |
 
 ---
 
@@ -1339,8 +1342,7 @@ python analyze_keywords_v2.py /path/to/repo-a
 
 ---
 
-**Version:** 2.0.0  
-**Last Updated:** October 8, 2025
+**Version:** 2.1.0
 
 ---
 
