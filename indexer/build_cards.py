@@ -1,12 +1,13 @@
-import os, json
-from typing import Dict
+import os
+import json
+from typing import Dict, Iterator
 from dotenv import load_dotenv
 from server.env_model import generate_text
 from common.config_loader import out_dir
 
 load_dotenv()
 REPO = os.getenv('REPO','project').strip()
-MAX_CHUNKS = int(os.getenv('CARDS_MAX','0') or '0')
+MAX_CHUNKS = int(os.getenv('CARDS_MAX','0') or '10')
 BASE = out_dir(REPO)
 CHUNKS = os.path.join(BASE, 'chunks.jsonl')
 CARDS = os.path.join(BASE, 'cards.jsonl')
@@ -19,13 +20,13 @@ PROMPT = (
     "routes (array of route paths if any). Respond with only the JSON.\n\n"
 )
 
-def iter_chunks():
+def iter_chunks() -> Iterator[Dict]:
     with open(CHUNKS, 'r', encoding='utf-8') as f:
         for line in f:
             o = json.loads(line)
             yield o
 
-def main():
+def main() -> None:
     os.makedirs(BASE, exist_ok=True)
     n = 0
     with open(CARDS, 'w', encoding='utf-8') as out_json, open(CARDS_TXT, 'w', encoding='utf-8') as out_txt:
@@ -49,10 +50,11 @@ def main():
             if MAX_CHUNKS and n >= MAX_CHUNKS:
                 break
     try:
-        import bm25s
-        from bm25s.tokenization import Tokenizer
-        from Stemmer import Stemmer
-        stemmer = Stemmer('english'); tok = Tokenizer(stemmer=stemmer, stopwords='en')
+        import bm25s  # type: ignore
+        from bm25s.tokenization import Tokenizer  # type: ignore
+        from Stemmer import Stemmer  # type: ignore
+        stemmer = Stemmer('english')
+        tok = Tokenizer(stemmer=stemmer, stopwords='en')
         with open(CARDS_TXT,'r',encoding='utf-8') as f:
             docs = [line.strip() for line in f if line.strip()]
         tokens = tok.tokenize(docs)

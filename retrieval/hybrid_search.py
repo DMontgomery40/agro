@@ -251,15 +251,20 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     except Exception:
         e = []
     try:
-        dres = qc.query_points(
-            collection_name=coll,
-            query=e,
-            using='dense',
-            limit=topk_dense,
-            with_payload=models.PayloadSelectorInclude(include=['file_path', 'start_line', 'end_line', 'language', 'layer', 'repo', 'hash', 'id'])
-        )
-        points = getattr(dres, 'points', dres)
-        dense_pairs = [(str(p.id), dict(p.payload)) for p in points]
+        backend = (os.getenv('VECTOR_BACKEND','qdrant') or 'qdrant').lower()
+        if backend == 'faiss':
+            # Experimental FAISS backend (offline). If not present, fall back to sparse-only.
+            dense_pairs = []
+        else:
+            dres = qc.query_points(
+                collection_name=coll,
+                query=e,
+                using='dense',
+                limit=topk_dense,
+                with_payload=models.PayloadSelectorInclude(include=['file_path', 'start_line', 'end_line', 'language', 'layer', 'repo', 'hash', 'id'])
+            )
+            points = getattr(dres, 'points', dres)
+            dense_pairs = [(str(p.id), dict(p.payload)) for p in points]
     except Exception:
         dense_pairs = []
 

@@ -755,7 +755,9 @@
                 <button data-tab="repos">Repos & Indexing</button>
                 <button data-tab="infra">Infrastructure</button>
                 <button data-tab="storage">Storage Calculator</button>
+                <button data-tab="eval">Eval</button>
                 <button data-tab="tools">Tools</button>
+                <button data-tab="misc">Misc</button>
             </div>
 
             <!-- Tab: Dashboard -->
@@ -1726,6 +1728,13 @@
                             <input type="number" name="TOPK_DENSE" value="75" min="1">
                         </div>
                         <div class="input-group">
+                            <label>Vector Backend</label>
+                            <select name="VECTOR_BACKEND">
+                                <option value="qdrant">Qdrant</option>
+                                <option value="faiss">FAISS (experimental)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
                             <label>
                                 Top-K Sparse (BM25)
                                 <span class="tooltip-wrap">
@@ -1989,6 +1998,29 @@
                             <label>Load Latest Trace</label>
                             <button class="small-button" id="btn-trace-latest">Open</button>
                         </div>
+                        <div class="input-group">
+                            <label>Open in LangSmith</label>
+                            <button class="small-button" id="btn-trace-open-ls">Open</button>
+                        </div>
+                        <div class="input-group">
+                            <label>Tracing Mode</label>
+                            <select name="TRACING_MODE">
+                                <option value="off">Off</option>
+                                <option value="local">Local</option>
+                                <option value="langsmith">LangSmith</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Auto-open in LangSmith</label>
+                            <select name="TRACE_AUTO_LS">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Trace Retention</label>
+                            <input type="number" name="TRACE_RETENTION" value="50" min="1" max="500">
+                        </div>
                     </div>
                     <div id="trace-output" class="result-display" style="min-height:120px;white-space:pre-wrap"></div>
                 </div>
@@ -2236,8 +2268,18 @@
                             </select>
                         </div>
                         <div class="input-group">
-                            <label>LangChain agro</label>
-                            <input type="text" name="LANGCHAIN_agro">
+                            <label>LangChain Project</label>
+                            <input type="text" name="LANGCHAIN_PROJECT" placeholder="agro">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>LangSmith Endpoint</label>
+                            <input type="text" name="LANGCHAIN_ENDPOINT" placeholder="https://api.smith.langchain.com">
+                        </div>
+                        <div class="input-group">
+                            <label>LangSmith API Key</label>
+                            <input type="password" name="LANGCHAIN_API_KEY" placeholder="sk-...">
                         </div>
                     </div>
                     <div class="input-row">

@@ -764,50 +764,156 @@ def scan_hw() -> Dict[str, Any]:
     return {"info": info, "runtimes": runtimes, "tools": tools}
 
 def _find_price(provider: str, model: Optional[str]) -> Optional[Dict[str, Any]]:
+    """Generic price lookup (backwards-compat) — used for generation rows."""
     data = _read_json(GUI_DIR / "prices.json", {"models": []})
     models = data.get("models", [])
     # Prefer exact provider+model, else fallback to first matching provider
-    for m in models:
-        if m.get("provider") == provider and (model is None or m.get("model") == model):
+    try:
+        prov = str(provider or '').lower()
+        mdl = str(model or '').lower()
+        for m in models:
+            if str(m.get("provider", "")).lower() == prov and (not mdl or str(m.get("model", "")).lower() == mdl):
+                return m
+        # Model-only match (provider mismatch or unknown)
+        if mdl:
+            for m in models:
+                if str(m.get("model", "")).lower() == mdl:
+                    return m
+        for m in models:
+            if str(m.get("provider", "")).lower() == prov:
+                return m
+    except Exception:
+        pass
+    return None
+
+
+def _find_price_kind(provider: str, model: Optional[str], kind: str) -> Optional[Dict[str, Any]]:
+    """Find a price row constrained by kind: 'gen' | 'embed' | 'rerank'."""
+    data = _read_json(GUI_DIR / "prices.json", {"models": []})
+    models = data.get("models", [])
+    prov = str(provider or '').lower()
+    mdl = str(model or '').lower()
+
+    def is_embed(m):
+        return (m is not None) and (('embed_per_1k' in m) or ('embed' in str(m.get('family','')).lower()))
+
+    def is_rerank(m):
+        fam_mod = (str(m.get('family','')) + str(m.get('model',''))).lower()
+        return (m is not None) and (('rerank_per_1k' in m) or ('rerank' in fam_mod))
+
+    def is_gen(m):
+        u = str(m.get('unit','')).lower()
+        return (u == '1k_tokens') and (not is_embed(m)) and (not is_rerank(m))
+
+    kind_pred = {'gen': is_gen, 'embed': is_embed, 'rerank': is_rerank}.get(kind, lambda _m: True)
+
+    cand = [m for m in models if kind_pred(m)]
+    # exact provider+model
+    for m in cand:
+        if (str(m.get('provider','')).lower() == prov) and (not mdl or str(m.get('model','')).lower() == mdl):
             return m
+    # model-only
+    if mdl:
+        for m in cand:
+            if str(m.get('model','')).lower() == mdl:
+                return m
+    # first for provider among kind
+    for m in cand:
+        if str(m.get('provider','')).lower() == prov:
+            return m
+    # fallback any kind+provider
     for m in models:
-        if m.get("provider") == provider:
+        if str(m.get('provider','')).lower() == prov:
             return m
     return None
 
-def _estimate_cost(gen_provider: str, gen_model: Optional[str], tokens_in: int, tokens_out: int, embeds: int, reranks: int, requests_per_day: int,
-                   embed_provider: Optional[str] = None, embed_model: Optional[str] = None,
-                   rerank_provider: Optional[str] = None, rerank_model: Optional[str] = None) -> Dict[str, Any]:
+def _estimate_cost(
+    gen_provider: str,
+    gen_model: Optional[str],
+    tokens_in: int,
+    tokens_out: int,
+    embeds: int,
+    reranks: int,
+    requests_per_day: int,
+    embed_provider: Optional[str] = None,
+    embed_model: Optional[str] = None,
+    rerank_provider: Optional[str] = None,
+    rerank_model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Estimate daily and monthly costs using gui/prices.json.
+
+    Semantics (simple and robust):
+      - tokens_in/out are per-request tokens; multiplied by requests_per_day for generation costs.
+      - embeds is total embedding tokens per day (already aggregated) unless zero.
+      - reranks is total rerank "units" per day:
+          * if price row has rerank_per_1k → interpret as tokens; cost = (reranks/1000) * rerank_per_1k.
+          * elif price row has per_request → interpret as count of requests; cost = reranks * per_request.
+          * else if price row unit == 'request' → cost = reranks * per_request (if available), else 0.
+      - Any missing fields default to 0.
+    """
+    rpd = max(1, int(requests_per_day or 0))
+
     # Generation
-    price_gen = _find_price(gen_provider, gen_model)
-    if not price_gen:
-        price_gen = {"input_per_1k": 0.0, "output_per_1k": 0.0, "per_request": 0.0}
-    per_1k_in = float(price_gen.get("input_per_1k", 0.0))
-    per_1k_out = float(price_gen.get("output_per_1k", 0.0))
-    per_req = float(price_gen.get("per_request", 0.0))
-    daily = 0.0
-    daily += (tokens_in/1000.0) * per_1k_in * max(1, requests_per_day)
-    daily += (tokens_out/1000.0) * per_1k_out * max(1, requests_per_day)
-    daily += per_req * max(1, requests_per_day)
+    price_gen = _find_price_kind(gen_provider, gen_model, 'gen') or {}
+    per_1k_in = float(price_gen.get("input_per_1k", 0.0) or 0.0)
+    per_1k_out = float(price_gen.get("output_per_1k", 0.0) or 0.0)
+    per_req = float(price_gen.get("per_request", 0.0) or 0.0)
+    # tokens_in/out are per request
+    gen_cost = (tokens_in/1000.0) * per_1k_in * rpd + (tokens_out/1000.0) * per_1k_out * rpd + per_req * rpd
 
-    # Embeddings (separate provider/model)
+    # Embeddings (separate provider/model); "embeds" is total tokens per day
+    emb_cost = 0.0
+    emb_row = None
     if embeds > 0:
-        if embed_provider is None and gen_provider == 'openai':
-            embed_provider, embed_model = 'openai', (embed_model or 'text-embedding-3-small')
-        price_emb = _find_price(embed_provider or gen_provider, embed_model)
-        if price_emb:
-            daily += (embeds/1000.0) * float(price_emb.get("embed_per_1k", 0.0))
+        if not embed_provider and gen_provider == 'openai':
+            embed_provider = 'openai'
+            embed_model = embed_model or 'text-embedding-3-small'
+        emb_row = _find_price_kind(embed_provider or gen_provider, embed_model, 'embed')
+        if emb_row:
+            emb_cost = (embeds/1000.0) * float(emb_row.get("embed_per_1k", 0.0) or 0.0)
 
-    # Rerank
+    # Rerank; "reranks" interpreted by price row
+    rr_cost = 0.0
+    rr_row = None
     if reranks > 0:
-        price_rr = _find_price(rerank_provider or 'cohere', rerank_model or 'rerank-3.5')
-        if price_rr:
-            daily += (reranks/1000.0) * float(price_rr.get("rerank_per_1k", 0.0))
+        rr_row = _find_price_kind(rerank_provider or 'cohere', rerank_model or 'rerank-3.5', 'rerank')
+        if rr_row:
+            per_1k_rr = float(rr_row.get("rerank_per_1k", 0.0) or 0.0)
+            per_req_rr = float(rr_row.get("per_request", 0.0) or 0.0)
+            unit = str(rr_row.get("unit") or '').lower()
+            if unit == 'request':
+                # Treat input `reranks` as number of requests
+                if per_req_rr > 0.0:
+                    rr_cost = float(reranks) * per_req_rr
+                elif per_1k_rr > 0.0:
+                    rr_cost = (reranks/1000.0) * per_1k_rr
+            elif per_1k_rr > 0.0:
+                rr_cost = (reranks/1000.0) * per_1k_rr
+            elif per_req_rr > 0.0:
+                # Treat "reranks" as number of rerank calls for the day
+                rr_cost = float(reranks) * per_req_rr
+            elif unit == 'request' and per_req_rr == 0.0:
+                rr_cost = 0.0
 
+    daily = float(gen_cost + emb_cost + rr_cost)
     breakdown = {
-        "generation": price_gen,
-        "embeddings": _find_price(embed_provider or gen_provider, embed_model) if embeds>0 else None,
-        "rerank": _find_price(rerank_provider or 'cohere', rerank_model or 'rerank-3.5') if reranks>0 else None,
+        "generation": {
+            "row": price_gen,
+            "tokens_in_per_req": tokens_in,
+            "tokens_out_per_req": tokens_out,
+            "requests_per_day": rpd,
+            "cost_daily": round(gen_cost, 6),
+        },
+        "embeddings": {
+            "row": (emb_row or None),
+            "tokens_daily": embeds,
+            "cost_daily": round(emb_cost, 6),
+        } if embeds > 0 else None,
+        "rerank": {
+            "row": (rr_row or None),
+            "units_daily": reranks,
+            "cost_daily": round(rr_cost, 6),
+        } if reranks > 0 else None,
     }
     return {"daily": round(daily, 6), "monthly": round(daily*30.0, 4), "breakdown": breakdown}
 
@@ -951,11 +1057,54 @@ def index_status() -> Dict[str, Any]:
 
 @app.post("/api/cards/build")
 def cards_build() -> Dict[str, Any]:
-    return {"ok": True}
+    """Build cards index by running indexer.build_cards"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, "-m", "indexer.build_cards"],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        return {
+            "ok": result.returncode == 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 @app.get("/api/cards")
 def cards_list() -> Dict[str, Any]:
-    return {"cards": []}
+    """Return cards index information"""
+    try:
+        from common.config_loader import out_dir
+        repo = os.getenv('REPO', 'agro').strip()
+        cards_path = Path(out_dir(repo)) / "cards.jsonl"
+        
+        if not cards_path.exists():
+            return {"count": 0, "cards": [], "path": str(cards_path)}
+        
+        cards = []
+        with open(cards_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.strip():
+                    cards.append(json.loads(line))
+        
+        return {"count": len(cards), "cards": cards[:10], "path": str(cards_path)}
+    except Exception as e:
+        return {"count": 0, "cards": [], "error": str(e)}
+
+# ---------------- Autotune ----------------
+@app.get("/api/autotune/status")
+def autotune_status() -> Dict[str, Any]:
+    """Return autotune status. Pro feature stub."""
+    return {"enabled": False, "current_mode": None}
+
+@app.post("/api/autotune/status")
+def autotune_update(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Update autotune settings. Pro feature stub."""
+    return {"ok": True, "enabled": payload.get("enabled", False), "current_mode": payload.get("current_mode")}
 
 # ---------------- Git hooks helpers ----------------
 def _git_hooks_dir() -> Path:
