@@ -74,7 +74,7 @@ Test the protocol directly:
 # Test tools/list
 python -c "
 import json
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
 server = MCPServer()
 print(json.dumps(server.handle_request(req), indent=2))
@@ -260,7 +260,7 @@ The `expect_paths` uses substring matching — any result containing one of thes
   ```bash
   . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
     python - <<'PY'
-  from hybrid_search import search_routed_multi
+  from retrieval.hybrid_search import search_routed_multi
   print(search_routed_multi('test', repo_override='agro', final_k=3))
   PY
   ```

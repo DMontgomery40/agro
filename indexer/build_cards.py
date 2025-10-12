@@ -1,7 +1,7 @@
 import os, json
 from typing import Dict
 from dotenv import load_dotenv
-from env_model import generate_text
+from server.env_model import generate_text
 from config_loader import out_dir
 
 load_dotenv()
@@ -72,4 +72,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

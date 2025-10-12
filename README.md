@@ -100,6 +100,17 @@ All knobs are GUI‑first. Use the GUI’s Infrastructure/Models/Retrieval tabs 
 
 See MIGRATION.md for the old→new path mapping and rationale.
 
+## Imports Cheatsheet (Canonical)
+
+- Build graph (LangGraph): `from server.langgraph_app import build_graph`
+- Search (hybrid retrieval): `from retrieval.hybrid_search import search_routed, search_routed_multi`
+- Env/model helpers: `from server.env_model import generate_text`
+- Indexer entry: `from indexer.index_repo import main as index_main`
+- MCP server (stdio): `from server.mcp.server import MCPServer`
+- FastAPI app: `from server.app import app` (root shim: `serve_rag.py`)
+
+Shims remain at root for backward compatibility; prefer canonical imports in new code.
+
 ---
 
 ## Quick Start
@@ -901,7 +912,7 @@ GUI path (accessibility):
 ```bash
 # 1. Use rag_search to see what was retrieved
 python -c "
-from hybrid_search import search_routed_multi
+from retrieval.hybrid_search import search_routed_multi
 results = search_routed_multi('your question', repo_override='repo-a', final_k=10)
 for r in results[:5]:
     print(f\"{r['rerank_score']:.3f} {r['file_path']}:{r['start_line']}\")
@@ -1003,7 +1014,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 docker exec rag-redis redis-cli ping
 
 # Test graph initialization
-python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')"
+python -c "from server.langgraph_app import build_graph; build_graph(); print('✓ OK')"
 ```
 
 **MCP rag_search returns no results (count: 0):**
@@ -1019,7 +1030,7 @@ python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')
    ```bash
    . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
      python - <<'PY'
-   from hybrid_search import search_routed_multi
+   from retrieval.hybrid_search import search_routed_multi
    print(len(search_routed_multi('Where is OAuth validated', repo_override='agro', m=2, final_k=5)))
    PY
    ```
@@ -1047,7 +1058,7 @@ python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')
 3. **Inspect retrieved docs:**
    ```bash
    python -c "
-   from hybrid_search import search_routed_multi
+   from retrieval.hybrid_search import search_routed_multi
    docs = search_routed_multi('your query', repo_override='repo-a', final_k=10)
    for d in docs[:5]:
        print(f\"{d['rerank_score']:.3f} {d['file_path']}\")

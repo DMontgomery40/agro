@@ -9,6 +9,7 @@ What changed
     - `server/langgraph_app.py`
     - `server/env_model.py`
     - `server/index_stats.py`
+    - `server/app.py` (FastAPI app; root shim `serve_rag.py`)
     - `server/mcp/server.py` (stdio MCP)
     - `server/mcp/http.py` (HTTP MCP)
   - `retrieval/`: search + rerank + AST
@@ -21,7 +22,7 @@ What changed
     - `indexer/build_cards.py`
 
 - Root shims (keep CLI paths and imports stable)
-  - `serve_rag.py` (entrypoint for API/GUI)
+  - `serve_rag.py` → re-exports `server/app.py: app`
   - `chat_cli.py` (CLI chat)
   - `index_repo.py` → re-exports from `indexer/index_repo.py`
   - `build_cards.py` → re-exports from `indexer/build_cards.py`
@@ -62,4 +63,3 @@ Definition of done (for future cleanup)
 - All internal imports prefer `server.*`, `retrieval.*`, `indexer.*`.
 - Shims no longer imported by any internal code or scripts.
 - Scripts updated to call canonical entrypoints (or keep shims by design).
-

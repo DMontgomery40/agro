@@ -13,7 +13,7 @@ except:
     def count_tokens(text): return len(text) // 4
 
 # Get tool schemas
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 server = MCPServer()
 tools_req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
 tools_resp = server.handle_request(tools_req)

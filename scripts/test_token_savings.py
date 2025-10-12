@@ -98,7 +98,7 @@ def measure_claude_alone(question: str, repo: str):
 def measure_rag_python(question: str, repo: str, top_k: int = 10):
     """Use hybrid_search.py directly (local Python calls)"""
     try:
-        from hybrid_search import search_routed_multi
+        from retrieval.hybrid_search import search_routed_multi
 
         results = search_routed_multi(question, repo_override=repo, final_k=top_k)
 
@@ -132,7 +132,7 @@ def measure_rag_mcp(question: str, repo: str, top_k: int = 10):
     This calls the same backend as direct Python but through MCP layer.
     """
     try:
-        from mcp_server import MCPServer
+        from server.mcp.server import MCPServer
 
         # Call rag_search tool
         req = {

@@ -52,7 +52,7 @@ codex mcp list
 
 # List available tools
 python -c "
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 import json
 req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
 print(json.dumps(MCPServer().handle_request(req)['result']['tools'], indent=2))

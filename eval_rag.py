@@ -1,7 +1,7 @@
 import os, json, time
 from typing import List, Dict
 from dotenv import load_dotenv
-from hybrid_search import search_routed, search_routed_multi
+from retrieval.hybrid_search import search_routed, search_routed_multi
 
 load_dotenv()
 
