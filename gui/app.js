@@ -1202,6 +1202,36 @@
         }
     }
 
+    // Simulated progress ticker for long-running actions
+    function startSimProgress(label, total = 80, tips = []) {
+        const status = document.getElementById('dash-index-status');
+        const bar = document.getElementById('dash-index-bar');
+        let step = 0; let tipIdx = 0;
+        function tick() {
+            step = Math.min(total, step + 1);
+            const pct = Math.min(90, Math.max(5, Math.floor((step / Math.max(1,total)) * 90)));
+            if (bar) { bar.style.width = pct + '%'; bar.style.opacity = '0.9'; }
+            const tip = tips.length ? (tips[tipIdx % tips.length]) : '';
+            tipIdx++;
+            if (status) {
+                status.innerHTML = `
+                    <div class="mono" style="color:#bbb;">
+                        🔎 ${label}<br>
+                        Scanning ${step} of ${total}… ${tip ? `<span style='color:#666'>(${tip})</span>` : ''}
+                    </div>
+                `;
+            }
+        }
+        const id = setInterval(tick, 900);
+        tick();
+        return {
+            stop: () => {
+                clearInterval(id);
+                if (bar) { bar.style.width = '100%'; bar.style.opacity = '1'; setTimeout(()=>{ bar.style.width='0%'; }, 1500); }
+            }
+        };
+    }
+
     function bindQuickAction(btnId, handler) {
         const btn = document.getElementById(btnId);
         if (!btn) return;
@@ -1230,7 +1260,7 @@
             const response = await fetch(api('/api/config'));
             const data = await response.json();
             const repos = data.repos || [];
-            const currentRepo = data.config?.REPO || 'agro';
+            const currentRepo = (data.env && data.env.REPO) || data.default_repo || 'agro';
 
             if (repos.length === 0) {
                 showStatus('No repositories configured', 'error');
@@ -1307,16 +1337,32 @@
     }
 
     async function createKeywords() {
-        showStatus('Generating keywords (this may take 2-5 minutes)...', 'loading');
+        const btn = document.getElementById('btn-generate-keywords');
+        setButtonState(btn, 'loading');
+        showStatus('Generating keywords (this may take 2–5 minutes)...', 'loading');
 
         try {
             const response = await fetch(api('/api/config'));
             const data = await response.json();
-            const repo = data.config?.REPO || 'agro';
+            const env = (data && data.env) || (state.config && state.config.env) || {};
+            const repo = env.REPO || data.default_repo || 'agro';
             const modeSel = document.getElementById('kw-gen-mode');
-            const mode = modeSel ? (modeSel.value || 'heuristic') : 'heuristic';
+            const mode = modeSel ? (modeSel.value || 'llm') : 'llm';
             const maxFilesEl = document.querySelector('[name="KEYWORDS_MAX_FILES"]');
             const max_files = maxFilesEl && maxFilesEl.value ? Number(maxFilesEl.value) : undefined;
+            const backend = (env.ENRICH_BACKEND || 'mlx').toLowerCase();
+            const model = backend === 'ollama' ? (env.ENRICH_MODEL_OLLAMA || 'qwen3-coder:30b') : (env.ENRICH_MODEL || 'mlx-community/Qwen3-Coder-30B');
+            const tips = [
+                'After keywords, build Semantic Cards in Repos → Indexing',
+                'Add Path Boosts to steer retrieval (Repos tab)',
+                'Toggle ENRICH_CODE_CHUNKS to store per‑chunk summaries',
+                'Use shared profile to reuse indices across branches (Infrastructure)'
+            ];
+            var sim = startSimProgress(
+                mode === 'llm' ? `Mode: LLM • Backend: ${backend} • Model: ${model}` : 'Mode: Heuristic • Scanning tokens and file coverage…',
+                max_files || 80,
+                tips
+            );
 
             // Call the keywords generation endpoint
             const createResponse = await fetch(api('/api/keywords/generate'), {
@@ -1358,20 +1404,43 @@
 
                     const statusDiv = document.getElementById('dash-index-status');
                     if (statusDiv) {
-                        statusDiv.innerHTML = status;
+                        statusDiv.innerHTML = status + `
+                            <div style="margin-top:8px;">
+                                <button id="cta-build-cards" class="small-button">Build Cards Now</button>
+                            </div>
+                        `;
+                        const cta = document.getElementById('cta-build-cards');
+                        if (cta) cta.addEventListener('click', async () => {
+                            switchTab('repos');
+                            const b = document.getElementById('btn-cards-build');
+                            if (b) { b.click(); showStatus('Building cards...', 'loading'); }
+                        });
                     }
 
                     // Reload keywords to populate the UI
                     await loadKeywords();
+                    setButtonState(btn, 'success');
+                    setTimeout(()=> setButtonState(btn, null), 1500);
+                    try { if (sim && sim.stop) sim.stop(); } catch {}
                 } else {
                     showStatus(`Failed to generate keywords: ${result.error || 'Unknown error'}`, 'error');
+                    setButtonState(btn, 'error');
+                    setTimeout(()=> setButtonState(btn, null), 2000);
+                    try { if (sim && sim.stop) sim.stop(); } catch {}
                 }
             } else {
                 const error = await createResponse.text();
                 showStatus(`Failed to generate keywords: ${error}`, 'error');
+                setButtonState(btn, 'error');
+                setTimeout(()=> setButtonState(btn, null), 2000);
+                try { if (sim && sim.stop) sim.stop(); } catch {}
             }
         } catch (err) {
             showStatus(`Error generating keywords: ${err.message}`, 'error');
+            const btn = document.getElementById('btn-generate-keywords');
+            setButtonState(btn, 'error');
+            setTimeout(()=> setButtonState(btn, null), 2000);
+            try { if (typeof sim !== 'undefined' && sim && sim.stop) sim.stop(); } catch {}
         }
     }
 
@@ -1413,6 +1482,17 @@
         if (oneClick) oneClick.addEventListener('click', onWizardOneClick);
         const loadCur = document.getElementById('btn-wizard-load-cur');
         if (loadCur) loadCur.addEventListener('click', loadWizardFromEnv);
+
+        // Dopamine-y feedback on any button click
+        document.querySelectorAll('button').forEach(btn => {
+            if (btn.dataset && btn.dataset.dopamineBound) return;
+            if (!btn.dataset) btn.dataset = {};
+            btn.dataset.dopamineBound = '1';
+            btn.addEventListener('click', () => {
+                const label = (btn.textContent || btn.id || 'button').trim();
+                if (label) showStatus(`→ ${label}`, 'info');
+            });
+        });
 
         const addGen = document.getElementById('btn-add-gen-model');
         if (addGen) addGen.addEventListener('click', addGenModelFlow);

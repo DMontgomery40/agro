@@ -325,7 +325,11 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
 
     # Heuristic pipeline (existing behavior)
     def run_heuristic() -> None:
-        """Inline heuristic generation (no external scripts)."""
+        """Inline heuristic generation (no external scripts).
+
+        More permissive than before: computes TF–IDF over all tokens with a
+        small stopword list and falls back to top-frequency tokens when needed.
+        """
         nonlocal results
         import re
         try:
@@ -357,6 +361,12 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
         hash_comment = re.compile(r'#.*?\n')
         sl_comment = re.compile(r'//.*?\n')
         ident_rx = re.compile(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b')
+        stop = set([
+            'the','and','that','with','this','from','into','your','you','for','are','was','have','has','will','can','not','out','one','two',
+            'def','class','import','return','const','let','var','function','void','null','true','false','elif','else','try','except','finally',
+            'self','args','kwargs','none','object','module','package','public','private','static','final','new','extends','implements','using',
+            'todo','fixme','note','copyright','license','utf','ascii','error','warn','info','data','item','value','result','type','types'
+        ])
 
         def extract_tokens(text: str) -> List[str]:
             text = str_rx.sub('', text)
@@ -365,7 +375,7 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
             toks = ident_rx.findall(text)
             return [t.lower() for t in toks if len(t) > 2]
 
-        # Discriminative (TF*IDF-ish)
+        # Discriminative (TF–IDF)
         file_tokens: Dict[str, set[str]] = {}
         global_counts: Counter[str] = Counter()
         for fp in files:
@@ -373,7 +383,7 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
                 code = fp.read_text(encoding='utf-8', errors='ignore')
             except Exception:
                 continue
-            toks = set(extract_tokens(code))
+            toks = set(t for t in extract_tokens(code) if t not in stop)
             file_tokens[str(fp)] = toks
             for t in toks:
                 global_counts[t] += 1
@@ -381,17 +391,21 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
         doc_freq: Counter[str] = Counter()
         for toks in file_tokens.values():
             doc_freq.update(toks)
+        import math as _m
         keyword_scores: Dict[str, float] = {}
         for token, df in doc_freq.items():
             if df <= 1:
                 continue
-            if df < max(2, int(0.05 * num_files)):
-                idf = num_files / df
-                tf = global_counts[token]
-                keyword_scores[token] = tf * idf
-        topn_discr = int(os.getenv("KEYWORDS_TOPN_DISCR", "50") or 50)
+            idf = _m.log(num_files / (1.0 + df)) if num_files > 1 else 0.0
+            tf = global_counts[token]
+            score = tf * (idf if idf > 0 else 1.0)
+            keyword_scores[token] = float(score)
+        topn_discr = int(os.getenv("KEYWORDS_TOPN_DISCR", "60") or 60)
         discr_sorted = sorted(keyword_scores.items(), key=lambda x: x[1], reverse=True)[:topn_discr]
         discr_list = [k for k, _ in discr_sorted]
+        if not discr_list:
+            # fallback: top tokens by document frequency
+            discr_list = [k for k, _ in doc_freq.most_common(topn_discr) if k not in stop]
         # Persist
         discr_path = repo_root() / "discriminative_keywords.json"
         discr_data = _read_json(discr_path, {})
@@ -416,7 +430,7 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
                 code = Path(fp).read_text(encoding='utf-8', errors='ignore')
             except Exception:
                 continue
-            terms = extract_tokens(code)
+            terms = [t for t in extract_tokens(code) if t not in stop]
             rel = str(fp)
             for t in terms:
                 term_counts[t] += 1
@@ -424,13 +438,15 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
         scored: list[tuple[str, float]] = []
         for t, fileset in term_files.items():
             fc = len(fileset)
-            if fc >= 2 and fc <= max(2, int(0.2 * num_files)):
+            if fc >= 2 and fc <= max(3, int(0.5 * num_files)):
                 dir_boost = 2.0 if t in dir_terms else 1.0
                 score = (term_counts[t] * fc * dir_boost) / (num_files + 1)
                 scored.append((t, score))
-        topn_sem = int(os.getenv("KEYWORDS_TOPN_SEM", "50") or 50)
+        topn_sem = int(os.getenv("KEYWORDS_TOPN_SEM", "60") or 60)
         sem_sorted = sorted(scored, key=lambda x: x[1], reverse=True)[:topn_sem]
         sem_list = [k for k, _ in sem_sorted]
+        if not sem_list:
+            sem_list = [k for k, _ in term_counts.most_common(topn_sem) if k not in stop]
         sem_path = repo_root() / "semantic_keywords.json"
         sem_data = _read_json(sem_path, {})
         if not isinstance(sem_data, dict):
@@ -499,6 +515,9 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
     try:
         if mode == "llm":
             run_llm()
+            # If LLM produced nothing, fall back to heuristics for useful output
+            if (results.get("llm", {}).get("count") or 0) == 0:
+                run_heuristic()
         else:
             run_heuristic()
         # Compose totals (heuristic writes discr/semantic; llm writes llm)

@@ -1,4 +1,4 @@
-@@
+
 import math
 import os
 from typing import List, Dict
@@ -143,4 +143,3 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
                 r['rerank_score'] = float(r.get('rerank_score', 0.0)) / abs(mx)
     results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
     return results[:top_k]
-
