@@ -801,6 +801,12 @@
                                 Quick Actions
                             </h3>
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
+                                <button class="action-btn" id="btn-generate-keywords" data-action="generate-keywords">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 2l2.39 4.85L20 8l-4 3.9.95 5.54L12 15.77 7.05 17.45 8 11.9 4 8l5.61-1.15L12 2z"></path>
+                                    </svg>
+                                    <span>Generate Keywords</span>
+                                </button>
                                 <button class="action-btn" id="dash-change-repo" data-action="change-repo">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
@@ -1413,23 +1419,7 @@
             <!-- Tab: Repositories -->
             <div id="tab-repos" class="tab-content">
                 <div class="settings-section">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
-                        <h3 style="margin:0;">Repository Configuration</h3>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <label style="font-size:12px;color:#aaa;">Keywords Backend</label>
-                            <select id="kw-gen-mode" style="height:32px;">
-                                <option value="heuristic">Heuristic</option>
-                                <option value="llm">LLM</option>
-                            </select>
-                            <div class="input-group" style="margin:0;">
-                                <label style="font-size:12px;">Max Files</label>
-                                <input type="number" name="KEYWORDS_MAX_FILES" value="60" style="width:90px;">
-                            </div>
-                            <button id="btn-generate-keywords" class="action-button" style="background:#b794f6;padding:10px 18px;font-size:13px;">
-                                <span style="margin-right:6px;">✨</span>Generate Keywords
-                            </button>
-                        </div>
-                    </div>
+                    <h3>Repository Configuration</h3>
                     <div id="repos-section"></div>
                 </div>
             </div>
