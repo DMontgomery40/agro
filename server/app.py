@@ -422,9 +422,11 @@ def get_keywords() -> Dict[str, Any]:
     discr_raw = _read_json(repo_root() / "discriminative_keywords.json", {})
     sema_raw = _read_json(repo_root() / "semantic_keywords.json", {})
     llm_raw = _read_json(repo_root() / "llm_keywords.json", {})
+    manual_raw = _read_json(repo_root() / "manual_keywords.json", [])
     discr = extract_terms(discr_raw)
     sema = extract_terms(sema_raw)
     llm = extract_terms(llm_raw)
+    manual = extract_terms(manual_raw) if manual_raw else []
     repos_cfg = load_repos()
     repo_k = []
     for r in repos_cfg.get("repos", []):
@@ -441,9 +443,70 @@ def get_keywords() -> Dict[str, Any]:
     discr = uniq(discr)
     sema = uniq(sema)
     llm = uniq(llm)
+    manual = uniq(manual)
     repo_k = uniq(repo_k)
-    allk = uniq((discr or []) + (sema or []) + (llm or []) + (repo_k or []))
-    return {"discriminative": discr, "semantic": sema, "llm": llm, "repos": repo_k, "keywords": allk}
+    allk = uniq((discr or []) + (sema or []) + (llm or []) + (manual or []) + (repo_k or []))
+    return {"discriminative": discr, "semantic": sema, "llm": llm, "manual": manual, "repos": repo_k, "keywords": allk}
+
+@app.post("/api/keywords/add")
+def add_keyword(body: Dict[str, Any]) -> Dict[str, Any]:
+    """Add a manually created keyword to the appropriate category."""
+    keyword = body.get("keyword", "").strip()
+    category = body.get("category", "")  # 'discriminative', 'semantic', or empty
+
+    if not keyword:
+        return {"error": "Keyword is required"}
+
+    # Map category to file
+    category_files = {
+        "discriminative": "discriminative_keywords.json",
+        "semantic": "semantic_keywords.json"
+    }
+
+    if category and category in category_files:
+        file_path = repo_root() / category_files[category]
+
+        # Read existing data
+        data = _read_json(file_path, {})
+        if not isinstance(data, dict):
+            data = {}
+
+        # Add keyword to the appropriate structure
+        # The structure appears to be a list or dict, let's handle both
+        if isinstance(data, list):
+            if keyword not in data:
+                data.append(keyword)
+                data.sort()
+        else:
+            # If it's a dict, add to a 'manual' key
+            if "manual" not in data:
+                data["manual"] = []
+            if keyword not in data["manual"]:
+                data["manual"].append(keyword)
+                data["manual"].sort()
+
+        # Write back to file
+        try:
+            with open(file_path, "w") as f:
+                json.dump(data, f, indent=2)
+            return {"ok": True, "keyword": keyword, "category": category}
+        except Exception as e:
+            return {"error": f"Failed to save keyword: {str(e)}"}
+    else:
+        # If no category specified, add to a manual keywords file
+        manual_path = repo_root() / "manual_keywords.json"
+        data = _read_json(manual_path, [])
+        if not isinstance(data, list):
+            data = []
+        if keyword not in data:
+            data.append(keyword)
+            data.sort()
+        try:
+            with open(manual_path, "w") as f:
+                json.dump(data, f, indent=2)
+            return {"ok": True, "keyword": keyword, "category": "manual"}
+        except Exception as e:
+            return {"error": f"Failed to save keyword: {str(e)}"}
 
 @app.post("/api/keywords/generate")
 def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:

@@ -50,7 +50,7 @@
     function switchTab(tabName) {
         const groups = {
             models: ['generation','embeddings','reranking'],
-            retrieval: ['retrieval','confidence','cards'],
+            retrieval: ['retrieval','confidence'],
             repos: ['repos','indexing'],
             // Show full Tools group: base panel + eval + misc
             // Note: there is no 'tab-calculator' anymore; storage has its own tab
@@ -385,6 +385,7 @@
                                         <option value=\"semantic\">Semantic</option>
                                         <option value=\"repos\">Repo</option>
                                     </select>
+                                    <button class=\"small-button\" id=\"kw-new-${rname}\" style=\"background:#00ff88; color:#000; padding:4px 8px; font-size:11px;\" title=\"Add New Keyword\">+</button>
                                 </div>
                                 <select id=\"kw-all-${rname}\" multiple size=\"8\" style=\"width:100%;\"></select>
                             </div>
@@ -419,6 +420,7 @@
                 const filter = div.querySelector(`#kw-filter-${rname}`);
                 const addBtn = div.querySelector(`#kw-add-${rname}`);
                 const remBtn = div.querySelector(`#kw-rem-${rname}`);
+                const newBtn = div.querySelector(`#kw-new-${rname}`);
 
                 function currentRepoKws() {
                     return (fld.value || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -456,6 +458,144 @@
                 });
                 srcSel.addEventListener('change', paintSource);
                 filter.addEventListener('input', paintSource);
+
+                // Handle add new keyword button
+                newBtn.addEventListener('click', () => {
+                    // Create a custom dialog for adding keywords
+                    const dialog = document.createElement('div');
+                    dialog.style.cssText = `
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        background: #0a0a0a;
+                        border: 1px solid #00ff88;
+                        border-radius: 8px;
+                        padding: 20px;
+                        z-index: 10000;
+                        min-width: 300px;
+                        box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+                    `;
+
+                    dialog.innerHTML = `
+                        <h4 style="color: #00ff88; margin-bottom: 16px;">Add New Keyword</h4>
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; color: #999; font-size: 11px; margin-bottom: 4px;">Keyword</label>
+                            <input type="text" id="new-kw-input" style="width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 4px;" placeholder="Enter keyword...">
+                        </div>
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; color: #999; font-size: 11px; margin-bottom: 4px;">Category (optional)</label>
+                            <select id="new-kw-category" style="width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 4px;">
+                                <option value="">None (appears in All only)</option>
+                                <option value="discriminative">Discriminative</option>
+                                <option value="semantic">Semantic</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                            <button id="cancel-kw" style="background: #1a1a1a; color: #999; border: 1px solid #333; padding: 6px 16px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                            <button id="add-kw" style="background: #00ff88; color: #000; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Add</button>
+                        </div>
+                    `;
+
+                    // Add backdrop
+                    const backdrop = document.createElement('div');
+                    backdrop.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;';
+
+                    document.body.appendChild(backdrop);
+                    document.body.appendChild(dialog);
+
+                    const input = dialog.querySelector('#new-kw-input');
+                    const categorySelect = dialog.querySelector('#new-kw-category');
+                    const addButton = dialog.querySelector('#add-kw');
+                    const cancelButton = dialog.querySelector('#cancel-kw');
+
+                    // Focus input
+                    input.focus();
+
+                    const cleanup = () => {
+                        document.body.removeChild(dialog);
+                        document.body.removeChild(backdrop);
+                    };
+
+                    const addKeyword = async () => {
+                        const newKeyword = input.value.trim();
+                        const category = categorySelect.value;
+
+                        if (newKeyword) {
+                            // Add to global catalog if not exists
+                            if (!state.keywordsCatalog) state.keywordsCatalog = { keywords: [] };
+                            if (!state.keywordsCatalog.keywords) state.keywordsCatalog.keywords = [];
+
+                            // Add to the 'all' category if not already there
+                            if (!state.keywordsCatalog.keywords.includes(newKeyword)) {
+                                state.keywordsCatalog.keywords.push(newKeyword);
+                                state.keywordsCatalog.keywords.sort();
+
+                                // Also add to specific category if selected
+                                if (category) {
+                                    if (!state.keywordsCatalog[category]) state.keywordsCatalog[category] = [];
+                                    if (!state.keywordsCatalog[category].includes(newKeyword)) {
+                                        state.keywordsCatalog[category].push(newKeyword);
+                                        state.keywordsCatalog[category].sort();
+                                    }
+                                }
+
+                                // Update the datalist for autocomplete
+                                const list = document.getElementById('keywords-list');
+                                if (list) {
+                                    const opt = document.createElement('option');
+                                    opt.value = newKeyword;
+                                    list.appendChild(opt);
+                                }
+
+                                // Update keywords count display
+                                const kc = document.getElementById('keywords-count');
+                                if (kc) kc.textContent = String(state.keywordsCatalog.keywords.length);
+
+                                // Save to server for persistence
+                                try {
+                                    const response = await fetch(api('/api/keywords/add'), {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ keyword: newKeyword, category: category })
+                                    });
+                                    const result = await response.json();
+                                    if (result.ok) {
+                                        showStatus(`Added keyword: ${newKeyword}${category ? ` (${category})` : ''}`, 'success');
+                                    } else {
+                                        showStatus(`Failed to persist keyword: ${result.error}`, 'warning');
+                                    }
+                                } catch (e) {
+                                    console.warn('Failed to save keyword to server:', e);
+                                }
+                            }
+
+                            // Refresh the source list to show the new keyword
+                            paintSource();
+
+                            // Select the new keyword in the all list if visible
+                            setTimeout(() => {
+                                const options = Array.from(allSel.options);
+                                const newOption = options.find(o => o.value === newKeyword);
+                                if (newOption) {
+                                    newOption.selected = true;
+                                    // Auto-focus to make it visible
+                                    allSel.focus();
+                                }
+                            }, 100);
+
+                            cleanup();
+                        }
+                    };
+
+                    // Event handlers
+                    addButton.addEventListener('click', addKeyword);
+                    cancelButton.addEventListener('click', cleanup);
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') addKeyword();
+                        if (e.key === 'Escape') cleanup();
+                    });
+                });
 
                 // initial fill using existing values + catalog (if loaded later, loadKeywords will repaint)
                 setRepoKws((repo.keywords||[]));
@@ -1986,7 +2126,7 @@
         function sectionGroupFor(el){
             const tc = el.closest('.tab-content'); if (!tc) return 'dashboard';
             const id = tc.id.replace('tab-','');
-            const map = { generation:'models', embeddings:'models', reranking:'models', retrieval:'retrieval', confidence:'retrieval', cards:'retrieval', repos:'repos', indexing:'repos', infra:'infra', calculator:'tools', eval:'tools', misc:'tools', dashboard:'dashboard' };
+            const map = { generation:'models', embeddings:'models', reranking:'models', retrieval:'retrieval', confidence:'retrieval', repos:'repos', indexing:'repos', infra:'infra', calculator:'tools', eval:'tools', misc:'tools', dashboard:'dashboard' };
             return map[id] || id;
         }
         function go(item){
@@ -2098,6 +2238,149 @@
             await pollIndexStatus();
         } catch {}
     }
+
+    // ---------------- Cards Viewer ----------------
+    async function loadCards() {
+        try {
+            const resp = await fetch(api('/api/cards'));
+            const data = await resp.json();
+            const cards = Array.isArray(data.cards) ? data.cards : [];
+            const cardsContainer = document.getElementById('cards-viewer');
+            if (cardsContainer) {
+                cardsContainer.innerHTML = cards.length === 0 ?
+                    `<div style="text-align: center; padding: 24px; color: #666;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 12px;">
+                            <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                            <line x1="9" y1="4" x2="9" y2="20"></line>
+                        </svg>
+                        <div>No cards available</div>
+                        <div style="font-size: 11px; margin-top: 8px;">Click "Build Cards" to generate code cards</div>
+                    </div>` :
+                    cards.map(card => `
+                        <div class="card-item" data-filepath="${card.file_path}" data-line="${card.start_line || 1}"
+                             style="background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;"
+                             onmouseover="this.style.borderColor='#00ff88'; this.style.background='#1f1f1f';"
+                             onmouseout="this.style.borderColor='#2a2a2a'; this.style.background='#1a1a1a';">
+                            <h4 style="margin: 0 0 8px 0; color: #00ff88; font-size: 14px; font-weight: 600;">
+                                ${(card.symbols && card.symbols[0]) ? card.symbols[0] : (card.file_path || '').split('/').slice(-1)[0]}
+                            </h4>
+                            <p style="margin: 0 0 8px 0; color: #aaa; font-size: 12px; line-height: 1.4;">
+                                ${card.purpose || 'No description available'}
+                            </p>
+                            <div style="font-size: 10px; color: #666;">
+                                <span style="color: #5b9dff;">${card.file_path || 'Unknown file'}</span>
+                                ${card.start_line ? ` : ${card.start_line}` : ''}
+                            </div>
+                        </div>
+                    `).join('');
+
+                // Add click event listeners to cards
+                document.querySelectorAll('.card-item[data-filepath]').forEach(card => {
+                    card.addEventListener('click', function() {
+                        const filePath = this.dataset.filepath;
+                        const lineNumber = this.dataset.line;
+                        jumpToLine(filePath, lineNumber);
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error loading cards:', error);
+            const cardsContainer = document.getElementById('cards-viewer');
+            if (cardsContainer) {
+                cardsContainer.innerHTML = `<div style="text-align: center; padding: 24px; color: #ff5555;">
+                    Error loading cards: ${error.message}
+                </div>`;
+            }
+        }
+    }
+
+    function jumpToLine(filePath, lineNumber) {
+        // Enhanced navigation with visual feedback
+        console.log(`📍 Navigate to: ${filePath}:${lineNumber}`);
+
+        // Visual feedback
+        const event = new CustomEvent('cardNavigation', {
+            detail: { file: filePath, line: lineNumber }
+        });
+        window.dispatchEvent(event);
+
+        // You can add VSCode or other IDE integration here
+        // For now, show in a notification style
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed; bottom: 20px; right: 20px;
+            background: #1a1a1a; border: 1px solid #00ff88;
+            padding: 12px 16px; border-radius: 6px;
+            color: #fff; font-size: 13px; z-index: 10000;
+            animation: slideInRight 0.3s ease;
+        `;
+        notification.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: #00ff88;">📍</span>
+                <span>Navigate to: <strong style="color: #5b9dff;">${filePath}:${lineNumber}</strong></span>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Add refresh and build handlers
+    async function refreshCards() {
+        console.log('Refreshing cards...');
+        await loadCards();
+    }
+
+    async function buildCards() {
+        try {
+            const btn = document.getElementById('btn-cards-build');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Building Cards...';
+            }
+
+            const resp = await fetch(api('/api/cards/build'), { method: 'POST' });
+            const data = await resp.json();
+
+            if (data.success || data.status === 'success') {
+                console.log('✅ Cards built successfully');
+                await loadCards(); // Reload the cards
+            } else {
+                console.error('❌ Failed to build cards:', data.message || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error building cards:', error);
+        } finally {
+            const btn = document.getElementById('btn-cards-build');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<span style="margin-right: 4px;">⚡</span> Build Cards';
+            }
+        }
+    }
+
+    try {
+        window.jumpToLine = jumpToLine;
+        window.refreshCards = refreshCards;
+        window.buildCards = buildCards;
+    } catch {}
+
+    // Call loadCards on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCards();
+
+        // Add button event listeners
+        const btnRefresh = document.getElementById('btn-cards-refresh');
+        const btnBuild = document.getElementById('btn-cards-build');
+
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', refreshCards);
+        }
+
+        if (btnBuild) {
+            btnBuild.addEventListener('click', buildCards);
+        }
+    });
 
     // ---------------- Help Tooltips ----------------
     function addHelpTooltips() {
