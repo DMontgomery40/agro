@@ -5,6 +5,7 @@ from dotenv import load_dotenv, find_dotenv
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.redis import RedisSaver
 from retrieval.hybrid_search import search_routed_multi as hybrid_search_routed_multi
+from server.tracing import get_trace
 from server.env_model import generate_text
 from server.index_stats import get_index_stats
 
@@ -44,9 +45,24 @@ def retrieve_node(state: RAGState) -> Dict:
     q = state['question']
     repo = state.get('repo') if isinstance(state, dict) else None
     mq = int(os.getenv('MQ_REWRITES','2')) if should_use_multi_query(q) else 1
-    docs = hybrid_search_routed_multi(q, repo_override=repo, m=mq, final_k=20)
+    tr = get_trace()
+    docs = hybrid_search_routed_multi(q, repo_override=repo, m=mq, final_k=int(os.getenv('LANGGRAPH_FINAL_K','20') or 20), trace=tr)
     conf = float(sum(d.get('rerank_score',0.0) for d in docs)/max(1,len(docs)))
     repo_used = (repo or (docs[0].get('repo') if docs else os.getenv('REPO','project')))
+    # freshness snapshot (per-request)
+    try:
+        from server.index_stats import get_index_stats
+        stats = get_index_stats()
+        if tr is not None:
+            tr.add('freshness.status', {
+                'bm25_updated': stats.get('timestamp'),
+                'cards_updated': None,
+                'dense_updated_min': stats.get('timestamp'),
+                'dense_updated_max': stats.get('timestamp'),
+                'dense_backlog': 0,
+            })
+    except Exception:
+        pass
     return {'documents': docs, 'confidence': conf, 'iteration': state.get('iteration',0)+1, 'repo': repo_used}
 
 def route_after_retrieval(state:RAGState)->str:
@@ -62,6 +78,20 @@ def route_after_retrieval(state:RAGState)->str:
         CONF_ANY = float(os.getenv('CONF_ANY', '0.55'))
     except Exception:
         CONF_TOP1, CONF_AVG5, CONF_ANY = 0.62, 0.55, 0.55
+    # add trace of gating decision
+    try:
+        from server.tracing import get_trace
+        tr = get_trace()
+        if tr is not None:
+            tr.add('gating.outcome', {
+                'confidence_top1': top1,
+                'confidence_avg5': avg5,
+                'thresholds': {'top1': CONF_TOP1, 'avg5': CONF_AVG5, 'any': CONF_ANY},
+                'iterated': it > 0,
+                'notes': ''
+            })
+    except Exception:
+        pass
     if top1 >= CONF_TOP1 or avg5 >= CONF_AVG5 or conf >= CONF_ANY:
         return "generate"
     if it >= 3:
@@ -78,6 +108,29 @@ def rewrite_query(state: RAGState) -> Dict:
 
 def generate_node(state: RAGState) -> Dict:
     q = state['question']; ctx = state['documents'][:5]
+    # packer summary for trace
+    try:
+        tr = get_trace()
+        if tr is not None:
+            budget = int(os.getenv('PACK_BUDGET_TOKENS', '4096') or 4096)
+            selected = []
+            for d in ctx:
+                sel = {
+                    'path': d.get('file_path'),
+                    'lines': f"L{d.get('start_line')}-L{d.get('end_line')}",
+                    'est_tokens': int(len((d.get('code') or ''))/4),
+                    'reason': ['high_rerank']
+                }
+                selected.append(sel)
+            tr.add('packer.pack', {
+                'budget_tokens': budget,
+                'diversity_penalty': 0.0,
+                'hydration_mode': (os.getenv('HYDRATION_MODE','lazy') or 'lazy'),
+                'selected': selected,
+                'final_tokens': sum(s['est_tokens'] for s in selected)
+            })
+    except Exception:
+        pass
     ql = (q or '').lower()
     if any(kw in ql for kw in ("last index", "last indexed", "when was this indexed", "when indexed", "index time")):
         stats = get_index_stats()

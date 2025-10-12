@@ -19,7 +19,7 @@ import json as _json
 # Import canonical modules (no sys.path hacks)
 from server.langgraph_app import build_graph
 from retrieval.hybrid_search import search_routed_multi
-from config_loader import list_repos
+from common.config_loader import list_repos
 
 
 class MCPServer:
@@ -272,4 +272,3 @@ class MCPServer:
 if __name__ == "__main__":
     server = MCPServer()
     server.run()
-

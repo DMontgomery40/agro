@@ -29,7 +29,7 @@ except Exception:
 load_dotenv(Path(__file__).parent / ".env")
 
 from server.langgraph_app import build_graph
-from config_loader import list_repos
+from common.config_loader import list_repos
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel

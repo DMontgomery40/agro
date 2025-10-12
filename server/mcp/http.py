@@ -7,7 +7,7 @@ from fastmcp import FastMCP
 # Canonical imports
 from server.langgraph_app import build_graph
 from retrieval.hybrid_search import search_routed_multi
-from config_loader import list_repos
+from common.config_loader import list_repos
 
 
 mcp = FastMCP("rag-service")
@@ -72,4 +72,3 @@ if __name__ == "__main__":
     port = int(os.getenv("MCP_HTTP_PORT", "8013"))
     path = os.getenv("MCP_HTTP_PATH", "/mcp")
     mcp.run(transport="http", host=host, port=port, path=path)
-

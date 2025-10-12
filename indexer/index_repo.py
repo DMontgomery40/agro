@@ -4,8 +4,8 @@ import hashlib
 from typing import List, Dict
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
-from config_loader import get_repo_paths, out_dir
-from path_config import data_dir
+from common.config_loader import get_repo_paths, out_dir
+from common.paths import data_dir
 from retrieval.ast_chunker import lang_from_path, collect_files, chunk_code
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -17,11 +17,11 @@ from retrieval.embed_cache import EmbeddingCache
 import tiktoken
 from sentence_transformers import SentenceTransformer
 import fnmatch, pathlib
-import qdrant_recreate_fallback  # make recreate_collection 404-safe
+import common.qdrant_utils as qdrant_recreate_fallback  # make recreate_collection 404-safe
 from datetime import datetime
 
 # --- global safe filters (avoid indexing junk) ---
-from filtering import _prune_dirs_in_place, _should_index_file, PRUNE_DIRS
+from common.filtering import _prune_dirs_in_place, _should_index_file, PRUNE_DIRS
 
 # Patch os.walk to prune noisy dirs and skip junk file types
 _os_walk = os.walk
@@ -263,7 +263,7 @@ def main() -> None:
     ENRICH = (os.getenv('ENRICH_CODE_CHUNKS', 'false') or 'false').lower() == 'true'
     if ENRICH:
         try:
-            from metadata_enricher import enrich  # type: ignore
+            from common.metadata import enrich  # type: ignore
         except Exception:
             enrich = None
         if enrich is not None:
@@ -375,7 +375,8 @@ def main() -> None:
     point_ids: List[str] = []
     try:
         q = QdrantClient(url=QDRANT_URL)
-        q.recreate_collection(
+        qdrant_recreate_fallback.recreate_collection(
+            q,
             collection_name=COLLECTION,
             vectors_config={'dense': models.VectorParams(size=len(embs[0]), distance=models.Distance.COSINE)}
         )
@@ -425,4 +426,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-

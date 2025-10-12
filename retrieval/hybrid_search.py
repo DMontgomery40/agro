@@ -3,7 +3,7 @@ import json
 import collections
 from typing import List, Dict
 from pathlib import Path
-from config_loader import choose_repo_from_query, get_default_repo, out_dir
+from common.config_loader import choose_repo_from_query, get_default_repo, out_dir
 from dotenv import load_dotenv, find_dotenv
 
 # Load any existing env ASAP so downstream imports (e.g., rerank backend) see them
@@ -239,7 +239,7 @@ def _load_cards_map(repo: str) -> Dict:
         return {'by_idx': {}, 'by_chunk_id': {}}
 
 
-def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int = 10) -> List[Dict]:
+def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, final_k: int = 10, trace: object | None = None) -> List[Dict]:
     chunks = _load_chunks(repo)
     if not chunks:
         return []
@@ -309,7 +309,34 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     HYDRATION_MODE = (os.getenv('HYDRATION_MODE', 'lazy') or 'lazy').lower()
     if HYDRATION_MODE != 'none':
         _hydrate_docs_inplace(repo, docs)
-    docs = ce_rerank(query, docs, top_k=final_k)
+    # tracing: pre-rerank candidate snapshot
+    try:
+        if trace is not None and hasattr(trace, 'add'):
+            cands = []
+            seen_pre = set()
+            # Use union of bm25+dense by earliest rank observed
+            rank_map_dense = {pid: i+1 for i, pid in enumerate(dense_ids[:max(final_k, 50)])}
+            rank_map_sparse = {pid: i+1 for i, pid in enumerate(sparse_ids[:max(final_k, 50)])}
+            for pid in list(rank_map_dense.keys()) + list(rank_map_sparse.keys()):
+                if pid in seen_pre: continue
+                seen_pre.add(pid)
+                meta = by_id.get(pid, {})
+                cands.append({
+                    'path': meta.get('file_path'),
+                    'start': meta.get('start_line'),
+                    'end': meta.get('end_line'),
+                    'bm25_rank': rank_map_sparse.get(pid),
+                    'dense_rank': rank_map_dense.get(pid),
+                })
+            trace.add('retriever.retrieve', {
+                'k_sparse': int(topk_sparse),
+                'k_dense': int(topk_dense),
+                'candidates': cands[:max(final_k, 50)],
+            })
+    except Exception:
+        pass
+
+    docs = ce_rerank(query, docs, top_k=final_k, trace=trace)
 
     intent = _classify_query(query)
     for d in docs:
@@ -399,9 +426,9 @@ def route_repo(query: str, default_repo: str | None = None) -> str:
         return (default_repo or os.getenv('REPO', 'project') or 'project').strip()
 
 
-def search_routed(query: str, repo_override: str | None = None, final_k: int = 10):
+def search_routed(query: str, repo_override: str | None = None, final_k: int = 10, trace: object | None = None):
     repo = (repo_override or route_repo(query, default_repo=os.getenv('REPO', 'project')) or os.getenv('REPO', 'project')).strip()
-    return search(query, repo=repo, final_k=final_k)
+    return search(query, repo=repo, final_k=final_k, trace=trace)
 
 
 def expand_queries(query: str, m: int = 4) -> list[str]:
@@ -421,12 +448,28 @@ def expand_queries(query: str, m: int = 4) -> list[str]:
         return [query]
 
 
-def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4, final_k: int = 10):
+def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4, final_k: int = 10, trace: object | None = None):
     repo = (repo_override or route_repo(query) or os.getenv('REPO', 'project')).strip()
     variants = expand_queries(query, m=m)
+    try:
+        if trace is not None and hasattr(trace, 'add'):
+            trace.add('router.decide', {
+                'policy': 'code',  # heuristic profile
+                'intent': _classify_query(query),
+                'query_original': query,
+                'query_rewrites': variants[1:] if len(variants) > 1 else [],
+                'knobs': {
+                    'topk_sparse': int(os.getenv('TOPK_SPARSE', '75') or 75),
+                    'topk_dense': int(os.getenv('TOPK_DENSE', '75') or 75),
+                    'final_k': int(final_k),
+                    'hydration_mode': (os.getenv('HYDRATION_MODE', 'lazy') or 'lazy'),
+                },
+            })
+    except Exception:
+        pass
     all_docs = []
     for qv in variants:
-        docs = search(qv, repo=repo, final_k=final_k)
+        docs = search(qv, repo=repo, final_k=final_k, trace=trace)
         all_docs.extend(docs)
     seen = set()
     uniq = []

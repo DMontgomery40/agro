@@ -57,6 +57,7 @@
             tools: ['tools','eval','misc'],
             infra: ['infra'],
             dashboard: ['dashboard'],
+            chat: ['chat'],
             storage: ['storage']
         };
         const show = groups[tabName] || [tabName];
@@ -79,6 +80,8 @@
                 switchTab(tab);
             });
         });
+        const traceBtn = document.getElementById('btn-trace-latest');
+        if (traceBtn){ traceBtn.addEventListener('click', loadLatestTrace); }
     }
 
     // ---------------- Tooltips (modular) ----------------
@@ -143,6 +146,76 @@
         } catch (e) {
             $('#health-status').textContent = 'Error';
         }
+    }
+
+    // ---------------- Routing Trace Panel ----------------
+    async function loadLatestTrace(targetId='trace-output'){
+        try{
+            const repoSel = document.querySelector('select[name="REPO"]');
+            const repo = repoSel && repoSel.value ? `?repo=${encodeURIComponent(repoSel.value)}` : '';
+            const r = await fetch(api(`/api/traces/latest${repo}`));
+            const d = await r.json();
+            const el = document.getElementById(targetId);
+            if (!el) return;
+            if (!d || !d.trace){ el.textContent = 'No traces yet. Enable LangChain Tracing V2 in Misc and run a query via /answer.'; return; }
+            const t = d.trace;
+            const decide = (t.events||[]).find(ev=>ev.kind==='router.decide');
+            const rer = (t.events||[]).find(ev=>ev.kind==='reranker.rank');
+            const gate = (t.events||[]).find(ev=>ev.kind==='gating.outcome');
+            const header = `Policy: ${(decide?.data?.policy)||'—'}\n`+
+                           `Intent: ${(decide?.data?.intent)||'—'}\n`+
+                           `Final K: ${(rer?.data?.output_topK)||'—'}`;
+            const lines = [header, '', 'Events:'];
+            for (const ev of (t.events||[])){
+                const when = ev.ts || '';
+                lines.push(`- ${when} • ${ev.kind}`);
+            }
+            el.textContent = lines.join('\n');
+        }catch(e){ const el=$('#trace-output'); if(el) el.textContent = 'Failed to load trace: '+e.message; }
+    }
+
+    // ---------------- Chat ----------------
+    function appendChatMessage(role, text){
+        const box = document.getElementById('chat-messages'); if (!box) return;
+        const wrap = document.createElement('div');
+        wrap.style.marginBottom = '12px';
+        const who = document.createElement('div');
+        who.style.fontSize = '11px';
+        who.style.color = role === 'user' ? '#5b9dff' : '#00ff88';
+        who.style.textTransform = 'uppercase';
+        who.style.letterSpacing = '0.5px';
+        who.textContent = role === 'user' ? 'You' : 'Assistant';
+        const msg = document.createElement('div');
+        msg.style.background = '#0f0f0f';
+        msg.style.border = '1px solid #2a2a2a';
+        msg.style.borderRadius = '6px';
+        msg.style.padding = '10px';
+        msg.style.whiteSpace = 'pre-wrap';
+        msg.textContent = text;
+        wrap.appendChild(who); wrap.appendChild(msg);
+        box.appendChild(wrap);
+        // auto-scroll if near bottom
+        try { box.scrollTop = box.scrollHeight; } catch {}
+    }
+
+    async function sendChat(){
+        const ta = document.getElementById('chat-input'); if (!ta) return;
+        const q = (ta.value || '').trim(); if (!q) return;
+        appendChatMessage('user', q);
+        ta.value = '';
+        const repoSel = document.getElementById('chat-repo-select');
+        const repo = repoSel && repoSel.value ? repoSel.value : undefined;
+        try{
+            const qs = new URLSearchParams({ q });
+            if (repo) qs.set('repo', repo);
+            const r = await fetch(api(`/answer?${qs.toString()}`));
+            const d = await r.json();
+            const text = (d && d.answer) ? d.answer : '—';
+            appendChatMessage('assistant', text);
+            // load trace if the dropdown is open
+            const det = document.getElementById('chat-trace');
+            if (det && det.open){ await loadLatestTrace('chat-trace-output'); }
+        }catch(e){ appendChatMessage('assistant', `Error: ${e.message}`); }
     }
 
     // ---------------- Config ----------------
@@ -1485,6 +1558,20 @@
         if (oneClick) oneClick.addEventListener('click', onWizardOneClick);
         const loadCur = document.getElementById('btn-wizard-load-cur');
         if (loadCur) loadCur.addEventListener('click', loadWizardFromEnv);
+
+        // Retrieval tab: trace button
+        const rt = document.getElementById('btn-trace-latest');
+        if (rt) rt.addEventListener('click', ()=>loadLatestTrace('trace-output'));
+
+        // Chat bindings
+        const chatSend = document.getElementById('chat-send');
+        if (chatSend) chatSend.addEventListener('click', sendChat);
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) chatInput.addEventListener('keydown', (e)=>{ if ((e.ctrlKey||e.metaKey) && e.key==='Enter') { e.preventDefault(); sendChat(); }});
+        const chatClear = document.getElementById('chat-clear');
+        if (chatClear) chatClear.addEventListener('click', ()=>{ const box=document.getElementById('chat-messages'); if (box) box.innerHTML='';});
+        const chatTrace = document.getElementById('chat-trace');
+        if (chatTrace) chatTrace.addEventListener('toggle', ()=>{ if (chatTrace.open) loadLatestTrace('chat-trace-output'); });
 
         // Dopamine-y feedback on any button click
         document.querySelectorAll('button').forEach(btn => {

@@ -2,7 +2,7 @@ import os, json
 from typing import Dict
 from dotenv import load_dotenv
 from server.env_model import generate_text
-from config_loader import out_dir
+from common.config_loader import out_dir
 
 load_dotenv()
 REPO = os.getenv('REPO','project').strip()

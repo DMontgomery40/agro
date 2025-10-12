@@ -3,6 +3,22 @@
 
 let goldenQuestions = [];
 
+// Recommended questions (baseline for this repo)
+const RECOMMENDED_GOLDEN = [
+  { q: 'Where is hybrid retrieval implemented?', repo: 'agro', expect_paths: ['retrieval/hybrid_search.py'] },
+  { q: 'Where is keyword generation handled server-side?', repo: 'agro', expect_paths: ['server/app.py','keywords/generate'] },
+  { q: 'Where is the metadata enrichment logic for code/keywords?', repo: 'agro', expect_paths: ['metadata_enricher.py'] },
+  { q: 'Where is the indexing pipeline (BM25 and dense) implemented?', repo: 'agro', expect_paths: ['indexer/index_repo.py'] },
+  { q: 'Where is comprehensive index status computed?', repo: 'agro', expect_paths: ['server/app.py','server/index_stats.py','index/status'] },
+  { q: 'Where are semantic cards built or listed?', repo: 'agro', expect_paths: ['server/app.py','api/cards','indexer/build_cards.py'] },
+  { q: 'Where are golden questions API routes defined?', repo: 'agro', expect_paths: ['server/app.py','api/golden'] },
+  { q: 'Where is the endpoint to test a single golden question?', repo: 'agro', expect_paths: ['server/app.py','api/golden/test'] },
+  { q: 'Where are GUI assets mounted and served?', repo: 'agro', expect_paths: ['server/app.py','/gui','gui/index.html'] },
+  { q: 'Where is repository configuration (repos.json) loaded?', repo: 'agro', expect_paths: ['config_loader.py'] },
+  { q: 'Where are MCP stdio tools implemented (rag_answer, rag_search)?', repo: 'agro', expect_paths: ['server/mcp/server.py'] },
+  { q: 'Where can I list or fetch latest LangGraph traces?', repo: 'agro', expect_paths: ['server/app.py','api/traces'] }
+];
+
 // Load all golden questions
 async function loadGoldenQuestions() {
     try {
@@ -308,10 +324,10 @@ if (typeof window !== 'undefined') {
         const btnExport = document.getElementById('btn-golden-export');
         const btnTestNew = document.getElementById('btn-golden-test-new');
 
-        if (btnAdd) btnAdd.addEventListener('click', addGoldenQuestion);
-        if (btnRefresh) btnRefresh.addEventListener('click', loadGoldenQuestions);
-        if (btnExport) btnExport.addEventListener('click', exportGoldenQuestions);
-        if (btnTestNew) {
+    if (btnAdd) btnAdd.addEventListener('click', addGoldenQuestion);
+    if (btnRefresh) btnRefresh.addEventListener('click', loadGoldenQuestions);
+    if (btnExport) btnExport.addEventListener('click', exportGoldenQuestions);
+    if (btnTestNew) {
             btnTestNew.addEventListener('click', async () => {
                 const q = document.getElementById('golden-new-q').value.trim();
                 const repo = document.getElementById('golden-new-repo').value;
@@ -342,6 +358,11 @@ if (typeof window !== 'undefined') {
             });
         }
 
+        const btnLoad = document.getElementById('btn-golden-load-recommended');
+        if (btnLoad) btnLoad.addEventListener('click', bulkAddRecommended);
+        const btnRunAll = document.getElementById('btn-golden-run-tests');
+        if (btnRunAll) btnRunAll.addEventListener('click', runAllGoldenTests);
+
         // Auto-load on Tools tab activation
         const toolsTab = document.querySelector('[data-tab="tools"]');
         if (toolsTab) {
@@ -355,4 +376,73 @@ if (typeof window !== 'undefined') {
 // Export for use in edit inline function
 if (typeof window !== 'undefined') {
     window.saveEditQuestion = saveEditQuestion;
+    window.bulkAddRecommended = bulkAddRecommended;
+    window.runAllGoldenTests = runAllGoldenTests;
 }
+
+// ---- Bulk helpers ----
+async function bulkAddRecommended() {
+    try {
+        let added = 0;
+        for (const q of RECOMMENDED_GOLDEN) {
+            const r = await fetch('/api/golden', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(q)
+            });
+            const d = await r.json();
+            if (d && d.ok) added += 1;
+        }
+        await loadGoldenQuestions();
+        showToast(`Loaded ${added} recommended questions`, added ? 'success' : 'error');
+    } catch (e) {
+        console.error('bulkAddRecommended failed', e);
+        showToast('Failed to load recommended questions: ' + e.message, 'error');
+    }
+}
+
+async function runAllGoldenTests() {
+    try {
+        const btn = document.getElementById('btn-golden-run-tests');
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.7'; btn.textContent = 'Running…'; }
+        if (typeof showStatus === 'function') showStatus('Running all golden questions…', 'loading');
+        if (!goldenQuestions.length) await loadGoldenQuestions();
+        let top1 = 0, topk = 0, total = goldenQuestions.length;
+        for (let i = 0; i < goldenQuestions.length; i++) {
+            const q = goldenQuestions[i];
+            const resp = await fetch('/api/golden/test', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ q: q.q, repo: q.repo, expect_paths: q.expect_paths || [], final_k: 5, use_multi: true })
+            });
+            const data = await resp.json();
+            if (data.top1_hit) top1 += 1; else if (data.topk_hit) topk += 1;
+            // Paint per-question result under item
+            const slot = document.getElementById(`test-results-${i}`);
+            if (slot) {
+                const color = data.top1_hit ? '#00ff88' : data.topk_hit ? '#ff9b5e' : '#ff6b6b';
+                slot.style.display = 'block';
+                slot.innerHTML = `
+                    <div style="font-size:12px;color:${color};">
+                        ${data.top1_hit ? '✓ Top‑1 Hit' : data.topk_hit ? '✓ Top‑K Hit' : '✗ Miss'}
+                        <span style="color:#666"> — ${escapeHtml(q.q)}</span>
+                    </div>
+                `;
+            }
+        }
+        const msg = `Golden tests: Top‑1 ${top1}/${total}, Top‑K ${topk}/${total}`;
+        showToast(msg, 'success');
+        if (typeof showStatus === 'function') showStatus(msg, 'success');
+    } catch (e) {
+        console.error('runAllGoldenTests failed', e);
+        showToast('Run tests failed: ' + e.message, 'error');
+    } finally {
+        const btn = document.getElementById('btn-golden-run-tests');
+        if (btn) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = 'Run All Tests'; }
+    }
+}
+
+// Defensive binding via event delegation (in case direct bind missed)
+document.addEventListener('click', (e) => {
+    const run = e.target && (e.target.id === 'btn-golden-run-tests' || (e.target.closest && e.target.closest('#btn-golden-run-tests')));
+    const load = e.target && (e.target.id === 'btn-golden-load-recommended' || (e.target.closest && e.target.closest('#btn-golden-load-recommended')));
+    if (run) { e.preventDefault(); runAllGoldenTests(); }
+    if (load) { e.preventDefault(); bulkAddRecommended(); }
+}, true);

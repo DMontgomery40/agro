@@ -6,10 +6,11 @@ from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from server.langgraph_app import build_graph
+from server.tracing import start_trace, end_trace, Trace, latest_trace_path
 from retrieval.hybrid_search import search_routed_multi
-from config_loader import load_repos
+from common.config_loader import load_repos, out_dir
 from server.index_stats import get_index_stats as _get_index_stats
-from path_config import repo_root, gui_dir, docs_dir, files_root
+from common.paths import repo_root, gui_dir, docs_dir, files_root
 import os, json, sys
 from typing import Any, Dict
 from collections import Counter, defaultdict
@@ -67,9 +68,131 @@ def answer(
     Otherwise, a lightweight router selects the repo from the query content.
     """
     g = get_graph()
+    # start local trace if enabled
+    tr: Optional[Trace] = None
+    try:
+        if Trace.enabled():
+            tr = start_trace(repo=(repo or os.getenv('REPO','agro')), question=q)
+    except Exception:
+        tr = None
     state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0, "repo": (repo.strip() if repo else None)}
     res = g.invoke(state, CFG)
+    # finalize trace
+    try:
+        if tr is not None:
+            end_trace()
+    except Exception:
+        pass
     return {"answer": res["generation"]}
+
+class ChatRequest(BaseModel):
+    question: str
+    repo: Optional[str] = None
+    model: Optional[str] = None
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+    multi_query: Optional[int] = None
+    final_k: Optional[int] = None
+    confidence: Optional[float] = None
+    system_prompt: Optional[str] = None
+
+@app.post("/api/chat")
+def chat(req: ChatRequest) -> Dict[str, Any]:
+    """Chat endpoint with full settings control.
+
+    Accepts all chat settings and applies them to the RAG pipeline:
+    - model: Override GEN_MODEL
+    - temperature: Control response randomness (0.0-2.0)
+    - max_tokens: Maximum response length
+    - multi_query: Number of query rewrites (1-6)
+    - final_k: Number of code chunks to retrieve (5-50)
+    - confidence: Minimum confidence threshold (0.3-0.9)
+    - system_prompt: Custom system prompt override
+    """
+    # Save current env state
+    old_env = {
+        'GEN_MODEL': os.environ.get('GEN_MODEL'),
+        'GEN_TEMPERATURE': os.environ.get('GEN_TEMPERATURE'),
+        'GEN_MAX_TOKENS': os.environ.get('GEN_MAX_TOKENS'),
+        'MQ_REWRITES': os.environ.get('MQ_REWRITES'),
+        'LANGGRAPH_FINAL_K': os.environ.get('LANGGRAPH_FINAL_K'),
+        'CONF_TOP1': os.environ.get('CONF_TOP1'),
+        'CONF_AVG5': os.environ.get('CONF_AVG5'),
+        'CONF_ANY': os.environ.get('CONF_ANY'),
+        'SYSTEM_PROMPT': os.environ.get('SYSTEM_PROMPT'),
+    }
+
+    try:
+        # Apply chat settings to env
+        if req.model:
+            os.environ['GEN_MODEL'] = req.model
+        if req.temperature is not None:
+            os.environ['GEN_TEMPERATURE'] = str(req.temperature)
+        if req.max_tokens is not None:
+            os.environ['GEN_MAX_TOKENS'] = str(req.max_tokens)
+        if req.multi_query is not None:
+            os.environ['MQ_REWRITES'] = str(req.multi_query)
+        if req.final_k is not None:
+            os.environ['LANGGRAPH_FINAL_K'] = str(req.final_k)
+        if req.confidence is not None:
+            # Scale confidence to thresholds
+            conf = req.confidence
+            os.environ['CONF_TOP1'] = str(conf + 0.05)  # Slightly higher for top-1
+            os.environ['CONF_AVG5'] = str(conf)
+            os.environ['CONF_ANY'] = str(conf - 0.05)  # Slightly lower for any
+        if req.system_prompt:
+            os.environ['SYSTEM_PROMPT'] = req.system_prompt
+
+        # Run the RAG pipeline with overridden settings
+        g = get_graph()
+
+        # Start trace if enabled
+        tr: Optional[Trace] = None
+        try:
+            if Trace.enabled():
+                tr = start_trace(repo=(req.repo or os.getenv('REPO','agro')), question=req.question)
+        except Exception:
+            tr = None
+
+        state = {
+            "question": req.question,
+            "documents": [],
+            "generation": "",
+            "iteration": 0,
+            "confidence": 0.0,
+            "repo": (req.repo.strip() if req.repo else None)
+        }
+
+        res = g.invoke(state, CFG)
+
+        # Finalize trace
+        try:
+            if tr is not None:
+                end_trace()
+        except Exception:
+            pass
+
+        return {
+            "answer": res["generation"],
+            "confidence": res.get("confidence", 0.0),
+            "settings_applied": {
+                "model": req.model or old_env.get('GEN_MODEL'),
+                "temperature": req.temperature,
+                "max_tokens": req.max_tokens,
+                "multi_query": req.multi_query,
+                "final_k": req.final_k,
+                "confidence_threshold": req.confidence
+            }
+        }
+
+    finally:
+        # Restore original env
+        for k, v in old_env.items():
+            if v is None:
+                if k in os.environ:
+                    del os.environ[k]
+            else:
+                os.environ[k] = v
 
 @app.get("/search")
 def search(
@@ -94,6 +217,35 @@ def search(
         for d in docs
     ]
     return {"results": results, "repo": repo, "count": len(results)}
+
+# ---------------- Trace API ----------------
+@app.get("/api/traces")
+def list_traces(repo: Optional[str] = Query(None)) -> Dict[str, Any]:
+    """List available trace files for a repo (defaults to current REPO)."""
+    r = (repo or os.getenv('REPO','agro')).strip()
+    base = Path(out_dir(r)) / 'traces'
+    files = []
+    if base.exists():
+        for p in sorted([x for x in base.glob('*.json') if x.is_file()], key=lambda x: x.stat().st_mtime, reverse=True)[:50]:
+            files.append({
+                'path': str(p),
+                'name': p.name,
+                'mtime': __import__('datetime').datetime.utcfromtimestamp(p.stat().st_mtime).isoformat() + 'Z'
+            })
+    return {'repo': r, 'files': files}
+
+
+@app.get("/api/traces/latest")
+def latest_trace(repo: Optional[str] = Query(None)) -> Dict[str, Any]:
+    r = (repo or os.getenv('REPO','agro')).strip()
+    p = latest_trace_path(r)
+    if not p:
+        return {'repo': r, 'trace': None}
+    try:
+        data = json.loads(Path(p).read_text())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return {'repo': r, 'trace': data, 'path': p}
 
 # ---------------- Minimal GUI API stubs ----------------
 def _read_json(path: Path, default: Any) -> Any:
@@ -303,7 +455,7 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
     """
     import subprocess
     import time
-    from config_loader import get_repo_paths
+    from common.config_loader import get_repo_paths
 
     repo = body.get("repo")
     mode = (body.get("mode") or os.getenv("KEYWORDS_GEN_MODE", "heuristic")).strip().lower()
@@ -480,7 +632,7 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
     def run_llm(backend_override: str | None = None, model_override: str | None = None) -> None:
         nonlocal results
         try:
-            from metadata_enricher import enrich  # uses MLX or Ollama based on env
+            from common.metadata import enrich  # uses MLX or Ollama based on env
         except Exception as e:  # pragma: no cover
             results["ok"] = False
             results["error"] = f"LLM backend unavailable: {e}"
