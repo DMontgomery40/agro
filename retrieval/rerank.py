@@ -1,8 +1,8 @@
 
 import math
 import os
-from typing import List, Dict
-from rerankers import Reranker
+from typing import List, Dict, Any
+from rerankers import Reranker  # type: ignore[import-untyped]
 from typing import Optional
 
 try:
@@ -29,7 +29,7 @@ def _normalize(score: float, model_name: str) -> float:
         return _sigmoid(score)
     return float(score)
 
-def _maybe_init_hf_pipeline(model_name: str) -> Optional[object]:
+def _maybe_init_hf_pipeline(model_name: str) -> Optional[Any]:
     global _HF_PIPE
     if _HF_PIPE is not None:
         return _HF_PIPE
@@ -59,7 +59,7 @@ def get_reranker() -> Reranker:
         _RERANKER = Reranker(model_name, model_type='cross-encoder', trust_remote_code=True)
     return _RERANKER
 
-def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: object | None = None) -> List[Dict]:
+def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: Any = None) -> List[Dict]:
     if not results:
         return []
     if RERANK_BACKEND in ('none', 'off', 'disabled'):
@@ -123,7 +123,7 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: obje
             code_snip = (r.get('code') or r.get('text') or '')[:700]
             pairs.append({'text': query, 'text_pair': code_snip})
         try:
-            out = pipe(pairs, truncation=True)
+            out = pipe(pairs, truncation=True)  # type: ignore[misc]
             raw = []
             for i, o in enumerate(out):
                 score = float(o.get('score', 0.0))
@@ -167,7 +167,7 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: obje
     rr = get_reranker()
     if rr is None and _maybe_init_hf_pipeline(model_name) is not None:
         return results[:top_k]
-    ranked = rr.rank(query=query, docs=docs, doc_ids=list(range(len(docs))))
+    ranked = rr.rank(query=query, docs=docs, doc_ids=list(range(len(docs))))  # type: ignore[attr-defined]
     raw_scores = []
     for res in ranked.results:
         idx = res.document.doc_id

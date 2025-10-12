@@ -85,9 +85,7 @@ def greedy_fallback(src:str, fpath:str, lang:str, target:int)->List[Dict]:
             "start_line": 1, "end_line": s.count("\n")+1, "imports": extract_imports(src, lang), "code": s
         } for i,s in enumerate(out)]
     else:
-        rejoined: list[str] = []
-        buf: list[str] = []
-        acc = 0
+        rejoined, buf, acc = [], [], 0
         for p in parts:
             if acc + nonws_len(p) > target and buf:
                 s = "".join(buf)
