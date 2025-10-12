@@ -37,8 +37,11 @@ rag-service/
 │
 ├── 📄 START_HERE.md ................... This file (navigation hub)
 │
-├── 📘 README.md ....................... MAIN GUIDE (1105 lines)
+├── 📘 README.md ....................... MAIN GUIDE (1105+ lines)
 │   └─ Everything: setup, .ragignore, MCP, CLI, eval, troubleshooting
+│
+├── 🧭 MIGRATION.md .................... Package layout + shims mapping
+│   └─ Old→New paths; GUI‑first config; server/mcp move
 │
 ├── 📋 AGENTS.md ....................... Agent behavior rules
 ├── 🧪 golden.json ..................... Test cases (replace with yours!)

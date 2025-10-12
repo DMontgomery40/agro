@@ -1069,6 +1069,163 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Golden Questions Manager -->
+                <div class="settings-section" style="border-left: 3px solid #5b9dff;">
+                    <h3>
+                        <span class="accent-blue">●</span> Golden Questions Manager
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Golden Questions</span>
+                                Questions with known-good answers used to measure RAG quality. Each question should have expected file paths that contain the answer.
+                                <div class="tt-badges">
+                                    <span class="tt-badge info">Quality Assurance</span>
+                                    <span class="tt-badge">No Re-index</span>
+                                </div>
+                            </div>
+                        </span>
+                    </h3>
+                    <p class="small">Manage test questions for evaluating retrieval quality. Add, edit, test individual questions, or run full evaluation suite.</p>
+
+                    <!-- Add New Question Form -->
+                    <div id="golden-add-form" style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; margin-bottom: 16px;">
+                        <h4 style="font-size: 13px; color: #00ff88; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Add New Question</h4>
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label>Question Text</label>
+                            <textarea id="golden-new-q" placeholder="e.g., Where is OAuth token validated?" style="min-height: 60px;"></textarea>
+                        </div>
+                        <div class="input-row" style="margin-bottom: 12px;">
+                            <div class="input-group">
+                                <label>Repository</label>
+                                <select id="golden-new-repo">
+                                    <option value="agro">agro</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Expected Paths (comma-separated)</label>
+                                <input type="text" id="golden-new-paths" placeholder="auth, oauth, token">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="small-button" id="btn-golden-add" style="background: #00ff88; color: #000; border: none; width: auto; flex: 1;">Add Question</button>
+                            <button class="small-button" id="btn-golden-test-new" style="width: auto;">Test First</button>
+                        </div>
+                    </div>
+
+                    <!-- Questions List -->
+                    <div id="golden-questions-list" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+                        <div id="golden-questions-content" style="font-size: 13px; color: #aaa;">
+                            Loading questions...
+                        </div>
+                    </div>
+
+                    <div class="action-buttons" style="margin-top: 16px;">
+                        <button id="btn-golden-refresh" style="flex: 1;">Refresh List</button>
+                        <button id="btn-golden-export" style="flex: 1; background: #1a1a1a; color: #00ff88;">Export JSON</button>
+                    </div>
+                </div>
+
+                <!-- Evaluation Runner -->
+                <div class="settings-section" style="border-left: 3px solid #b794f6;">
+                    <h3>
+                        <span class="accent-purple">●</span> Evaluation Runner
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Evaluation System</span>
+                                Runs all golden questions and measures retrieval accuracy. Tracks regressions vs. saved baseline.
+                                <div class="tt-badges">
+                                    <span class="tt-badge info">Accuracy Metrics</span>
+                                    <span class="tt-badge warn">Can Be Slow</span>
+                                </div>
+                            </div>
+                        </span>
+                    </h3>
+                    <p class="small">Run full evaluation suite to measure RAG quality. Compare against baseline to detect regressions.</p>
+
+                    <!-- Settings -->
+                    <div class="input-row" style="margin-bottom: 16px;">
+                        <div class="input-group">
+                            <label>
+                                Use Multi-Query
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Multi-Query Expansion</span>
+                                        Generate multiple query variations for better recall. Increases API costs but improves accuracy. Recommended: enabled.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Better Recall</span>
+                                            <span class="tt-badge warn">Higher Cost</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <select id="eval-use-multi">
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                Final K Results
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Results Count</span>
+                                        Number of results to return per question. Higher = more context but more noise. Recommended: 5-10.
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" id="eval-final-k" value="5" min="1" max="20">
+                        </div>
+                    </div>
+
+                    <!-- Run Button -->
+                    <button class="action-buttons" id="btn-eval-run" style="width: 100%; background: #b794f6; color: #000; font-size: 15px; padding: 14px;">
+                        Run Full Evaluation
+                    </button>
+
+                    <!-- Progress -->
+                    <div id="eval-progress" style="margin-top: 16px; display: none;">
+                        <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px;">
+                            <div id="eval-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #b794f6 0%, #ff6b9d 100%); transition: width 0.3s ease;"></div>
+                        </div>
+                        <div id="eval-status" class="mono" style="font-size: 12px; color: #aaa; text-align: center;">—</div>
+                    </div>
+
+                    <!-- Results Display -->
+                    <div id="eval-results" style="margin-top: 16px; display: none;">
+                        <!-- Overall Metrics -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-1 Accuracy</div>
+                                <div id="eval-top1-acc" class="mono" style="font-size: 24px; color: #00ff88; font-weight: 700;">—</div>
+                            </div>
+                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-K Accuracy</div>
+                                <div id="eval-topk-acc" class="mono" style="font-size: 24px; color: #00ff88; font-weight: 700;">—</div>
+                            </div>
+                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Duration</div>
+                                <div id="eval-duration" class="mono" style="font-size: 24px; color: #b794f6; font-weight: 700;">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Per-Question Results -->
+                        <div id="eval-details" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 300px; overflow-y: auto;"></div>
+
+                        <!-- Baseline Actions -->
+                        <div class="action-buttons" style="margin-top: 16px;">
+                            <button id="btn-eval-save-baseline" style="flex: 1;">Save as Baseline</button>
+                            <button id="btn-eval-compare" style="flex: 1; background: #1a1a1a; color: #00ff88;">Compare to Baseline</button>
+                            <button id="btn-eval-export" style="flex: 1; background: #1a1a1a; color: #00ff88;">Export Results</button>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Results -->
+                    <div id="eval-comparison" style="margin-top: 16px; display: none;"></div>
+                </div>
             </div>
 
             <!-- Tab: Generation -->
@@ -1246,54 +1403,309 @@
                     <p class="small">Hybrid search fuses sparse (BM25) + dense (vectors). These knobs tune candidate counts and hydration behavior.</p>
                     <div class="input-row">
                         <div class="input-group">
-                            <label>Multi-Query Rewrites</label>
+                            <label>
+                                Multi-Query Rewrites
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Multi-Query Expansion</span>
+                                        Number of query variations to generate for better recall. Each variant searches independently, results are merged and reranked. Higher = better recall but more API calls. Default: 2. Range: 1-6.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Better Recall</span>
+                                            <span class="tt-badge warn">Higher Cost</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <input type="number" name="MQ_REWRITES" value="2" min="1">
                         </div>
                         <div class="input-group">
-                            <label>Final K</label>
+                            <label>
+                                Final K
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Final Results Count</span>
+                                        Number of top results to return after fusion and reranking. This is what you get back from search. Higher = more context but more noise. Default: 10. Range: 5-30.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Core Setting</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <input type="number" name="FINAL_K" value="10" min="1">
                         </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
-                            <label>Top-K Dense (Qdrant)</label>
+                            <label>
+                                Top-K Dense (Qdrant)
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Dense Vector Candidates</span>
+                                        Number of candidates to retrieve from Qdrant vector search before fusion. Higher = better recall for semantic matches but slower. Should be >= Final K. Default: 75. Range: 20-200.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Semantic Search</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <input type="number" name="TOPK_DENSE" value="75" min="1">
                         </div>
                         <div class="input-group">
-                            <label>Top-K Sparse (BM25)</label>
+                            <label>
+                                Top-K Sparse (BM25)
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Sparse BM25 Candidates</span>
+                                        Number of candidates to retrieve from BM25 keyword search before fusion. Higher = better recall for exact matches but slower. Should be >= Final K. Default: 75. Range: 20-200.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Keyword Search</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <input type="number" name="TOPK_SPARSE" value="75" min="1">
                         </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
-                            <label>Hydration Mode</label>
+                            <label>
+                                Hydration Mode
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Code Loading Strategy</span>
+                                        Controls when full code is loaded. "Lazy" loads code from chunks.jsonl after retrieval. "None" only returns metadata (file path, line numbers). Lazy is recommended. None is faster but returns no code.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge">Lazy Recommended</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <select name="HYDRATION_MODE">
                                 <option value="lazy">Lazy</option>
                                 <option value="none">None</option>
                             </select>
                         </div>
                         <div class="input-group">
-                            <label>Hydration Max Chars</label>
+                            <label>
+                                Hydration Max Chars
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Code Truncation Limit</span>
+                                        Maximum characters to load per chunk when hydrating. Prevents huge chunks from bloating responses. 0 = no limit. Default: 2000. Range: 500-5000.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge">Performance</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <input type="number" name="HYDRATION_MAX_CHARS" value="2000">
                         </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
-                            <label>Vendor Mode</label>
+                            <label>
+                                Vendor Mode
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">First-Party vs Vendor Code</span>
+                                        Controls scoring bonus for first-party vs vendor code. "Prefer First Party" boosts your code (+0.06) and penalizes vendor libs (-0.08). "Prefer Vendor" boosts vendor code. Most use cases prefer first party.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Code Priority</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <select name="VENDOR_MODE">
                                 <option value="prefer_first_party">Prefer First Party</option>
                                 <option value="prefer_vendor">Prefer Vendor</option>
                             </select>
                         </div>
                         <div class="input-group">
-                            <label>agro Path Boosts (CSV)</label>
+                            <label>
+                                agro Path Boosts (CSV)
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Path-Specific Score Boosts</span>
+                                        Comma-separated list of path prefixes to boost. Each matching prefix adds +0.06 to chunk score (max +0.18). For example, "app/,lib/,config/" boosts results from those directories. Repo-specific tuning.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge">Repo-Specific</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <input type="text" name="agro_PATH_BOOSTS" placeholder="app/,lib/,config/">
                         </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
-                            <label>Cards Max</label>
+                            <label>
+                                Cards Max
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Card-Based Retrieval Limit</span>
+                                        Maximum number of results to retrieve via card-based search (high-level summaries). Cards help answer "where is X done?" questions. 0 disables cards. Default: 0. Range: 0-30.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Intent Detection</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
                             <input type="number" name="CARDS_MAX" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced RAG Tuning -->
+                <div class="settings-section" style="border-left: 3px solid #ff9b5e;">
+                    <h3>
+                        <span class="accent-orange">●</span> Advanced RAG Tuning
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Advanced Parameters</span>
+                                Fine-tune scoring, fusion, and iteration behavior. These parameters significantly affect retrieval quality and performance. Only modify if you understand the implications.
+                                <div class="tt-badges">
+                                    <span class="tt-badge warn">Expert Only</span>
+                                    <span class="tt-badge">No Re-index</span>
+                                </div>
+                            </div>
+                        </span>
+                    </h3>
+                    <p class="small">Expert-level controls for fusion weighting, score bonuses, and LangGraph iteration behavior. Changes take effect immediately without re-indexing.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>
+                                RRF K Divisor
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Reciprocal Rank Fusion (RRF)</span>
+                                        Controls how RRF weights sparse (BM25) vs dense (vector) results. Lower values = stronger fusion effect. Formula: score += 1/(K + rank). Default: 60. Range: 10-100.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Affects Fusion</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="RRF_K_DIV" value="60" min="10" max="100" step="5">
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                Card Bonus
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Card Matching Bonus</span>
+                                        Score boost applied to chunks matched via card-based retrieval. Cards are high-level summaries used for "where is X done?" queries. Default: 0.08. Range: 0.0-0.2.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Improves Intent</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="CARD_BONUS" value="0.08" min="0" max="0.2" step="0.01">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>
+                                Filename Boost (Exact Match)
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Filename Exact Match Multiplier</span>
+                                        Multiplier applied when query terms match the filename exactly. For example, query "auth.py" matching file "auth.py". Boosts precision for file-specific queries. Default: 1.5. Range: 1.0-3.0.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Precision Boost</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="FILENAME_BOOST_EXACT" value="1.5" min="1.0" max="3.0" step="0.1">
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                Filename Boost (Partial Match)
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Path Component Match Multiplier</span>
+                                        Multiplier applied when query terms match any part of the file path (directory names, partial filename). For example, query "auth" matching "src/auth/oauth.py". Default: 1.2. Range: 1.0-2.0.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Recall Boost</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="FILENAME_BOOST_PARTIAL" value="1.2" min="1.0" max="2.0" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>
+                                LangGraph Final K
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">LangGraph Document Count</span>
+                                        Number of documents retrieved for LangGraph RAG pipeline (used by /answer endpoint). Higher = more context but slower + costlier. Separate from retrieval Final K. Default: 20. Range: 5-50.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Context Window</span>
+                                            <span class="tt-badge warn">Higher Cost</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="LANGGRAPH_FINAL_K" value="20" min="5" max="50" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                Max Query Rewrites
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Iteration Limit</span>
+                                        Maximum number of query rewrite iterations in LangGraph when confidence is low. Each iteration generates a new query variant and retrieves again. Default: 3. Range: 1-5.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Adaptive Search</span>
+                                            <span class="tt-badge warn">Higher Latency</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="MAX_QUERY_REWRITES" value="3" min="1" max="5" step="1">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>
+                                Fallback Confidence Threshold
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Low-Confidence Fallback</span>
+                                        When initial retrieval confidence is below this threshold, triggers a fallback multi-query search with expanded parameters. Lower = more aggressive fallback. Default: 0.55. Range: 0.3-0.8.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Recall Safety Net</span>
+                                            <span class="tt-badge warn">Extra API Calls</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="FALLBACK_CONFIDENCE" value="0.55" min="0.3" max="0.8" step="0.05">
                         </div>
                     </div>
                 </div>
@@ -1719,6 +2131,8 @@
     <script src="/gui/js/profile_renderer.js"></script>
     <script src="/gui/js/autoprofile_v2.js"></script>
     <script src="/gui/js/cost_logic.js"></script>
+    <script src="/gui/js/golden_questions.js"></script>
+    <script src="/gui/js/eval_runner.js"></script>
     <script src="/gui/app.js"></script>
   </body>
 </html>

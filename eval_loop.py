@@ -21,7 +21,7 @@ load_dotenv()
 
 # Import eval logic
 from eval_rag import main as run_eval, hit, GOLDEN_PATH, USE_MULTI, FINAL_K
-from hybrid_search import search_routed, search_routed_multi
+from retrieval.hybrid_search import search_routed, search_routed_multi
 
 
 BASELINE_PATH = os.getenv('BASELINE_PATH', 'eval_baseline.json')
