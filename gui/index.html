@@ -922,6 +922,17 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1690,6 +1701,32 @@
                     </div>
                 </div>
 
+                <!-- Cards Viewer -->
+                <div class="settings-section" style="border-left: 3px solid #00ff88;">
+                    <h3>
+                        <span class="accent-green">●</span> Cards Viewer
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Code Cards</span>
+                                High-level code cards for quick navigation and understanding of key components. Click any card to view its source.
+                            </div>
+                        </span>
+                    </h3>
+                    <div class="action-buttons" style="margin-bottom: 16px; display:flex; gap:8px;">
+                        <button id="btn-cards-refresh" style="flex: 1; background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88;">
+                            <span style="margin-right: 4px;">↻</span> Refresh Cards
+                        </button>
+                        <button id="btn-cards-build" style="flex: 1; background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">
+                            <span style="margin-right: 4px;">⚡</span> Build Cards
+                        </button>
+                    </div>
+                    <div id="cards-viewer-container" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+                        <div id="cards-viewer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px;"></div>
+                    </div>
+                    <p class="small" style="color:#888; margin-top:8px;">Click a card to navigate to its source location.</p>
+                </div>
+
                 <!-- Evaluation Runner -->
                 <div class="settings-section" style="border-left: 3px solid #b794f6;">
                     <h3>
@@ -2353,6 +2390,7 @@
                     </div>
                 </div>
             </div>
+
 
             <!-- Tab: Infrastructure -->
             <div id="tab-infra" class="tab-content">

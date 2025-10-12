@@ -2,4 +2,4 @@
 {"id":1,"text":"Imports all functions and classes from the retrieval.rerank module.  /Users/davidmontgomery/agro/rerank.py"}
 {"id":2,"text":"Load configuration settings from a common module.  /Users/davidmontgomery/agro/config_loader.py"}
 {"id":3,"text":"preferences_classify_query Classifies query intent based on keywords.  /Users/davidmontgomery/agro/hybrid_search.py"}
-{"id":4,"text":"_project_layer_bonus Calculates a bonus value based on the specified layer and intent.  /Users/davidmontgomery/agro/hybrid_search.py"}
+{"id":4,"text":"_project_layer_bonus Calculates a bonus based on the specified layer and intent.  /Users/davidmontgomery/agro/hybrid_search.py"}

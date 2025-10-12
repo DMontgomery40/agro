@@ -1,0 +1,1603 @@
+{
+  "repo": "agro",
+  "id": "7b5a7137",
+  "question": "how do i, in this env, don't even know if i can , but how do i make code in code blocks different colors like in vscode func and class and commenets and all didfferent colors i want that in the chat interfact, when it givesme code blcoks",
+  "started_at": "2025-10-12T19:32:57.080676Z",
+  "finished_at": "2025-10-12T19:33:17.391268Z",
+  "events": [
+    {
+      "ts": "2025-10-12T19:32:58.773762Z",
+      "kind": "router.decide",
+      "data": {
+        "policy": "code",
+        "intent": "server",
+        "query_original": "how do i, in this env, don't even know if i can , but how do i make code in code blocks different colors like in vscode func and class and commenets and all didfferent colors i want that in the chat interfact, when it givesme code blcoks",
+        "query_rewrites": [
+          "What steps do I need to follow to customize code block colors for functions, classes, and comments similar to VSCode in this chat?",
+          "Is it possible to make code blocks in this chat interface display different colors for functions, classes, and comments like in VSCode?"
+        ],
+        "knobs": {
+          "topk_sparse": 75,
+          "topk_dense": 75,
+          "final_k": 20,
+          "hydration_mode": "lazy"
+        }
+      }
+    },
+    {
+      "ts": "2025-10-12T19:32:59.070337Z",
+      "kind": "retriever.retrieve",
+      "data": {
+        "k_sparse": 75,
+        "k_dense": 75,
+        "candidates": [
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 1
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 39,
+            "bm25_rank": null,
+            "dense_rank": 2
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 9,
+            "bm25_rank": null,
+            "dense_rank": 3
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 4
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 5
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 112,
+            "bm25_rank": null,
+            "dense_rank": 6
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 28,
+            "bm25_rank": null,
+            "dense_rank": 7
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 93,
+            "bm25_rank": null,
+            "dense_rank": 8
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 29,
+            "bm25_rank": null,
+            "dense_rank": 9
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 38,
+            "bm25_rank": null,
+            "dense_rank": 10
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 11
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 12
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 13
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 14
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 40,
+            "bm25_rank": null,
+            "dense_rank": 15
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 16
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 17
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 152,
+            "bm25_rank": null,
+            "dense_rank": 18
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 19
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 20
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 10,
+            "bm25_rank": null,
+            "dense_rank": 21
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 22
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 33,
+            "bm25_rank": null,
+            "dense_rank": 23
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 44,
+            "bm25_rank": null,
+            "dense_rank": 24
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 25
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 29,
+            "bm25_rank": null,
+            "dense_rank": 26
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 45,
+            "bm25_rank": null,
+            "dense_rank": 27
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 77,
+            "bm25_rank": null,
+            "dense_rank": 28
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 29
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/server/mcp/http.py",
+            "start": 1,
+            "end": 27,
+            "bm25_rank": null,
+            "dense_rank": 30
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/tooltips.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 31
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 185,
+            "bm25_rank": null,
+            "dense_rank": 32
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 35,
+            "bm25_rank": null,
+            "dense_rank": 33
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 20,
+            "bm25_rank": null,
+            "dense_rank": 34
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 35
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 36
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 14,
+            "bm25_rank": null,
+            "dense_rank": 37
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 38
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 39
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 19,
+            "bm25_rank": null,
+            "dense_rank": 40
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/index-display.js",
+            "start": 1,
+            "end": 173,
+            "bm25_rank": null,
+            "dense_rank": 41
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 28,
+            "bm25_rank": null,
+            "dense_rank": 42
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 58,
+            "bm25_rank": null,
+            "dense_rank": 43
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/sitecustomize.py",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 44
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 45
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 46
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 31,
+            "bm25_rank": null,
+            "dense_rank": 47
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/retrieval/ast_chunker.py",
+            "start": 1,
+            "end": 48,
+            "bm25_rank": null,
+            "dense_rank": 48
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 20,
+            "bm25_rank": null,
+            "dense_rank": 49
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 45,
+            "bm25_rank": null,
+            "dense_rank": 50
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T19:32:59.070346Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "BAAI/bge-reranker-v2-m3",
+        "input_topN": 40,
+        "output_topK": 20
+      }
+    },
+    {
+      "ts": "2025-10-12T19:32:59.252327Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "cohere:rerank-english-v3.0",
+        "scores": [
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 25,
+            "rerank_score": 1.0
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.5207670947728658
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.41392252040383376
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 112,
+            "rerank_score": 0.3668514478006415
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "rerank_score": 0.2926509000082014
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "rerank_score": 0.192077551199702
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 9,
+            "rerank_score": 0.14113364139781273
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 38,
+            "rerank_score": 0.11431766908654455
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 152,
+            "rerank_score": 0.10050262127341048
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 32,
+            "rerank_score": 0.07528794397048715
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 39,
+            "rerank_score": 0.05175419775728584
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 17,
+            "rerank_score": 0.039685091712195426
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 24,
+            "rerank_score": 0.018172238496650756
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 93,
+            "rerank_score": 0.016037215302945166
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 28,
+            "rerank_score": 0.01554386186306814
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 44,
+            "rerank_score": 0.012686816037059144
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/langgraph_app.py",
+            "start": 1,
+            "end": 9,
+            "rerank_score": 0.008857092038220037
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.007695245068179515
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 17,
+            "rerank_score": 0.0075169955562642546
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 40,
+            "rerank_score": 0.004741013565823073
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T19:32:59.589629Z",
+      "kind": "retriever.retrieve",
+      "data": {
+        "k_sparse": 75,
+        "k_dense": 75,
+        "candidates": [
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 39,
+            "bm25_rank": null,
+            "dense_rank": 1
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 2
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 112,
+            "bm25_rank": null,
+            "dense_rank": 3
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 9,
+            "bm25_rank": null,
+            "dense_rank": 4
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 5
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 29,
+            "bm25_rank": null,
+            "dense_rank": 6
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 7
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 28,
+            "bm25_rank": null,
+            "dense_rank": 8
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 9
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 93,
+            "bm25_rank": null,
+            "dense_rank": 10
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 11
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 12
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 38,
+            "bm25_rank": null,
+            "dense_rank": 13
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/retrieval/ast_chunker.py",
+            "start": 1,
+            "end": 48,
+            "bm25_rank": null,
+            "dense_rank": 14
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 15
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/server/mcp/http.py",
+            "start": 1,
+            "end": 27,
+            "bm25_rank": null,
+            "dense_rank": 16
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 44,
+            "bm25_rank": null,
+            "dense_rank": 17
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 18
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 45,
+            "bm25_rank": null,
+            "dense_rank": 19
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 33,
+            "bm25_rank": null,
+            "dense_rank": 20
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/sitecustomize.py",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 21
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 22
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 23
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 24
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 77,
+            "bm25_rank": null,
+            "dense_rank": 25
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 26
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 40,
+            "bm25_rank": null,
+            "dense_rank": 27
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 152,
+            "bm25_rank": null,
+            "dense_rank": 28
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/retrieval/ast_chunker.py",
+            "start": 1,
+            "end": 40,
+            "bm25_rank": null,
+            "dense_rank": 29
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 30
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 31
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 10,
+            "bm25_rank": null,
+            "dense_rank": 32
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 33
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 34
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 185,
+            "bm25_rank": null,
+            "dense_rank": 35
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 21,
+            "bm25_rank": null,
+            "dense_rank": 36
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 45,
+            "bm25_rank": null,
+            "dense_rank": 37
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 19,
+            "bm25_rank": null,
+            "dense_rank": 38
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 29,
+            "bm25_rank": null,
+            "dense_rank": 39
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 39,
+            "bm25_rank": null,
+            "dense_rank": 40
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 41
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/quick_setup.py",
+            "start": 1,
+            "end": 38,
+            "bm25_rank": null,
+            "dense_rank": 42
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 35,
+            "bm25_rank": null,
+            "dense_rank": 43
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 31,
+            "bm25_rank": null,
+            "dense_rank": 44
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/tooltips.js",
+            "start": 1,
+            "end": 16,
+            "bm25_rank": null,
+            "dense_rank": 45
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/tooltips.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 46
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 47
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/autoprofile_v2.js",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 48
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 154,
+            "bm25_rank": null,
+            "dense_rank": 49
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 42,
+            "bm25_rank": null,
+            "dense_rank": 50
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T19:32:59.589635Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "BAAI/bge-reranker-v2-m3",
+        "input_topN": 40,
+        "output_topK": 20
+      }
+    },
+    {
+      "ts": "2025-10-12T19:32:59.766771Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "cohere:rerank-english-v3.0",
+        "scores": [
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 1.0
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 112,
+            "rerank_score": 0.9000252184139366
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 25,
+            "rerank_score": 0.772979343372426
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.6212347710962607
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "rerank_score": 0.33657322145189617
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "rerank_score": 0.2912978185998507
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 9,
+            "rerank_score": 0.280142614022995
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 45,
+            "rerank_score": 0.1553413761029017
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 39,
+            "rerank_score": 0.1414426078395633
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/index_stats.py",
+            "start": 1,
+            "end": 3,
+            "rerank_score": 0.06629959945756175
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/env_model.py",
+            "start": 1,
+            "end": 2,
+            "rerank_score": 0.058054522005306
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 38,
+            "rerank_score": 0.0438227003031644
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 93,
+            "rerank_score": 0.040847416551945154
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/langgraph_app.py",
+            "start": 1,
+            "end": 9,
+            "rerank_score": 0.03035565601143391
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/server/__init__.py",
+            "start": 1,
+            "end": 7,
+            "rerank_score": 0.024970063231097166
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/quick_setup.py",
+            "start": 1,
+            "end": 38,
+            "rerank_score": 0.024013506906129484
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/indexer/__init__.py",
+            "start": 1,
+            "end": 7,
+            "rerank_score": 0.01400714502144887
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/mcp_server.py",
+            "start": 1,
+            "end": 8,
+            "rerank_score": 0.013158510142517085
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.01049091747879898
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/retrieval/ast_chunker.py",
+            "start": 1,
+            "end": 48,
+            "rerank_score": 0.00933082931275636
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T19:33:00.172105Z",
+      "kind": "retriever.retrieve",
+      "data": {
+        "k_sparse": 75,
+        "k_dense": 75,
+        "candidates": [
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 1
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 39,
+            "bm25_rank": null,
+            "dense_rank": 2
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 9,
+            "bm25_rank": null,
+            "dense_rank": 3
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 28,
+            "bm25_rank": null,
+            "dense_rank": 4
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 5
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 6
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 93,
+            "bm25_rank": null,
+            "dense_rank": 7
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 112,
+            "bm25_rank": null,
+            "dense_rank": 8
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 9
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 29,
+            "bm25_rank": null,
+            "dense_rank": 10
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 11
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 12
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 38,
+            "bm25_rank": null,
+            "dense_rank": 13
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 14
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 15
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 16
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 17
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/retrieval/ast_chunker.py",
+            "start": 1,
+            "end": 48,
+            "bm25_rank": null,
+            "dense_rank": 18
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 77,
+            "bm25_rank": null,
+            "dense_rank": 19
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/index-display.js",
+            "start": 1,
+            "end": 173,
+            "bm25_rank": null,
+            "dense_rank": 20
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 44,
+            "bm25_rank": null,
+            "dense_rank": 21
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 185,
+            "bm25_rank": null,
+            "dense_rank": 22
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 23
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 33,
+            "bm25_rank": null,
+            "dense_rank": 24
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "bm25_rank": null,
+            "dense_rank": 25
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/server/mcp/http.py",
+            "start": 1,
+            "end": 27,
+            "bm25_rank": null,
+            "dense_rank": 26
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 152,
+            "bm25_rank": null,
+            "dense_rank": 27
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/sitecustomize.py",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 28
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 29
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 30
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 29,
+            "bm25_rank": null,
+            "dense_rank": 31
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 32
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 14,
+            "bm25_rank": null,
+            "dense_rank": 33
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 34
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 35
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 40,
+            "bm25_rank": null,
+            "dense_rank": 36
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 28,
+            "bm25_rank": null,
+            "dense_rank": 37
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 38
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/tooltips.js",
+            "start": 1,
+            "end": 17,
+            "bm25_rank": null,
+            "dense_rank": 39
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 25,
+            "bm25_rank": null,
+            "dense_rank": 40
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/retrieval/ast_chunker.py",
+            "start": 1,
+            "end": 40,
+            "bm25_rank": null,
+            "dense_rank": 41
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 20,
+            "bm25_rank": null,
+            "dense_rank": 42
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 43
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 36,
+            "bm25_rank": null,
+            "dense_rank": 44
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 45
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 92,
+            "bm25_rank": null,
+            "dense_rank": 46
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 16,
+            "bm25_rank": null,
+            "dense_rank": 47
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 18,
+            "bm25_rank": null,
+            "dense_rank": 48
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 58,
+            "bm25_rank": null,
+            "dense_rank": 49
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 154,
+            "bm25_rank": null,
+            "dense_rank": 50
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T19:33:00.172112Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "BAAI/bge-reranker-v2-m3",
+        "input_topN": 40,
+        "output_topK": 20
+      }
+    },
+    {
+      "ts": "2025-10-12T19:33:00.335856Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "cohere:rerank-english-v3.0",
+        "scores": [
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 25,
+            "rerank_score": 1.0
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 9,
+            "rerank_score": 0.6534850235287304
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.347007519158474
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 77,
+            "rerank_score": 0.2946894422861686
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 30,
+            "rerank_score": 0.26528683367044203
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 112,
+            "rerank_score": 0.24067687203369703
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 38,
+            "rerank_score": 0.20040732942704642
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.17968929472093934
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "start": 1,
+            "end": 22,
+            "rerank_score": 0.12166973370465163
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 23,
+            "rerank_score": 0.11122926116826959
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 39,
+            "rerank_score": 0.08905079582113383
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 17,
+            "rerank_score": 0.06122437072896936
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/index-display.js",
+            "start": 1,
+            "end": 173,
+            "rerank_score": 0.05510007453999267
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "start": 1,
+            "end": 93,
+            "rerank_score": 0.04881968191687109
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/chat_cli.py",
+            "start": 1,
+            "end": 44,
+            "rerank_score": 0.036427191007156766
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 24,
+            "rerank_score": 0.03395489344617333
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 28,
+            "rerank_score": 0.02398666092650959
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/langgraph_app.py",
+            "start": 1,
+            "end": 9,
+            "rerank_score": 0.018976166507253683
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/index_stats.py",
+            "start": 1,
+            "end": 3,
+            "rerank_score": 0.014895300926252741
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 17,
+            "rerank_score": 0.009249337530908947
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T19:33:01.463509Z",
+      "kind": "freshness.status",
+      "data": {
+        "bm25_updated": "2025-10-12T19:09:36.991919Z",
+        "cards_updated": null,
+        "dense_updated_min": "2025-10-12T19:09:36.991919Z",
+        "dense_updated_max": "2025-10-12T19:09:36.991919Z",
+        "dense_backlog": 0,
+        "vector_backend": "qdrant"
+      }
+    },
+    {
+      "ts": "2025-10-12T19:33:01.463790Z",
+      "kind": "gating.outcome",
+      "data": {
+        "confidence_top1": 1.7999999999999998,
+        "confidence_avg5": 1.4894125856934501,
+        "thresholds": {
+          "top1": 0.6000000000000001,
+          "avg5": 0.55,
+          "any": 0.5
+        },
+        "iterated": true,
+        "notes": ""
+      }
+    },
+    {
+      "ts": "2025-10-12T19:33:01.464109Z",
+      "kind": "packer.pack",
+      "data": {
+        "budget_tokens": 4096,
+        "diversity_penalty": 0.0,
+        "hydration_mode": "lazy",
+        "selected": [
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "lines": "L1-L112",
+            "est_tokens": 500,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/chat.js",
+            "lines": "L1-L25",
+            "est_tokens": 248,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/profile_renderer.js",
+            "lines": "L1-L22",
+            "est_tokens": 282,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "lines": "L1-L77",
+            "est_tokens": 500,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "lines": "L1-L152",
+            "est_tokens": 500,
+            "reason": [
+              "high_rerank"
+            ]
+          }
+        ],
+        "final_tokens": 2030
+      }
+    }
+  ],
+  "tracing_mode": "local",
+  "langsmith_project": null
+}

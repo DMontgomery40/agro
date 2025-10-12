@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cards Viewer Test</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding: 20px;
+            margin: 0;
+        }
+        .test-results {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        .test-item {
+            margin: 8px 0;
+            padding: 8px;
+            border-left: 3px solid #666;
+        }
+        .test-pass {
+            border-left-color: #00ff88;
+            color: #00ff88;
+        }
+        .test-fail {
+            border-left-color: #ff5555;
+            color: #ff5555;
+        }
+        .test-info {
+            border-left-color: #5b9dff;
+            color: #5b9dff;
+        }
+        .test-warning {
+            border-left-color: #ffaa00;
+            color: #ffaa00;
+        }
+        h1 { color: #00ff88; }
+        code {
+            background: #0f0f0f;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SF Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cards Viewer Test Suite</h1>
+
+    <div class="test-results" id="test-results">
+        <div class="test-item test-info">🔄 Running tests...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8012';
+        const results = [];
+
+        function addResult(message, status = 'info') {
+            results.push({ message, status });
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('test-results');
+            container.innerHTML = results.map(r => {
+                const statusClass = `test-${r.status}`;
+                const icon = r.status === 'pass' ? '✅' :
+                           r.status === 'fail' ? '❌' :
+                           r.status === 'warning' ? '⚠️' : 'ℹ️';
+                return `<div class="test-item ${statusClass}">${icon} ${r.message}</div>`;
+            }).join('');
+        }
+
+        async function runTests() {
+            // Clear previous results
+            results.length = 0;
+
+            addResult('Starting Cards Viewer tests...', 'info');
+
+            // Test 1: Check if server is running
+            try {
+                const healthResp = await fetch(`${API_BASE}/health`);
+                if (healthResp.ok) {
+                    addResult('Server is running at ' + API_BASE, 'pass');
+                } else {
+                    addResult('Server returned status ' + healthResp.status, 'warning');
+                }
+            } catch (error) {
+                addResult('Cannot connect to server: ' + error.message, 'fail');
+                return;
+            }
+
+            // Test 2: Check cards API endpoint
+            try {
+                const cardsResp = await fetch(`${API_BASE}/api/cards`);
+                const cardsData = await cardsResp.json();
+
+                if (cardsResp.ok) {
+                    addResult(`Cards API is accessible`, 'pass');
+                    addResult(`Found ${cardsData.count} cards`, 'info');
+
+                    if (cardsData.count > 0) {
+                        addResult(`First card: ${cardsData.cards[0].symbols?.[0] || 'unnamed'}`, 'info');
+                    } else {
+                        addResult('No cards available. Run "Build Cards" to generate them.', 'warning');
+                    }
+                } else {
+                    addResult(`Cards API returned error: ${cardsResp.status}`, 'fail');
+                }
+            } catch (error) {
+                addResult('Failed to fetch cards: ' + error.message, 'fail');
+            }
+
+            // Test 3: Check GUI elements exist
+            try {
+                const guiResp = await fetch(`${API_BASE}/gui/index.html`);
+                const guiText = await guiResp.text();
+
+                if (guiText.includes('Cards Viewer')) {
+                    addResult('Cards Viewer section found in GUI', 'pass');
+                } else {
+                    addResult('Cards Viewer section might be missing from GUI', 'warning');
+                }
+
+                if (guiText.includes('btn-cards-refresh')) {
+                    addResult('Refresh Cards button found', 'pass');
+                } else {
+                    addResult('Refresh Cards button not found', 'fail');
+                }
+
+                if (guiText.includes('btn-cards-build')) {
+                    addResult('Build Cards button found', 'pass');
+                } else {
+                    addResult('Build Cards button not found', 'fail');
+                }
+
+                if (guiText.includes('cards-viewer')) {
+                    addResult('Cards container element found', 'pass');
+                } else {
+                    addResult('Cards container element not found', 'fail');
+                }
+            } catch (error) {
+                addResult('Failed to check GUI: ' + error.message, 'fail');
+            }
+
+            // Test 4: Check JavaScript functionality
+            try {
+                const jsResp = await fetch(`${API_BASE}/gui/app.js`);
+                const jsText = await jsResp.text();
+
+                if (jsText.includes('loadCards')) {
+                    addResult('loadCards function found', 'pass');
+                } else {
+                    addResult('loadCards function not found', 'fail');
+                }
+
+                if (jsText.includes('refreshCards')) {
+                    addResult('refreshCards function found', 'pass');
+                } else {
+                    addResult('refreshCards function not found', 'fail');
+                }
+
+                if (jsText.includes('buildCards')) {
+                    addResult('buildCards function found', 'pass');
+                } else {
+                    addResult('buildCards function not found', 'fail');
+                }
+
+                if (jsText.includes('jumpToLine')) {
+                    addResult('jumpToLine function found', 'pass');
+                } else {
+                    addResult('jumpToLine function not found', 'fail');
+                }
+            } catch (error) {
+                addResult('Failed to check JavaScript: ' + error.message, 'fail');
+            }
+
+            // Test 5: Verify cards are in Tools tab
+            try {
+                const guiResp = await fetch(`${API_BASE}/gui/index.html`);
+                const guiText = await guiResp.text();
+
+                // Check that cards viewer is after golden questions and before eval runner
+                const goldenIndex = guiText.indexOf('Golden Questions Manager');
+                const cardsIndex = guiText.indexOf('Cards Viewer');
+                const evalIndex = guiText.indexOf('Evaluation Runner');
+
+                if (goldenIndex > 0 && cardsIndex > 0 && evalIndex > 0) {
+                    if (goldenIndex < cardsIndex && cardsIndex < evalIndex) {
+                        addResult('Cards Viewer correctly positioned between Golden Questions and Eval Runner', 'pass');
+                    } else {
+                        addResult('Cards Viewer position might be incorrect', 'warning');
+                    }
+                } else {
+                    addResult('Could not verify Cards Viewer position', 'warning');
+                }
+
+                // Check that cards is NOT in retrieval tab navigation
+                if (guiText.includes("retrieval: ['retrieval','confidence','cards']")) {
+                    addResult('Cards still in retrieval tab navigation - needs to be removed', 'fail');
+                } else if (guiText.includes("retrieval: ['retrieval','confidence']")) {
+                    addResult('Cards correctly removed from retrieval tab navigation', 'pass');
+                }
+            } catch (error) {
+                addResult('Failed to verify positioning: ' + error.message, 'fail');
+            }
+
+            // Summary
+            const passCount = results.filter(r => r.status === 'pass').length;
+            const failCount = results.filter(r => r.status === 'fail').length;
+            const warningCount = results.filter(r => r.status === 'warning').length;
+
+            addResult(`Test Summary: ${passCount} passed, ${failCount} failed, ${warningCount} warnings`,
+                      failCount > 0 ? 'fail' : warningCount > 0 ? 'warning' : 'pass');
+
+            if (failCount === 0 && warningCount === 0) {
+                addResult('🎉 All tests passed! Cards Viewer is fully functional.', 'pass');
+            } else if (failCount === 0) {
+                addResult('Cards Viewer is functional with some minor issues.', 'warning');
+            } else {
+                addResult('Some critical issues found. Please review the failed tests.', 'fail');
+            }
+        }
+
+        // Run tests when page loads
+        runTests();
+    </script>
+</body>
+</html>
