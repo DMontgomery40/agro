@@ -5,52 +5,35 @@
   },
   {
     "q": "Where is OAuth token validated?",
-    "repo": "repo-a",
-    "expect_paths": ["identity", "auth", "oauth", "token"]
+    "repo": "agro",
+    "expect_paths": [
+      "server",
+      "mcp"
+    ]
   },
   {
-    "q": "Where do we mask PHI in events?",
-    "repo": "repo-a",
-    "expect_paths": ["diagnostic", "event", "phi", "mask", "hipaa"]
+    "q": "Where is the mcp server?",
+    "repo": "agro",
+    "expect_paths": [
+      "/server/mcp"
+    ]
   },
   {
-    "q": "Where is ProviderSetupWizard rendered?",
-    "repo": "repo-a",
-    "expect_paths": ["ProviderSetupWizard", "admin_ui", "components"]
+    "q": "Where is auto-profile wizard rendered?",
+    "repo": "agro",
+    "expect_paths": [
+      "dashboard",
+      "gui",
+      "api",
+      "app.js"
+    ]
   },
   {
-    "q": "How do we handle notification providers?",
-    "repo": "repo-a",
-    "expect_paths": ["provider", "notification", "pushover", "apprise"]
-  },
-  {
-    "q": "Where is the admin diagnostics handler?",
-    "repo": "repo-a",
-    "expect_paths": ["admin", "diagnostic", "handler"]
-  },
-  {
-    "q": "Where do we configure routes in the Rails app?",
-    "repo": "repo-b",
-    "expect_paths": ["config/routes", "routes.rb"]
-  },
-  {
-    "q": "How do we handle inbound faxes?",
-    "repo": "repo-b",
-    "expect_paths": ["app/", "fax", "inbound", "receive"]
-  },
-  {
-    "q": "Where is the API authentication middleware?",
-    "repo": "repo-b",
-    "expect_paths": ["app/", "middleware", "auth", "api"]
-  },
-  {
-    "q": "How do we queue outbound fax jobs?",
-    "repo": "repo-b",
-    "expect_paths": ["app/", "job", "fax", "outbound", "queue"]
-  },
-  {
-    "q": "Where do we store fax metadata?",
-    "repo": "repo-b",
-    "expect_paths": ["app/models", "fax", "metadata"]
+    "q": "Test question from curl",
+    "repo": "agro",
+    "expect_paths": [
+      "test",
+      "example"
+    ]
   }
 ]

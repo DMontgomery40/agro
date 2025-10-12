@@ -171,6 +171,36 @@
     };
   }
 
+  function attachTooltipListeners(icon, bubble, wrap) {
+    function show(){ bubble.classList.add('tooltip-visible'); }
+    function hide(){ bubble.classList.remove('tooltip-visible'); }
+    icon.addEventListener('mouseenter', show);
+    icon.addEventListener('mouseleave', hide);
+    icon.addEventListener('focus', show);
+    icon.addEventListener('blur', hide);
+    icon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      bubble.classList.toggle('tooltip-visible');
+    });
+    document.addEventListener('click', (evt) => {
+      if (!wrap.contains(evt.target)) bubble.classList.remove('tooltip-visible');
+    });
+  }
+
+  function attachManualTooltips() {
+    // Attach event listeners to any manually-created tooltips in HTML
+    const manualTooltips = document.querySelectorAll('.tooltip-wrap');
+    manualTooltips.forEach((wrap) => {
+      const icon = wrap.querySelector('.help-icon');
+      const bubble = wrap.querySelector('.tooltip-bubble');
+      if (!icon || !bubble) return;
+      // Check if already has listeners (avoid double-attaching)
+      if (icon.dataset.tooltipAttached) return;
+      icon.dataset.tooltipAttached = 'true';
+      attachTooltipListeners(icon, bubble, wrap);
+    });
+  }
+
   function attachTooltips(){
     const map = buildTooltipMap();
     const fields = document.querySelectorAll('[name]');
@@ -202,6 +232,7 @@
       icon.setAttribute('tabindex', '0');
       icon.setAttribute('aria-label', `Help: ${name}`);
       icon.textContent = '?';
+      icon.dataset.tooltipAttached = 'true';
       const bubble = document.createElement('div');
       bubble.className = 'tooltip-bubble';
       bubble.setAttribute('role', 'tooltip');
@@ -209,21 +240,12 @@
       wrap.appendChild(icon);
       wrap.appendChild(bubble);
       label.appendChild(wrap);
-      function show(){ bubble.classList.add('tooltip-visible'); }
-      function hide(){ bubble.classList.remove('tooltip-visible'); }
-      icon.addEventListener('mouseenter', show);
-      icon.addEventListener('mouseleave', hide);
-      icon.addEventListener('focus', show);
-      icon.addEventListener('blur', hide);
-      icon.addEventListener('click', (e) => {
-        e.stopPropagation();
-        bubble.classList.toggle('tooltip-visible');
-      });
-      document.addEventListener('click', (evt) => {
-        if (!wrap.contains(evt.target)) bubble.classList.remove('tooltip-visible');
-      });
+      attachTooltipListeners(icon, bubble, wrap);
     });
+
+    // Also attach to manual tooltips in HTML
+    attachManualTooltips();
   }
 
-  window.Tooltips = { buildTooltipMap, attachTooltips };
+  window.Tooltips = { buildTooltipMap, attachTooltips, attachManualTooltips };
 })();

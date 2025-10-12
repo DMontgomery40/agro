@@ -28,7 +28,7 @@ except Exception:
 # Load environment
 load_dotenv(Path(__file__).parent / ".env")
 
-from langgraph_app import build_graph
+from server.langgraph_app import build_graph
 from config_loader import list_repos
 from rich.console import Console
 from rich.markdown import Markdown

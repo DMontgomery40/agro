@@ -85,6 +85,23 @@ replace what you don’t. The docs show one happy path; you can rewire models an
 
 ---
 
+## Package Layout and Shims (Non‑breaking Reorg)
+
+Canonical code now lives under `server/`, `retrieval/`, and `indexer/` to make navigation sane. Root‑level files remain as tiny shims so existing commands keep working (e.g., `python index_repo.py`, imports like `from hybrid_search import ...`).
+
+- Canonical modules
+  - `server/` → API/graph/model/stats, plus `server/mcp/` for MCP
+  - `retrieval/` → `hybrid_search.py`, `rerank.py`, `ast_chunker.py`, `embed_cache.py`
+  - `indexer/` → `index_repo.py`, `build_cards.py`
+- Root shims (compat): `index_repo.py`, `build_cards.py`, `hybrid_search.py`, `env_model.py`, `langgraph_app.py`, `index_stats.py`, `mcp_server.py`, `mcp_server_http.py`
+- MCP has moved to `server/mcp/` with root shims left in place
+
+All knobs are GUI‑first. Use the GUI’s Infrastructure/Models/Retrieval tabs and click “Apply All Changes” to persist to `.env` and `repos.json`. Backend endpoints are implemented in `serve_rag.py` (see serve_rag.py:160-220).
+
+See MIGRATION.md for the old→new path mapping and rationale.
+
+---
+
 ## Quick Start
 
 **Prerequisites**
