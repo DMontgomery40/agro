@@ -4,12 +4,12 @@ Interactive CLI chat interface for RAG service.
 Uses LangGraph with Redis checkpoints for conversation memory.
 
 Usage:
-    export REPO=project
+    export REPO=agro
     export THREAD_ID=my-session-1
     python chat_cli.py
 
 Commands:
-    /repo <name>    - Switch repository (project or project)
+    /repo <name>    - Switch repository (from repos.json)
     /save           - Save conversation checkpoint
     /clear          - Clear conversation history
     /help           - Show commands
@@ -29,6 +29,7 @@ except Exception:
 load_dotenv(Path(__file__).parent / ".env")
 
 from langgraph_app import build_graph
+from config_loader import list_repos
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -37,14 +38,14 @@ from rich.prompt import Prompt
 console = Console()
 
 # Configuration
-REPO = os.getenv('REPO', 'project')
+REPO = os.getenv('REPO', 'agro')
 THREAD_ID = os.getenv('THREAD_ID', 'cli-chat')
 
 
 class ChatCLI:
     """Interactive CLI chat with RAG."""
 
-    def __init__(self, repo: str = 'project', thread_id: str = 'cli-chat'):
+    def __init__(self, repo: str = 'agro', thread_id: str = 'cli-chat'):
         self.repo = repo
         self.thread_id = thread_id
         self.graph = None
@@ -91,8 +92,9 @@ class ChatCLI:
 
     def switch_repo(self, new_repo: str):
         """Switch to a different repository."""
-        if new_repo not in ['project', 'project']:
-            console.print(f"[red]✗[/red] Invalid repo. Use 'project' or 'project'")
+        allowed = set(list_repos())
+        if new_repo not in allowed:
+            console.print(f"[red]✗[/red] Invalid repo. Allowed: {sorted(allowed)}")
             return
 
         self.repo = new_repo
@@ -103,7 +105,7 @@ class ChatCLI:
         help_text = """
 ## Commands
 
-- `/repo <name>` - Switch repository (project or project)
+- `/repo <name>` - Switch repository (from repos.json)
 - `/save` - Save conversation checkpoint
 - `/clear` - Clear conversation history
 - `/help` - Show this help
@@ -118,7 +120,7 @@ Ask a question:
 
 Switch repo:
 ```
-> /repo project
+> /repo agro
 > How do we handle inbound faxes?
 ```
         """
@@ -238,7 +240,7 @@ def main():
         sys.exit(1)
 
     # Get config from environment
-    repo = os.getenv('REPO', 'project')
+    repo = os.getenv('REPO', 'agro')
     thread_id = os.getenv('THREAD_ID', 'cli-chat')
 
     # Create and run chat
