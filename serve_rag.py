@@ -7,9 +7,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from langgraph_app import build_graph
 from hybrid_search import search_routed_multi
 from config_loader import load_repos
-from index_stats import get_index_stats as _get_index_stats
+from server.index_stats import get_index_stats as _get_index_stats
+from path_config import repo_root, gui_dir, docs_dir, files_root
 import os, json, sys
 from typing import Any, Dict
+from collections import Counter, defaultdict
 
 app = FastAPI(title="AGRO RAG + GUI")
 
@@ -25,9 +27,9 @@ CFG = {"configurable": {"thread_id": "http"}}
 class Answer(BaseModel):
     answer: str
 
-ROOT = Path(__file__).resolve().parent
-GUI_DIR = ROOT / "gui"
-DOCS_DIR = ROOT / "docs"
+ROOT = repo_root()
+GUI_DIR = gui_dir()
+DOCS_DIR = docs_dir()
 
 # Serve static GUI assets
 if GUI_DIR.exists():
@@ -36,7 +38,7 @@ if GUI_DIR.exists():
 # Serve local docs and repo files for in-GUI links
 if DOCS_DIR.exists():
     app.mount("/docs", StaticFiles(directory=str(DOCS_DIR), html=True), name="docs")
-app.mount("/files", StaticFiles(directory=str(ROOT), html=True), name="files")
+app.mount("/files", StaticFiles(directory=str(files_root()), html=True), name="files")
 
 @app.get("/", include_in_schema=False)
 def serve_index():
@@ -264,10 +266,12 @@ def get_keywords() -> Dict[str, Any]:
         except Exception:
             pass
         return out
-    discr_raw = _read_json(ROOT / "discriminative_keywords.json", {})
-    sema_raw = _read_json(ROOT / "semantic_keywords.json", {})
+    discr_raw = _read_json(repo_root() / "discriminative_keywords.json", {})
+    sema_raw = _read_json(repo_root() / "semantic_keywords.json", {})
+    llm_raw = _read_json(repo_root() / "llm_keywords.json", {})
     discr = extract_terms(discr_raw)
     sema = extract_terms(sema_raw)
+    llm = extract_terms(llm_raw)
     repos_cfg = load_repos()
     repo_k = []
     for r in repos_cfg.get("repos", []):
@@ -283,73 +287,136 @@ def get_keywords() -> Dict[str, Any]:
         return out
     discr = uniq(discr)
     sema = uniq(sema)
+    llm = uniq(llm)
     repo_k = uniq(repo_k)
-    allk = uniq((discr or []) + (sema or []) + (repo_k or []))
-    return {"discriminative": discr, "semantic": sema, "repos": repo_k, "keywords": allk}
+    allk = uniq((discr or []) + (sema or []) + (llm or []) + (repo_k or []))
+    return {"discriminative": discr, "semantic": sema, "llm": llm, "repos": repo_k, "keywords": allk}
 
 @app.post("/api/keywords/generate")
 def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
-    """Generate discriminative and semantic keywords for specified repo(s)."""
+    """Generate keywords using either heuristics or an LLM (GUI‑selectable).
+
+    Body: { repo: str, mode?: 'heuristic' | 'llm', max_files?: int }
+    - heuristic: runs scripts/analyze_keywords.py and scripts/analyze_keywords_v2.py
+    - llm: samples files and uses metadata_enricher.enrich to accumulate keywords
+    """
     import subprocess
     import time
+    from config_loader import get_repo_paths
 
     repo = body.get("repo")
+    mode = (body.get("mode") or os.getenv("KEYWORDS_GEN_MODE", "heuristic")).strip().lower()
+    max_files = int(body.get("max_files") or os.getenv("KEYWORDS_MAX_FILES", "60") or 60)
     if not repo:
         return {"error": "repo parameter required", "ok": False}
 
-    results = {
+    results: Dict[str, Any] = {
         "ok": True,
         "repo": repo,
+        "mode": mode,
         "discriminative": {"count": 0, "file": "discriminative_keywords.json"},
         "semantic": {"count": 0, "file": "semantic_keywords.json"},
+        "llm": {"count": 0, "file": "llm_keywords.json"},
         "total_count": 0,
-        "duration_seconds": 0
+        "duration_seconds": 0,
     }
 
     start_time = time.time()
 
-    try:
-        # Run discriminative keyword extraction (TF-IDF based)
+    # Heuristic pipeline (existing behavior)
+    def run_heuristic() -> None:
+        nonlocal results
         discr_result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "analyze_keywords.py")],
-            env={**os.environ, "REPO": repo},
-            capture_output=True,
-            text=True,
-            timeout=300
+            [sys.executable, str(repo_root() / "scripts" / "analyze_keywords.py")],
+            env={**os.environ, "REPO": repo}, capture_output=True, text=True, timeout=300
         )
-
         if discr_result.returncode != 0:
             results["discriminative"]["error"] = discr_result.stderr
         else:
-            # Count keywords in generated file
-            discr_data = _read_json(ROOT / "discriminative_keywords.json", {})
-            discr_keywords = []
-            if isinstance(discr_data, dict) and repo in discr_data:
-                discr_keywords = discr_data[repo] if isinstance(discr_data[repo], list) else []
-            results["discriminative"]["count"] = len(discr_keywords)
+            discr_data = _read_json(repo_root() / "discriminative_keywords.json", {})
+            lst = discr_data.get(repo) if isinstance(discr_data, dict) else []
+            results["discriminative"]["count"] = len(lst or [])
 
-        # Run semantic keyword extraction (business/domain terms)
         sema_result = subprocess.run(
-            [sys.executable, str(ROOT / "scripts" / "analyze_keywords_v2.py")],
-            env={**os.environ, "REPO": repo},
-            capture_output=True,
-            text=True,
-            timeout=300
+            [sys.executable, str(repo_root() / "scripts" / "analyze_keywords_v2.py")],
+            env={**os.environ, "REPO": repo}, capture_output=True, text=True, timeout=300
         )
-
         if sema_result.returncode != 0:
             results["semantic"]["error"] = sema_result.stderr
         else:
-            # Count keywords in generated file
-            sema_data = _read_json(ROOT / "semantic_keywords.json", {})
-            sema_keywords = []
-            if isinstance(sema_data, dict) and repo in sema_data:
-                sema_keywords = sema_data[repo] if isinstance(sema_data[repo], list) else []
-            results["semantic"]["count"] = len(sema_keywords)
+            sema_data = _read_json(repo_root() / "semantic_keywords.json", {})
+            lst = sema_data.get(repo) if isinstance(sema_data, dict) else []
+            results["semantic"]["count"] = len(lst or [])
 
-        results["total_count"] = results["discriminative"]["count"] + results["semantic"]["count"]
+    # LLM pipeline (new)
+    def run_llm() -> None:
+        nonlocal results
+        try:
+            from metadata_enricher import enrich  # uses MLX or Ollama based on env
+        except Exception as e:  # pragma: no cover
+            results["ok"] = False
+            results["error"] = f"LLM backend unavailable: {e}"
+            return
+
+        # Collect candidate files (reuse indexer filters loosely)
+        exts = {".py", ".rb", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java", ".cs", ".yml", ".yaml", ".md"}
+        files: List[Path] = []
+        try:
+            bases = get_repo_paths(repo)
+        except Exception as e:
+            results["ok"] = False
+            results["error"] = str(e)
+            return
+        for base in bases:
+            p = Path(base).expanduser()
+            if not p.exists():
+                continue
+            for root, dirs, fnames in os.walk(p):
+                # prune noisy dirs
+                dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "__pycache__", ".venv", "dist", "build"}]
+                for fn in fnames:
+                    if Path(fn).suffix.lower() in exts:
+                        files.append(Path(root) / fn)
+        # Sample limited number deterministically: smallest paths first for stability
+        files = sorted(files, key=lambda pp: (len(str(pp)), str(pp)))[:max_files]
+
+        counts: Counter[str] = Counter()
+        per_file_limit = int(os.getenv("KEYWORDS_PER_FILE", "10") or 10)
+        for fp in files:
+            try:
+                text = fp.read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                continue
+            # clip to manageable size
+            text = text[:8000]
+            meta = enrich(str(fp), Path(fp).suffix.lstrip('.'), text) or {}
+            kws = [str(k).strip().lower() for k in (meta.get("keywords") or []) if isinstance(k, str)]
+            for k in kws[:per_file_limit]:
+                if k:
+                    counts[k] += 1
+        # Persist results
+        top_total = int(os.getenv("KEYWORDS_MAX_TOTAL", "200") or 200)
+        ranked = [k for k, _ in counts.most_common(top_total)]
+        out_path = repo_root() / "llm_keywords.json"
+        data = _read_json(out_path, {})
+        if not isinstance(data, dict):
+            data = {}
+        data[str(repo)] = ranked
+        _write_json(out_path, data)
+        results["llm"]["count"] = len(ranked)
+
+    try:
+        if mode == "llm":
+            run_llm()
+        else:
+            run_heuristic()
+        # Compose totals (heuristic writes discr/semantic; llm writes llm)
+        results["total_count"] = (
+            (results.get("discriminative", {}).get("count") or 0)
+            + (results.get("semantic", {}).get("count") or 0)
+            + (results.get("llm", {}).get("count") or 0)
+        )
         results["duration_seconds"] = round(time.time() - start_time, 2)
-
     except subprocess.TimeoutExpired:
         results["ok"] = False
         results["error"] = "Keyword generation timed out (300s limit)"
@@ -543,7 +610,7 @@ def index_start() -> Dict[str, Any]:
                 ["python", "index_repo.py"],
                 capture_output=True,
                 text=True,
-                cwd=ROOT,
+                cwd=repo_root(),
                 env={**os.environ, "REPO": repo}
             )
 
@@ -588,8 +655,7 @@ def cards_list() -> Dict[str, Any]:
 
 # ---------------- Git hooks helpers ----------------
 def _git_hooks_dir() -> Path:
-    # repo root assumed to be same as this file's parent
-    root = ROOT
+    root = repo_root()
     return root / ".git" / "hooks"
 
 _HOOK_POST_CHECKOUT = """#!/usr/bin/env bash

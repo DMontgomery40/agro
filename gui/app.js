@@ -1303,12 +1303,14 @@
             const response = await fetch(api('/api/config'));
             const data = await response.json();
             const repo = data.config?.REPO || 'agro';
+            const modeSel = document.getElementById('kw-gen-mode');
+            const mode = modeSel ? (modeSel.value || 'heuristic') : 'heuristic';
 
             // Call the keywords generation endpoint
             const createResponse = await fetch(api('/api/keywords/generate'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repo })
+                body: JSON.stringify({ repo, mode })
             });
 
             if (createResponse.ok) {
@@ -1643,6 +1645,11 @@
             COLLECTION_SUFFIX: 'Optional suffix to group collections in Qdrant.',
             COLLECTION_NAME: 'Override Qdrant collection name.',
             REPO_PATH: 'Fallback path when repos.json is absent.',
+            REPO_ROOT: 'Override project root. Affects GUI/docs/files mounts.',
+            FILES_ROOT: 'Root directory served at /files.',
+            GUI_DIR: 'Directory of GUI assets served at /gui.',
+            DOCS_DIR: 'Directory of docs served at /docs.',
+            DATA_DIR: 'Directory for local data files (excludes, keywords).',
             REPOS_FILE: 'Path to repos.json configuration file.',
             OUT_DIR_BASE: 'Base output directory for per-repo data.',
             RAG_OUT_BASE: 'Alternate env for OUT_DIR_BASE.',

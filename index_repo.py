@@ -5,6 +5,7 @@ from typing import List, Dict
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
 from config_loader import get_repo_paths, out_dir
+from path_config import data_dir
 from ast_chunker import lang_from_path, collect_files, chunk_code
 import bm25s
 from bm25s.tokenization import Tokenizer
@@ -83,7 +84,7 @@ SOURCE_EXTS = {
     ".cs", ".c", ".h", ".cpp", ".hpp", ".m", ".mm", ".kt", ".kts", ".swift",
     ".sql", ".yml", ".yaml", ".toml", ".ini", ".json", ".md"
 }
-EXCLUDE_GLOBS_FILE = "data/exclude_globs.txt"
+EXCLUDE_GLOBS_FILE = str((data_dir() / "exclude_globs.txt").resolve())
 
 def _load_exclude_globs() -> list[str]:
     p = pathlib.Path(EXCLUDE_GLOBS_FILE)
