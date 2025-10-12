@@ -325,28 +325,119 @@ def generate_keywords(body: Dict[str, Any]) -> Dict[str, Any]:
 
     # Heuristic pipeline (existing behavior)
     def run_heuristic() -> None:
+        """Inline heuristic generation (no external scripts)."""
         nonlocal results
-        discr_result = subprocess.run(
-            [sys.executable, str(repo_root() / "scripts" / "analyze_keywords.py")],
-            env={**os.environ, "REPO": repo}, capture_output=True, text=True, timeout=300
-        )
-        if discr_result.returncode != 0:
-            results["discriminative"]["error"] = discr_result.stderr
-        else:
-            discr_data = _read_json(repo_root() / "discriminative_keywords.json", {})
-            lst = discr_data.get(repo) if isinstance(discr_data, dict) else []
-            results["discriminative"]["count"] = len(lst or [])
+        import re
+        try:
+            bases = get_repo_paths(repo)
+        except Exception as e:
+            results["ok"] = False
+            results["error"] = str(e)
+            return
 
-        sema_result = subprocess.run(
-            [sys.executable, str(repo_root() / "scripts" / "analyze_keywords_v2.py")],
-            env={**os.environ, "REPO": repo}, capture_output=True, text=True, timeout=300
-        )
-        if sema_result.returncode != 0:
-            results["semantic"]["error"] = sema_result.stderr
-        else:
-            sema_data = _read_json(repo_root() / "semantic_keywords.json", {})
-            lst = sema_data.get(repo) if isinstance(sema_data, dict) else []
-            results["semantic"]["count"] = len(lst or [])
+        # Gather candidate files
+        exts = {".py", ".rb", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java", ".cs", ".yml", ".yaml", ".md"}
+        files: List[Path] = []
+        for base in bases:
+            p = Path(base).expanduser()
+            if not p.exists():
+                continue
+            for root, dirs, fnames in os.walk(p):
+                dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "__pycache__", ".venv", "dist", "build"}]
+                for fn in fnames:
+                    if Path(fn).suffix.lower() in exts:
+                        files.append(Path(root) / fn)
+        if not files:
+            results["ok"] = False
+            results["error"] = f"No source files found for repo {repo}"
+            return
+
+        # Tokenization helpers
+        str_rx = re.compile(r'["\'].*?["\']', re.S)
+        hash_comment = re.compile(r'#.*?\n')
+        sl_comment = re.compile(r'//.*?\n')
+        ident_rx = re.compile(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b')
+
+        def extract_tokens(text: str) -> List[str]:
+            text = str_rx.sub('', text)
+            text = hash_comment.sub('\n', text)
+            text = sl_comment.sub('\n', text)
+            toks = ident_rx.findall(text)
+            return [t.lower() for t in toks if len(t) > 2]
+
+        # Discriminative (TF*IDF-ish)
+        file_tokens: Dict[str, set[str]] = {}
+        global_counts: Counter[str] = Counter()
+        for fp in files:
+            try:
+                code = fp.read_text(encoding='utf-8', errors='ignore')
+            except Exception:
+                continue
+            toks = set(extract_tokens(code))
+            file_tokens[str(fp)] = toks
+            for t in toks:
+                global_counts[t] += 1
+        num_files = max(1, len(file_tokens))
+        doc_freq: Counter[str] = Counter()
+        for toks in file_tokens.values():
+            doc_freq.update(toks)
+        keyword_scores: Dict[str, float] = {}
+        for token, df in doc_freq.items():
+            if df <= 1:
+                continue
+            if df < max(2, int(0.05 * num_files)):
+                idf = num_files / df
+                tf = global_counts[token]
+                keyword_scores[token] = tf * idf
+        topn_discr = int(os.getenv("KEYWORDS_TOPN_DISCR", "50") or 50)
+        discr_sorted = sorted(keyword_scores.items(), key=lambda x: x[1], reverse=True)[:topn_discr]
+        discr_list = [k for k, _ in discr_sorted]
+        # Persist
+        discr_path = repo_root() / "discriminative_keywords.json"
+        discr_data = _read_json(discr_path, {})
+        if not isinstance(discr_data, dict):
+            discr_data = {}
+        discr_data[str(repo)] = discr_list
+        _write_json(discr_path, discr_data)
+        results["discriminative"]["count"] = len(discr_list)
+
+        # Semantic (domain-ish): frequency across files with directory boost
+        dir_terms: set[str] = set()
+        for fp in files:
+            for part in Path(fp).parts:
+                s = re.sub(r'[^a-zA-Z0-9_]+', ' ', part)
+                for w in s.split():
+                    if len(w) > 2:
+                        dir_terms.add(w.lower())
+        term_files: Dict[str, set[str]] = defaultdict(set)
+        term_counts: Counter[str] = Counter()
+        for fp in files:
+            try:
+                code = Path(fp).read_text(encoding='utf-8', errors='ignore')
+            except Exception:
+                continue
+            terms = extract_tokens(code)
+            rel = str(fp)
+            for t in terms:
+                term_counts[t] += 1
+                term_files[t].add(rel)
+        scored: list[tuple[str, float]] = []
+        for t, fileset in term_files.items():
+            fc = len(fileset)
+            if fc >= 2 and fc <= max(2, int(0.2 * num_files)):
+                dir_boost = 2.0 if t in dir_terms else 1.0
+                score = (term_counts[t] * fc * dir_boost) / (num_files + 1)
+                scored.append((t, score))
+        topn_sem = int(os.getenv("KEYWORDS_TOPN_SEM", "50") or 50)
+        sem_sorted = sorted(scored, key=lambda x: x[1], reverse=True)[:topn_sem]
+        sem_list = [k for k, _ in sem_sorted]
+        sem_path = repo_root() / "semantic_keywords.json"
+        sem_data = _read_json(sem_path, {})
+        if not isinstance(sem_data, dict):
+            sem_data = {}
+        sem_data[str(repo)] = sem_list
+        _write_json(sem_path, sem_data)
+        results["semantic"]["count"] = len(sem_list)
 
     # LLM pipeline (new)
     def run_llm() -> None:

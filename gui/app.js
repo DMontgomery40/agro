@@ -288,6 +288,16 @@
                 const allSel = div.querySelector(`#kw-all-${rname}`);
                 const repoSel = div.querySelector(`#kw-repo-${rname}`);
                 const srcSel = div.querySelector(`#kw-src-${rname}`);
+                // Ensure LLM source option is available
+                try {
+                    if (srcSel && !Array.from(srcSel.options).some(o => o.value === 'llm')) {
+                        const opt = document.createElement('option');
+                        opt.value = 'llm';
+                        opt.textContent = 'LLM';
+                        const before = Array.from(srcSel.options).find(o => o.value === 'repos');
+                        if (before) srcSel.insertBefore(opt, before); else srcSel.appendChild(opt);
+                    }
+                } catch {}
                 const filter = div.querySelector(`#kw-filter-${rname}`);
                 const addBtn = div.querySelector(`#kw-add-${rname}`);
                 const remBtn = div.querySelector(`#kw-rem-${rname}`);
@@ -1305,12 +1315,14 @@
             const repo = data.config?.REPO || 'agro';
             const modeSel = document.getElementById('kw-gen-mode');
             const mode = modeSel ? (modeSel.value || 'heuristic') : 'heuristic';
+            const maxFilesEl = document.querySelector('[name="KEYWORDS_MAX_FILES"]');
+            const max_files = maxFilesEl && maxFilesEl.value ? Number(maxFilesEl.value) : undefined;
 
             // Call the keywords generation endpoint
             const createResponse = await fetch(api('/api/keywords/generate'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ repo, mode })
+                body: JSON.stringify({ repo, mode, max_files })
             });
 
             if (createResponse.ok) {
@@ -1332,6 +1344,9 @@
                         </div>
                         <div style="font-size:12px;color:#ddd;margin-bottom:4px;">
                             <span style="color:#5b9dff;">Semantic:</span> ${sema} keywords
+                        </div>
+                        <div style="font-size:12px;color:#ddd;margin-bottom:4px;">
+                            <span style="color:#00d6ff;">LLM:</span> ${result.llm?.count || 0} keywords
                         </div>
                         <div style="font-size:11px;color:#999;margin-top:8px;">
                             Completed in ${duration}s
