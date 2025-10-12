@@ -7,16 +7,17 @@ from dotenv import load_dotenv, find_dotenv
 from common.config_loader import get_repo_paths, out_dir
 from common.paths import data_dir
 from retrieval.ast_chunker import lang_from_path, collect_files, chunk_code
-import bm25s
-from bm25s.tokenization import Tokenizer
-from Stemmer import Stemmer
+import bm25s  # type: ignore
+from bm25s.tokenization import Tokenizer  # type: ignore
+from Stemmer import Stemmer  # type: ignore
 from qdrant_client import QdrantClient, models
 import uuid
 from openai import OpenAI
 from retrieval.embed_cache import EmbeddingCache
 import tiktoken
 from sentence_transformers import SentenceTransformer
-import fnmatch, pathlib
+import fnmatch
+import pathlib
 import common.qdrant_utils as qdrant_recreate_fallback  # make recreate_collection 404-safe
 from datetime import datetime
 
@@ -30,7 +31,7 @@ def _filtered_os_walk(top, *args, **kwargs):
         _prune_dirs_in_place(dirs)
         files[:] = [f for f in files if _should_index_file(f)]
         yield root, dirs, files
-os.walk = _filtered_os_walk
+os.walk = _filtered_os_walk  # type: ignore
 
 # Patch Path.rglob as well (if code uses it)
 _Path_rglob = Path.rglob
@@ -42,7 +43,7 @@ def _filtered_rglob(self, pattern):
         if not _should_index_file(p.name):
             continue
         yield p
-Path.rglob = _filtered_rglob
+Path.rglob = _filtered_rglob  # type: ignore
 # --- end filters ---
 
 
@@ -214,7 +215,7 @@ def embed_texts_mxbai(texts: List[str], dim: int = 512, batch: int = 128) -> Lis
     return _renorm_truncate(out, dim)
 
 def embed_texts_voyage(texts: List[str], batch: int = 128, output_dimension: int = 512) -> List[List[float]]:
-    import voyageai
+    import voyageai  # type: ignore
     client = voyageai.Client(api_key=os.getenv('VOYAGE_API_KEY'))
     out: List[List[float]] = []
     for i in range(0, len(texts), batch):
@@ -261,11 +262,12 @@ def main() -> None:
     print(f'Prepared {len(chunks)} chunks.')
 
     ENRICH = (os.getenv('ENRICH_CODE_CHUNKS', 'false') or 'false').lower() == 'true'
+    enrich = None  # type: ignore[assignment]
     if ENRICH:
         try:
             from common.metadata import enrich  # type: ignore
         except Exception:
-            enrich = None
+            pass
         if enrich is not None:
             for c in chunks:
                 try:

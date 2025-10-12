@@ -1,5 +1,7 @@
-import os, json, time
-from typing import List, Dict
+import os
+import json
+import time
+from typing import List
 from dotenv import load_dotenv
 from retrieval.hybrid_search import search_routed, search_routed_multi
 
@@ -25,10 +27,13 @@ def main():
         print('No golden file found at', GOLDEN_PATH)
         return
     gold = json.load(open(GOLDEN_PATH))
-    total = len(gold); hits_top1 = 0; hits_topk = 0
+    total = len(gold)
+    hits_top1 = 0
+    hits_topk = 0
     t0 = time.time()
     for i, row in enumerate(gold, 1):
-        q = row['q']; repo = row.get('repo') or os.getenv('REPO','project')
+        q = row['q']
+        repo = row.get('repo') or os.getenv('REPO','project')
         expect = row.get('expect_paths') or []
         if USE_MULTI:
             docs = search_routed_multi(q, repo_override=repo, m=4, final_k=FINAL_K)
@@ -36,8 +41,10 @@ def main():
             docs = search_routed(q, repo_override=repo, final_k=FINAL_K)
         paths = [d.get('file_path','') for d in docs]
         if paths:
-            if hit(paths[:1], expect): hits_top1 += 1
-            if hit(paths, expect): hits_topk += 1
+            if hit(paths[:1], expect):
+                hits_top1 += 1
+            if hit(paths, expect):
+                hits_topk += 1
         print(f"[{i}/{total}] repo={repo} q={q}\n  top1={paths[:1]}\n  top{FINAL_K} hit={hit(paths, expect)}")
     dt = time.time() - t0
     print(json.dumps({
