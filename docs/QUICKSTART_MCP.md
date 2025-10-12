@@ -15,8 +15,12 @@
 
 ## Before You Start
 
-- Bring infra + MCP up (always-on helper):
-  - `bash scripts/up.sh`
+- Bring everything up (infra + MCP + API + open GUI):
+  - `make dev`  (or `bash scripts/dev_up.sh`)
+- Alternative (manual):
+  - `bash scripts/up.sh`  (infra + MCP)
+  - `make api`            (runs uvicorn)
+- Configure host/port and Docker preference in the GUI → Misc tab → “Apply All Changes”. These persist to `.env` and are read on next run.
 - Index both repos (once per code change):
   - `REPO=project python index_repo.py && REPO=project python index_repo.py`
 - Defaults:
@@ -32,7 +36,7 @@ Shared index across branches (recommended)
   # Export consistent env for MCP/tools
   source scripts/select_index.sh shared
   ```
-  The GUI can persist these via “Apply All Changes” (Infrastructure tab: set `Out Dir Base=./out.noindex-shared`).
+The GUI can persist these via “Apply All Changes” (Infrastructure tab: set `Out Dir Base=./out.noindex-shared`).
 
 ## Quick Commands
 

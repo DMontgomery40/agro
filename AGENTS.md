@@ -60,10 +60,14 @@ echo "activate venv" && \
 . .venv/bin/activate && \
 echo "verify deps" && \
 python -c "import fastapi, qdrant_client, bm25s; print('✓ fastapi, qdrant_client, bm25s loaded')"
-1) Bring up Infra + MCP (always-on)
+1) Bring up Dev (infra + MCP + API + GUI)
 bash
 Copy code
-cd path/to/your/rag-service && bash scripts/up.sh && bash scripts/status.sh
+cd path/to/your/rag-service && make dev && bash scripts/status.sh
+Manual alternative:
+bash
+Copy code
+cd path/to/your/rag-service && bash scripts/up.sh && bash scripts/status.sh && make api
 2) Index (run after code changes)
 bash
 Copy code
@@ -71,7 +75,7 @@ cd path/to/your/rag-service && . .venv/bin/activate && \
 echo "index project" && REPO=project python index_repo.py && \
 echo "index project" && REPO=project python index_repo.py && \
 echo "verify collections" && curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
-3) Run the HTTP service (in its own terminal)
+3) Run the HTTP service (manual; dev target already starts it)
 bash
 Copy code
 cd path/to/your/rag-service && . .venv/bin/activate && \

@@ -152,7 +152,7 @@
             display: flex;
             flex-direction: column;
             border-right: 1px solid #2a2a2a;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .tab-bar {
@@ -202,7 +202,7 @@
         .tab-content {
             display: none;
             padding: 24px;
-            overflow-y: auto;
+            overflow-y: visible;
             flex: 1;
         }
 
@@ -834,7 +834,7 @@
                             </div>
 
                             <!-- Status Display -->
-                            <div id="dash-index-status" style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; font-family: 'SF Mono', monospace; font-size: 12px; line-height: 1.6; color: #aaa; min-height: 48px; max-height: 480px; overflow-y: auto;"></div>
+                            <div id="dash-index-status" style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; font-family: 'SF Mono', monospace; font-size: 12px; line-height: 1.6; color: #aaa; min-height: 48px;"></div>
 
                             <!-- Progress Bar -->
                             <div style="margin-top: 12px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; height: 8px; overflow: hidden;">
@@ -1468,8 +1468,34 @@
                     </div>
                     <div class="input-row">
                         <div class="input-group">
+                            <label>Serve Host</label>
+                            <input type="text" name="HOST" value="127.0.0.1">
+                        </div>
+                        <div class="input-group">
                             <label>Serve Port</label>
                             <input type="number" name="PORT" value="8012">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Open Browser on Start</label>
+                            <select name="OPEN_BROWSER">
+                                <option value="1">On</option>
+                                <option value="0">Off</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Auto-start Colima (Docker)</label>
+                            <select name="AUTO_COLIMA">
+                                <option value="1">On</option>
+                                <option value="0">Off</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Colima Profile</label>
+                            <input type="text" name="COLIMA_PROFILE" placeholder="default">
                         </div>
                         <div class="input-group">
                             <label>agro Path</label>
@@ -1629,6 +1655,10 @@
                 <div class="input-row" style="margin-bottom: 8px;">
                     <div>Current Mode: <span id="autotune-mode">—</span></div>
                 </div>
+                <div style="margin-bottom: 12px; padding: 10px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Last Indexed</div>
+                    <div id="last-indexed-display" class="mono" style="font-size: 12px; color: #00ff88; font-weight: 600;">—</div>
+                </div>
                 <button class="small-button" id="btn-autotune-refresh">Refresh Status</button>
             </div>
 
@@ -1645,7 +1675,7 @@
                         <span style="text-transform: none;">Persist to defaults.json</span>
                     </label>
                 </div>
-                <pre id="ingest-out" class="mono" style="margin-top: 12px; padding: 8px; background: #0a0a0a; border-radius: 4px; max-height: 150px; overflow: auto;"></pre>
+                <pre id="ingest-out" class="mono" style="margin-top: 12px; padding: 8px; background: #0a0a0a; border-radius: 4px;"></pre>
             </div>
         </div>
     </div>

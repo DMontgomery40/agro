@@ -160,8 +160,6 @@ details summary { cursor:pointer; color: var(--muted); }
   font-size: 13px;
   line-height: 1.6;
   color: #9fb1c7;
-  max-height: 200px;
-  overflow: auto;
 }
 
 .tri-results {
@@ -191,8 +189,6 @@ details summary { cursor:pointer; color: var(--muted); }
   font-size: 13px;
   line-height: 1.6;
   color: #7d8ca8;
-  max-height: 200px;
-  overflow: auto;
 }
 
 /* Live indicator for cost calculator */
