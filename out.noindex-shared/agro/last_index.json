@@ -1,9 +1,9 @@
 {
   "repo": "agro",
-  "timestamp": "2025-10-12T07:49:37.401273Z",
+  "timestamp": "2025-10-12T11:27:02.509561Z",
   "chunks_path": "/Users/davidmontgomery/agro/out.noindex-shared/agro/chunks.jsonl",
   "bm25_index_dir": "/Users/davidmontgomery/agro/out.noindex-shared/agro/bm25_index",
-  "chunk_count": 404,
+  "chunk_count": 420,
   "collection_name": "code_chunks_agro",
   "embedding_type": "openai",
   "embedding_dim": 3072

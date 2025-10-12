@@ -60,6 +60,7 @@ def retrieve_node(state: RAGState) -> Dict:
                 'dense_updated_min': stats.get('timestamp'),
                 'dense_updated_max': stats.get('timestamp'),
                 'dense_backlog': 0,
+                'vector_backend': (os.getenv('VECTOR_BACKEND','qdrant') or 'qdrant'),
             })
     except Exception:
         pass
@@ -152,7 +153,8 @@ def generate_node(state: RAGState) -> Dict:
         return {'generation': header + "\n" + content}
     citations = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" for d in ctx])
     context_text = "\n\n".join([d.get('code','') for d in ctx])
-    sys = 'You answer strictly from the provided code context. Always cite file paths and line ranges you used.'
+    # Use custom system prompt if provided, otherwise use default
+    sys = os.getenv('SYSTEM_PROMPT') or 'You answer strictly from the provided code context. Always cite file paths and line ranges you used.'
     user = f"Question:\n{q}\n\nContext:\n{context_text}\n\nCitations (paths and line ranges):\n{citations}\n\nAnswer:"
     content, _ = generate_text(user_input=user, system_instructions=sys, reasoning_effort=None)
     content = content or ''
@@ -165,7 +167,9 @@ def generate_node(state: RAGState) -> Dict:
             citations2 = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" for d in ctx2])
             context_text2 = "\n\n".join([d.get('code','') for d in ctx2])
             user2 = f"Question:\n{q}\n\nContext:\n{context_text2}\n\nCitations (paths and line ranges):\n{citations2}\n\nAnswer:"
-            content2, _ = generate_text(user_input=user2, system_instructions=sys, reasoning_effort=None)
+            # Use same system prompt as first generation attempt
+            sys2 = os.getenv('SYSTEM_PROMPT') or 'You answer strictly from the provided code context. Always cite file paths and line ranges you used.'
+            content2, _ = generate_text(user_input=user2, system_instructions=sys2, reasoning_effort=None)
             content = (content2 or content or '')
     repo_hdr = state.get('repo') or (ctx[0].get('repo') if ctx else None) or os.getenv('REPO','project')
     header = f"[repo: {repo_hdr}]"

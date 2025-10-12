@@ -24,6 +24,16 @@
     return { gen_provider, gen_model, embed_provider, embed_model, rerank_provider, rerank_model, ...base };
   }
 
-  window.CostLogic = { buildBase, buildPayloadFromUI };
-})();
+  async function estimateFromUI(apiBase){
+    try{
+      const payload = buildPayloadFromUI();
+      const base = (apiBase||'').replace(/\/$/,'');
+      let r = await fetch(base + '/api/cost/estimate_pipeline', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      if (!r.ok) r = await fetch(base + '/api/cost/estimate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      if (!r.ok) throw new Error(await r.text() || 'Cost estimate failed');
+      return await r.json();
+    }catch(e){ throw e; }
+  }
 
+  window.CostLogic = { buildBase, buildPayloadFromUI, estimateFromUI };
+})();

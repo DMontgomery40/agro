@@ -1,0 +1,5 @@
+{"id":0,"text":"app Exports `app` from server.app for backward compatibility and supports direct run.  /Users/davidmontgomery/agro/serve_rag.py"}
+{"id":1,"text":"Imports all functionalities from the rerank module of the retrieval package.  /Users/davidmontgomery/agro/rerank.py"}
+{"id":2,"text":"Imports configuration settings from a common config loader.  /Users/davidmontgomery/agro/config_loader.py"}
+{"id":3,"text":"preferences_classify_query Classifies query intent based on the presence of specific keywords.  /Users/davidmontgomery/agro/hybrid_search.py"}
+{"id":4,"text":"_project_layer_bonus Calculates a bonus value based on the given layer and intent.  /Users/davidmontgomery/agro/hybrid_search.py"}

@@ -149,6 +149,15 @@
     }
 
     // ---------------- Routing Trace Panel ----------------
+    function _fmtTable(rows, headers){
+        const cols = headers.length;
+        const widths = new Array(cols).fill(0);
+        const all = [headers].concat(rows);
+        all.forEach(r => r.forEach((c,i)=>{ widths[i] = Math.max(widths[i], String(c||'').length); }));
+        const line = (r)=> r.map((c,i)=> String(c||'').padEnd(widths[i])).join('  ');
+        return ['```', line(headers), line(widths.map(w=>'-'.repeat(w))), ...rows.map(line), '```'].join('\n');
+    }
+
     async function loadLatestTrace(targetId='trace-output'){
         try{
             const repoSel = document.querySelector('select[name="REPO"]');
@@ -162,15 +171,40 @@
             const decide = (t.events||[]).find(ev=>ev.kind==='router.decide');
             const rer = (t.events||[]).find(ev=>ev.kind==='reranker.rank');
             const gate = (t.events||[]).find(ev=>ev.kind==='gating.outcome');
-            const header = `Policy: ${(decide?.data?.policy)||'—'}\n`+
-                           `Intent: ${(decide?.data?.intent)||'—'}\n`+
-                           `Final K: ${(rer?.data?.output_topK)||'—'}`;
-            const lines = [header, '', 'Events:'];
-            for (const ev of (t.events||[])){
-                const when = ev.ts || '';
-                lines.push(`- ${when} • ${ev.kind}`);
+            const header = [];
+            header.push(`Policy: ${(decide?.data?.policy)||'—'}`);
+            header.push(`Intent: ${(decide?.data?.intent)||'—'}`);
+            header.push(`Final K: ${(rer?.data?.output_topK)||'—'}`);
+            header.push(`Vector: ${((d && d.repo) ? (document.querySelector('[name="VECTOR_BACKEND"]').value||'qdrant'):'qdrant')}`);
+
+            const parts = [];
+            parts.push(header.join('  •  '));
+            parts.push('');
+            // Candidates
+            const pre = (t.events||[]).find(ev=>ev.kind==='retriever.retrieve');
+            if (pre && Array.isArray(pre.data?.candidates)){
+                const rows = pre.data.candidates.slice(0,10).map(c=>[
+                    (c.path||'').split('/').slice(-2).join('/'), c.bm25_rank||'', c.dense_rank||''
+                ]);
+                parts.push('Pre‑rerank candidates (top 10):');
+                parts.push(_fmtTable(rows, ['path','bm25','dense']));
+                parts.push('');
             }
-            el.textContent = lines.join('\n');
+            // Rerank results
+            if (rer && Array.isArray(rer.data?.scores)){
+                const rows = rer.data.scores.slice(0,10).map(s=>[
+                    (s.path||'').split('/').slice(-2).join('/'), (s.rerank_score!=null? Number(s.rerank_score).toFixed(3):'' )
+                ]);
+                parts.push('Post‑rerank (top 10):');
+                parts.push(_fmtTable(rows, ['path','score']));
+                parts.push('');
+            }
+            // Event list
+            parts.push('Events:');
+            for (const ev of (t.events||[])){
+                parts.push(`- ${ev.ts || ''} • ${ev.kind}`);
+            }
+            el.textContent = parts.join('\n');
         }catch(e){ const el=$('#trace-output'); if(el) el.textContent = 'Failed to load trace: '+e.message; }
     }
 
@@ -215,6 +249,15 @@
             // load trace if the dropdown is open
             const det = document.getElementById('chat-trace');
             if (det && det.open){ await loadLatestTrace('chat-trace-output'); }
+            // optional auto-open in LangSmith (project runs page)
+            try{
+                const env = (state.config?.env)||{};
+                if ((env.TRACING_MODE||'').toLowerCase()==='langsmith' && ['1','true','on'].includes(String(env.TRACE_AUTO_LS||'0').toLowerCase())){
+                    const prj = (env.LANGCHAIN_PROJECT||'agro');
+                    const url = `https://smith.langchain.com/projects/${encodeURIComponent(prj)}/runs`;
+                    window.open(url, '_blank');
+                }
+            }catch{}
         }catch(e){ appendChatMessage('assistant', `Error: ${e.message}`); }
     }
 
@@ -546,21 +589,26 @@
             if (providerSelect.options.length <= 1) setOpts(providerSelect, providers);
         }
         setOpts(modelList, allModels);
-        const genModels = unique(models
-            .filter(m => (m.family||'').includes('gen') || ['openai','anthropic','google','local','mistral','meta'].includes((m.provider||'').toLowerCase()))
-            .map(m => m.model));
-        const rrModels = unique(models
-            .filter(m => (m.family||'').includes('rerank') || ['cohere'].includes((m.provider||'').toLowerCase()) || (m.model||'').toLowerCase().includes('rerank'))
-            .map(m => m.model));
-        const embModels = unique(models
-            .filter(m => (m.family||'').includes('embed') || (m.embed_per_1k||0) > 0)
-            .map(m => m.model));
+        // Partition models into categories for filtering
+        // Inference models: unit == '1k_tokens' and no embed/rerank fields (cost may be 0 for local)
+        const isGen = (m)=> {
+            const u = String(m.unit || '').toLowerCase();
+            const hasEmbed = Object.prototype.hasOwnProperty.call(m, 'embed_per_1k');
+            const hasRerank = Object.prototype.hasOwnProperty.call(m, 'rerank_per_1k');
+            return u === '1k_tokens' && !hasEmbed && !hasRerank;
+        };
+        const isEmbed = (m)=> Object.prototype.hasOwnProperty.call(m, 'embed_per_1k');
+        const isRerank = (m)=> Object.prototype.hasOwnProperty.call(m, 'rerank_per_1k') || /rerank/i.test(String(m.family||'')+String(m.model||''));
+        const genModels = unique(models.filter(isGen).map(m => m.model));
+        const rrModels = unique(models.filter(isRerank).map(m => m.model));
+        const embModels = unique(models.filter(isEmbed).map(m => m.model));
         setOpts(genList, genModels);
         setOpts(rrList, rrModels);
         setOpts(embList, embModels);
 
+        // Default provider only; leave model empty so datalist shows all options on first focus
         if (!$('#cost-provider').value && providers.length) $('#cost-provider').value = providers[0];
-        if (!$('#cost-model').value && allModels.length) $('#cost-model').value = allModels[0];
+        if (!$('#cost-model').value) $('#cost-model').value = '';
 
         // Filter model options when provider changes AND update the input value
         const onProv = () => {
@@ -568,73 +616,95 @@
             if (!modelInput) return;
 
             const p = $('#cost-provider').value.trim().toLowerCase();
-            const provModels = unique(models.filter(m => (m.provider||'').toLowerCase()===p).map(m => m.model));
-            const filtered = provModels.length ? provModels : allModels;
-
-            setOpts(modelList, filtered);
-
-            // Auto-select first model from this provider if current model doesn't match
-            if (!filtered.includes(modelInput.value)) {
-                modelInput.value = filtered[0] || '';
+            const provModels = unique(models.filter(m => (m.provider||'').toLowerCase()===p && isGen(m)).map(m => m.model));
+            if (!provModels.length) {
+                // Fall back to all inference models so the dropdown is still usable
+                const allGen = unique(models.filter(isGen).map(m => m.model));
+                setOpts(modelList, allGen);
+                modelInput.value = '';
+                try { showStatus(`No inference models for provider "${p}" — showing all models.`, 'warn'); } catch {}
+                return;
+            }
+            setOpts(modelList, provModels);
+            // If current value isn't a model for this provider, clear so the datalist shows all options
+            if (!provModels.includes(modelInput.value)) {
+                modelInput.value = '';
             }
         };
 
         if (providerSelect) providerSelect.addEventListener('change', onProv);
         onProv(); // Initialize
-    }
 
-    function buildCostPayload() {
-        const payload = {
-            provider: $('#cost-provider').value.trim(),
-            model: $('#cost-model').value.trim(),
-            tokens_in: parseInt($('#cost-in').value, 10) || 0,
-            tokens_out: parseInt($('#cost-out').value, 10) || 0,
-            embeds: parseInt($('#cost-embeds').value, 10) || 0,
-            reranks: parseInt($('#cost-rerank').value, 10) || 0,
-            requests_per_day: parseInt($('#cost-rpd').value, 10) || 0,
-        };
-        // Optional per-component providers/models for full pipeline costing
-        const ep = document.getElementById('cost-embed-provider');
-        const em = document.getElementById('cost-embed-model');
-        const rp = document.getElementById('cost-rerank-provider');
-        const rm = document.getElementById('cost-rerank-model');
-        if (ep && ep.value) payload.embed_provider = ep.value.trim();
-        if (em && em.value) payload.embed_model = em.value.trim();
-        if (rp && rp.value) payload.rerank_provider = rp.value.trim();
-        if (rm && rm.value) payload.rerank_model = rm.value.trim();
-        // MQ rewrites from current config (affects per-request embed/rerank cost)
-        const mq = parseInt((state.config?.env?.MQ_REWRITES)||'1', 10) || 1;
-        payload.mq_rewrites = mq;
-        return payload;
+        // ---- Provider-specific filtering for Embeddings and Reranker ----
+        function normProvList(sel, kind){
+            const p = String(sel||'').toLowerCase();
+            if (p === 'mxbai') return ['huggingface'];
+            if (p === 'hugging face') return ['huggingface'];
+            if (p === 'local'){
+                // For local: embeddings prefer local/ollama; rerank prefer huggingface/local
+                return (kind==='embed') ? ['local','ollama'] : ['huggingface','local','ollama','mlx'];
+            }
+            return [p];
+        }
+        function updateEmbedList(){
+            const sel = document.getElementById('cost-embed-provider');
+            const input = document.getElementById('cost-embed-model');
+            if (!sel || !embList) return;
+            const prov = String(sel.value||'').toLowerCase();
+            const prows = normProvList(prov, 'embed');
+            let items = models.filter(m => isEmbed(m) && prows.includes(String(m.provider||'').toLowerCase())).map(m => m.model);
+            // If provider is mxbai, prefer Mixedbread embeddings; if none present, include all HF embeddings
+            if (prov === 'mxbai') {
+                const mb = items.filter(s => /mixedbread/i.test(s));
+                items = mb.length ? mb : models.filter(m => isEmbed(m) && String(m.provider||'').toLowerCase()==='huggingface').map(m => m.model);
+            }
+            if (!items.length) items = unique(models.filter(isEmbed).map(m => m.model));
+            setOpts(embList, unique(items));
+            if (input && items.length && !items.includes(input.value)) input.value = '';
+        }
+        function normProviderName(p){
+            p = String(p||'').toLowerCase();
+            if (p === 'hf' || p === 'hugging face') return 'huggingface';
+            return p;
+        }
+        function updateRerankList(){
+            const sel = document.getElementById('cost-rerank-provider');
+            const input = document.getElementById('cost-rerank-model');
+            if (!sel || !rrList) return;
+            const p = normProviderName(sel.value||'');
+            let items;
+            if (!p) {
+                items = models.filter(isRerank).map(m => m.model);
+            } else if (p === 'cohere') {
+                items = models.filter(m => isRerank(m) && String(m.provider||'').toLowerCase()==='cohere').map(m => m.model);
+            } else if (p === 'huggingface') {
+                items = models.filter(m => isRerank(m) && String(m.provider||'').toLowerCase()==='huggingface').map(m => m.model);
+            } else if (p === 'local') {
+                // Prefer HF rerankers for local
+                items = models.filter(m => isRerank(m) && (String(m.provider||'').toLowerCase()==='huggingface' || String(m.provider||'').toLowerCase()==='local' || String(m.provider||'').toLowerCase()==='ollama')).map(m => m.model);
+            } else if (p === 'none') {
+                items = [];
+            } else {
+                items = models.filter(m => isRerank(m) && String(m.provider||'').toLowerCase()===p).map(m => m.model);
+            }
+            if (!items.length) items = unique(models.filter(isRerank).map(m => m.model));
+            setOpts(rrList, unique(items));
+            if (input && items.length && !items.includes(input.value)) input.value = '';
+        }
+        const embProvSel = document.getElementById('cost-embed-provider');
+        const rrProvSel = document.getElementById('cost-rerank-provider');
+        if (embProvSel) embProvSel.addEventListener('change', updateEmbedList);
+        if (rrProvSel) rrProvSel.addEventListener('change', updateRerankList);
+        updateEmbedList();
+        updateRerankList();
     }
 
     async function estimateCost() {
-        const basic = buildCostPayload();
-        // Pipeline payload includes gen model+provider and uses env to resolve embed/rerank (cohere/openai etc.)
-        const pipeline = {
-            gen_provider: basic.provider,
-            gen_model: basic.model,
-            tokens_in: basic.tokens_in,
-            tokens_out: basic.tokens_out,
-            embeds: basic.embeds,
-            reranks: basic.reranks,
-            requests_per_day: basic.requests_per_day,
-        };
-
-        try {
-            let r = await fetch(api('/api/cost/estimate_pipeline'), {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pipeline)
-            });
-            if (!r.ok) {
-                // Fallback to legacy single‑row estimator
-                r = await fetch(api('/api/cost/estimate'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(basic) });
-            }
-            const d = await r.json();
+        try{
+            const d = await (window.CostLogic && window.CostLogic.estimateFromUI ? window.CostLogic.estimateFromUI(API_BASE) : Promise.reject(new Error('CostLogic missing')));
             $('#cost-daily').textContent = `$${Number(d.daily||0).toFixed(4)}`;
             $('#cost-monthly').textContent = `$${Number(d.monthly||0).toFixed(2)}`;
-        } catch (e) {
-            alert('Cost estimation failed: ' + e.message);
-        }
+        }catch(e){ alert('Cost estimation failed: ' + e.message); }
     }
 
     // ---------------- Hardware Scan & Profiles ----------------
@@ -1562,6 +1632,14 @@
         // Retrieval tab: trace button
         const rt = document.getElementById('btn-trace-latest');
         if (rt) rt.addEventListener('click', ()=>loadLatestTrace('trace-output'));
+        const rtLS = document.getElementById('btn-trace-open-ls');
+        if (rtLS) rtLS.addEventListener('click', ()=>{
+            try{
+                const prj = (state.config?.env?.LANGCHAIN_PROJECT||'agro');
+                const url = `https://smith.langchain.com/projects/${encodeURIComponent(prj)}/runs`;
+                window.open(url, '_blank');
+            }catch(e){ alert('Unable to open LangSmith: '+e.message); }
+        });
 
         // Chat bindings
         const chatSend = document.getElementById('chat-send');
@@ -1644,7 +1722,12 @@
         wireDayConverters();
     }
 
-    window.addEventListener('DOMContentLoaded', init);
+    // Ensure init runs even if DOMContentLoaded already fired (scripts at body end)
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
     // Decide v1 (client) vs v2 (server) auto-profile
     async function onWizardOneClick(e){

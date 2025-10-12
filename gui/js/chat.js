@@ -1,9 +1,6 @@
 // Chat interface for RAG system
 // Handles sending questions to /answer endpoint and displaying responses
 
-let chatMessages = [];
-let chatSettings = loadChatSettings();
-
 // Default chat settings
 const DEFAULT_CHAT_SETTINGS = {
     model: '',  // Empty = use GEN_MODEL
@@ -18,6 +15,9 @@ const DEFAULT_CHAT_SETTINGS = {
     syntaxHighlight: false,
     systemPrompt: ''
 };
+
+let chatMessages = [];
+let chatSettings = loadChatSettings();
 
 // Load settings from localStorage
 function loadChatSettings() {
