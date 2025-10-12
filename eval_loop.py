@@ -13,15 +13,12 @@ import sys
 import json
 import time
 import argparse
-from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any
 from dotenv import load_dotenv
+from eval_rag import hit, GOLDEN_PATH, USE_MULTI, FINAL_K
+from retrieval.hybrid_search import search_routed, search_routed_multi
 
 load_dotenv()
-
-# Import eval logic
-from eval_rag import main as run_eval, hit, GOLDEN_PATH, USE_MULTI, FINAL_K
-from retrieval.hybrid_search import search_routed, search_routed_multi
 
 
 BASELINE_PATH = os.getenv('BASELINE_PATH', 'eval_baseline.json')
@@ -126,7 +123,7 @@ def compare_with_baseline(current: Dict[str, Any]):
     """Compare current results with baseline."""
     if not os.path.exists(BASELINE_PATH):
         print(f"⚠ No baseline found at {BASELINE_PATH}")
-        print(f"  Run with --baseline to create one")
+        print("  Run with --baseline to create one")
         return
 
     with open(BASELINE_PATH) as f:
@@ -144,7 +141,7 @@ def compare_with_baseline(current: Dict[str, Any]):
     delta_top1 = curr_top1 - base_top1
     delta_topk = curr_topk - base_topk
 
-    print(f"\nTop-1 Accuracy:")
+    print("\nTop-1 Accuracy:")
     print(f"  Baseline: {base_top1:.3f}")
     print(f"  Current:  {curr_top1:.3f}")
     print(f"  Delta:    {delta_top1:+.3f} {'✓' if delta_top1 >= 0 else '✗'}")

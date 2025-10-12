@@ -127,8 +127,8 @@ Shims remain at root for backward compatibility; prefer canonical imports in new
 
 ```bash
 # 0) Get the code
-git clone https://github.com/DMontgomery40/rag-service.git
-cd rag-service
+git clone https://github.com/DMontgomery40/agro.git
+cd agro
 
 # 1) One‑command bring‑up (infra + MCP + API + open GUI)
 #    Uses Colima automatically on macOS if Docker isn't running
@@ -252,10 +252,10 @@ hand-writing a compose file.
 
 ```bash
 # Create directory structure
-mkdir -p /path/to/rag-service/{infra,data/qdrant,data/redis}
+mkdir -p /path/to/agro/{infra,data/qdrant,data/redis}
 
 # Create docker-compose.yml
-cat > /path/to/rag-service/infra/docker-compose.yml <<'YAML'
+cat > /path/to/agro/infra/docker-compose.yml <<'YAML'
 version: "3.8"
 services:
   qdrant:
@@ -269,7 +269,7 @@ services:
       - QDRANT__STORAGE__USE_MMAP=false
       - QDRANT__STORAGE__ON_DISK_PERSISTENCE=true
     volumes:
-      - /path/to/rag-service/data/qdrant:/qdrant/storage
+      - /path/to/agro/data/qdrant:/qdrant/storage
   redis:
     image: redis/redis-stack:7.2.0-v10
     container_name: rag-redis
@@ -279,11 +279,11 @@ services:
     environment:
       - REDIS_ARGS=--appendonly yes
     volumes:
-      - /path/to/rag-service/data/redis:/data
+      - /path/to/agro/data/redis:/data
 YAML
 
 # Start services
-cd /path/to/rag-service/infra
+cd /path/to/agro/infra
 docker compose up -d
 
 # Verify
@@ -294,7 +294,7 @@ docker exec rag-redis redis-cli ping       # Should return PONG
 ### Phase 2: Python Environment
 
 ```bash
-cd /path/to/rag-service
+cd /path/to/agro
 
 # Create venv (if not exists)
 python3 -m venv .venv
@@ -373,7 +373,7 @@ Automatically excludes common directories and file types:
 Edit this file to add glob patterns for your repos:
 
 ```bash
-cd /path/to/rag-service
+cd /path/to/agro
 cat data/exclude_globs.txt
 
 # Add your patterns:
@@ -409,7 +409,7 @@ echo "**/migrations/**" >> data/exclude_globs.txt
 The `scripts/` folder contains tools to analyze your codebase and generate optimal configurations:
 
 ```bash
-cd /path/to/rag-service/scripts
+cd /path/to/agro/scripts
 
 # Analyze a repo to find important keywords
 python analyze_keywords.py /path/to/your/repo-a
@@ -653,8 +653,8 @@ Edit the config file (create if it doesn't exist):
 {
   "mcpServers": {
     "rag-service": {
-      "command": "/path/to/rag-service/.venv/bin/python",
-      "args": ["/path/to/rag-service/mcp_server.py"],
+      "command": "/path/to/agro/.venv/bin/python",
+      "args": ["/path/to/agro/mcp_server.py"],
       "env": {
         "OPENAI_API_KEY": "sk-proj-...",
         "OLLAMA_URL": "http://127.0.0.1:11434/api",
@@ -706,8 +706,8 @@ codex --version
 
 ```bash
 codex mcp add rag-service -- \
-  /path/to/rag-service/.venv/bin/python \
-  /path/to/rag-service/mcp_server.py
+  /path/to/agro/.venv/bin/python \
+  /path/to/agro/mcp_server.py
 ```
 
 This adds the server to `~/.codex/config.toml`.
@@ -857,11 +857,11 @@ python eval_loop.py --json > results.json
 
 ```bash
 # Use the helper script (starts infra + MCP)
-cd /path/to/rag-service
+cd /path/to/agro
 bash scripts/up.sh
 
 # Or manually:
-cd /path/to/rag-service/infra
+cd /path/to/agro/infra
 docker compose up -d
 
 # Start CLI chat

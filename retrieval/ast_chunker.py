@@ -1,8 +1,10 @@
-import os, re, hashlib
+import os
+import re
+import hashlib
 from typing import Dict, List, Optional
 
 try:
-    from tree_sitter_languages import get_parser as _ts_get_parser
+    from tree_sitter_languages import get_parser as _ts_get_parser  # type: ignore
 except Exception:
     _ts_get_parser = None
 
@@ -70,22 +72,31 @@ def greedy_fallback(src:str, fpath:str, lang:str, target:int)->List[Dict]:
     if len(parts) < 2:
         out, cur, acc = [], [], 0
         for line in src.splitlines(True):
-            cur.append(line); acc += nonws_len(line)
+            cur.append(line)
+            acc += nonws_len(line)
             if acc >= target:
-                out.append("".join(cur)); cur, acc = [], 0
-        if cur: out.append("".join(cur))
+                out.append("".join(cur))
+                cur, acc = [], 0
+        if cur:
+            out.append("".join(cur))
         return [{
             "id": hashlib.md5((fpath+str(i)+s[:80]).encode()).hexdigest()[:12],
             "file_path": fpath, "language": lang, "type":"blob","name":None,
             "start_line": 1, "end_line": s.count("\n")+1, "imports": extract_imports(src, lang), "code": s
         } for i,s in enumerate(out)]
     else:
-        rejoined, buf, acc = [], [], 0
+        rejoined: list[str] = []
+        buf: list[str] = []
+        acc = 0
         for p in parts:
             if acc + nonws_len(p) > target and buf:
-                s = "".join(buf); rejoined.append(s); buf, acc = [], 0
-            buf.append(p); acc += nonws_len(p)
-        if buf: rejoined.append("".join(buf))
+                s = "".join(buf)
+                rejoined.append(s)
+                buf, acc = [], 0
+            buf.append(p)
+            acc += nonws_len(p)
+        if buf:
+            rejoined.append("".join(buf))
         return [{
             "id": hashlib.md5((fpath+str(i)+s[:80]).encode()).hexdigest()[:12],
             "file_path": fpath, "language": lang, "type":"section","name":None,
