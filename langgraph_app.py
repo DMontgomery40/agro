@@ -6,6 +6,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.redis import RedisSaver
 from hybrid_search import search_routed_multi as hybrid_search_routed_multi
 from env_model import generate_text
+from index_stats import get_index_stats
 
 # Load environment from repo root .env without hard-coded paths
 try:
@@ -60,7 +61,14 @@ def route_after_retrieval(state:RAGState)->str:
     scores = sorted([float(d.get("rerank_score",0.0) or 0.0) for d in docs], reverse=True)
     top1 = scores[0] if scores else 0.0
     avg5 = (sum(scores[:5])/min(5, len(scores))) if scores else 0.0
-    if top1 >= 0.62 or avg5 >= 0.55 or conf >= 0.55:
+    # Allow env overrides so teams can tighten gates without code changes
+    try:
+        CONF_TOP1 = float(os.getenv('CONF_TOP1', '0.62'))
+        CONF_AVG5 = float(os.getenv('CONF_AVG5', '0.55'))
+        CONF_ANY = float(os.getenv('CONF_ANY', '0.55'))
+    except Exception:
+        CONF_TOP1, CONF_AVG5, CONF_ANY = 0.62, 0.55, 0.55
+    if top1 >= CONF_TOP1 or avg5 >= CONF_AVG5 or conf >= CONF_ANY:
         return "generate"
     if it >= 3:
         return "fallback"
@@ -76,6 +84,27 @@ def rewrite_query(state: RAGState) -> Dict:
 
 def generate_node(state: RAGState) -> Dict:
     q = state['question']; ctx = state['documents'][:5]
+    # Special-case: answer index status questions deterministically from local files
+    ql = (q or '').lower()
+    if any(kw in ql for kw in ("last index", "last indexed", "when was this indexed", "when indexed", "index time")):
+        stats = get_index_stats()
+        repo_hdr = state.get('repo') or os.getenv('REPO','project')
+        # Pick paths for the active repo if present
+        paths = None
+        for r in stats.get('repos', []):
+            if str(r.get('name')) == str(repo_hdr):
+                paths = r.get('paths', {})
+                break
+        lines = []
+        lines.append(f"Most recent index: {stats.get('timestamp','unknown')}")
+        if paths and (paths.get('chunks') or paths.get('bm25')):
+            if paths.get('chunks'):
+                lines.append(f"chunks.jsonl: {paths['chunks']}")
+            if paths.get('bm25'):
+                lines.append(f"bm25_index: {paths['bm25']}")
+        content = "\n".join(lines)
+        header = f"[repo: {repo_hdr}]"
+        return {'generation': header + "\n" + content}
     citations = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" for d in ctx])
     context_text = "\n\n".join([d.get('code','') for d in ctx])
     sys = 'You answer strictly from the provided code context. Always cite file paths and line ranges you used.'

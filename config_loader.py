@@ -109,8 +109,32 @@ def get_repo_paths(name: str) -> List[str]:
     raise ValueError(f"Repo `{name}` missing 'path' in repos.json")
 
 
+def _out_base_dir() -> Path:
+    """Resolve base output directory for indices.
+
+    Order of precedence:
+      1) ENV OUT_DIR_BASE or RAG_OUT_BASE (absolute or relative to repo)
+      2) ./out.noindex-shared (cross-branch shared)
+      3) ./out.noindex-gui
+      4) ./out.noindex-devclean
+      5) ./out.noindex
+      6) ./out
+    """
+    root = Path(__file__).resolve().parent
+    env_base = os.getenv("OUT_DIR_BASE") or os.getenv("RAG_OUT_BASE")
+    if env_base:
+        p = Path(env_base).expanduser()
+        if not p.is_absolute():
+            p = (root / p)
+        return p
+    for cand in ("out.noindex-shared", "out.noindex-gui", "out.noindex-devclean", "out.noindex"):
+        if (root / cand).exists():
+            return root / cand
+    return root / "out"
+
+
 def out_dir(name: str) -> str:
-    base = Path(__file__).resolve().parent / "out" / name
+    base = _out_base_dir() / name
     return str(base)
 
 
@@ -166,4 +190,3 @@ def choose_repo_from_query(query: str, default: Optional[str] = None) -> str:
     if best:
         return best
     return (default or get_default_repo())
-

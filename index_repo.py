@@ -17,6 +17,7 @@ import tiktoken
 from sentence_transformers import SentenceTransformer
 import fnmatch, pathlib
 import qdrant_recreate_fallback  # make recreate_collection 404-safe
+from datetime import datetime
 
 # --- global safe filters (avoid indexing junk) ---
 from filtering import _prune_dirs_in_place, _should_index_file, PRUNE_DIRS
@@ -322,6 +323,21 @@ def main() -> None:
             f.write(json.dumps(c, ensure_ascii=False)+'\n')
     print('BM25 index saved.')
 
+    # Persist a lightweight last-index metadata file for downstream consumers (GUI/CLI)
+    try:
+        meta = {
+            'repo': REPO,
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'chunks_path': os.path.join(OUTDIR, 'chunks.jsonl'),
+            'bm25_index_dir': os.path.join(OUTDIR, 'bm25_index'),
+            'chunk_count': len(chunks),
+            'collection_name': COLLECTION,
+        }
+        with open(os.path.join(OUTDIR, 'last_index.json'), 'w', encoding='utf-8') as mf:
+            json.dump(meta, mf, indent=2)
+    except Exception:
+        pass
+
     # Optionally skip dense embeddings/Qdrant for fast local-only BM25 indexing
     if (os.getenv('SKIP_DENSE','0') or '0').strip() == '1':
         print('Skipping dense embeddings and Qdrant upsert (SKIP_DENSE=1).')
@@ -361,6 +377,10 @@ def main() -> None:
                 cache = EmbeddingCache(OUTDIR)
                 hashes = [c['hash'] for c in chunks]
                 embs = cache.embed_texts(client, texts, hashes, model='text-embedding-3-large', batch=64)
+                # Prune orphaned embeddings from deleted/changed files
+                pruned = cache.prune(set(hashes))
+                if pruned > 0:
+                    print(f'Pruned {pruned} orphaned embeddings from cache.')
                 cache.save()
             except Exception as e:
                 print(f'Embedding via OpenAI failed ({e}); falling back to local embeddings.')
@@ -403,6 +423,22 @@ def main() -> None:
         import json as _json
         _json.dump({str(i): pid for i, pid in enumerate(point_ids)}, open(os.path.join(OUTDIR,'bm25_index','bm25_point_ids.json'),'w'))
         print(f'Indexed {len(chunks)} chunks to Qdrant (embeddings: {len(embs[0])} dims).')
+        # Update last-index metadata to reflect completed dense upsert
+        try:
+            meta = {
+                'repo': REPO,
+                'timestamp': datetime.utcnow().isoformat() + 'Z',
+                'chunks_path': os.path.join(OUTDIR, 'chunks.jsonl'),
+                'bm25_index_dir': os.path.join(OUTDIR, 'bm25_index'),
+                'chunk_count': len(chunks),
+                'collection_name': COLLECTION,
+                'embedding_type': (os.getenv('EMBEDDING_TYPE','openai') or 'openai').lower(),
+                'embedding_dim': len(embs[0]) if embs and embs[0] else None,
+            }
+            with open(os.path.join(OUTDIR, 'last_index.json'), 'w', encoding='utf-8') as mf:
+                json.dump(meta, mf, indent=2)
+        except Exception:
+            pass
     except Exception as e:
         # Allow offline usage (BM25-only search) when Qdrant is unavailable
         print(f"Qdrant unavailable or failed to index ({e}); continuing with BM25-only index. Dense retrieval will be disabled.")

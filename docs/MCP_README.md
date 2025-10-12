@@ -32,6 +32,24 @@ See [docs/REMOTE_MCP.md](REMOTE_MCP.md) for HTTP setup.
 - Index repos: `REPO=repo-a python index_repo.py && REPO=repo-b python index_repo.py`
 - Codex CLI installed: `brew install openai/tap/codex` or `npm install -g @openai/codex`
 
+### Shared Index Across Branches
+
+MCP often runs in a different process/session than your shell. To avoid “no results” from mismatched paths, standardize on a shared index:
+
+```bash
+. .venv/bin/activate
+REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
+  python index_repo.py
+
+# Ensure MCP inherits consistent env
+source scripts/select_index.sh shared   # sets OUT_DIR_BASE and COLLECTION_NAME
+
+# Bring infra + MCP up with shared profile
+bash scripts/up.sh && bash scripts/status.sh
+```
+
+You can also persist these values via the GUI (Infrastructure tab → set `Out Dir Base=./out.noindex-shared` → “Apply All Changes”).
+
 ### 2. Register MCP Server with Codex
 
 ```bash
@@ -229,9 +247,23 @@ The `expect_paths` uses substring matching — any result containing one of thes
 
 ### "No results returned"
 
-- Ensure repo is indexed: `REPO=repo-a python index_repo.py`
-- Check collections exist: `curl -s http://127.0.0.1:6333/collections | jq`
-- Try search directly: `python -c "from hybrid_search import search_routed; print(search_routed('test', repo_override='repo-a'))"`
+- Verify shared index exists: `ls -lh out.noindex-shared/agro/chunks.jsonl`
+- Ensure MCP sees `OUT_DIR_BASE=./out.noindex-shared`:
+  - `source scripts/select_index.sh shared` before starting MCP
+  - or set via GUI → Infrastructure → “Apply All Changes” (writes `.env`)
+- Re-index (fast BM25-only):
+  ```bash
+  . .venv/bin/activate && REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
+    python index_repo.py
+  ```
+- Try retrieval directly:
+  ```bash
+  . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
+    python - <<'PY'
+  from hybrid_search import search_routed_multi
+  print(search_routed_multi('test', repo_override='agro', final_k=3))
+  PY
+  ```
 
 ### "Codex can't find the tools"
 
