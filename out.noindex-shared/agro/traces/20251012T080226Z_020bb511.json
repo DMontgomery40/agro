@@ -1,0 +1,601 @@
+{
+  "repo": "agro",
+  "id": "020bb511",
+  "question": "test",
+  "started_at": "2025-10-12T08:02:05.662764Z",
+  "finished_at": "2025-10-12T08:02:26.187621Z",
+  "events": [
+    {
+      "ts": "2025-10-12T08:02:05.663764Z",
+      "kind": "router.decide",
+      "data": {
+        "policy": "code",
+        "intent": "server",
+        "query_original": "test",
+        "query_rewrites": [],
+        "knobs": {
+          "topk_sparse": 75,
+          "topk_dense": 75,
+          "final_k": 20,
+          "hydration_mode": "lazy"
+        }
+      }
+    },
+    {
+      "ts": "2025-10-12T08:02:06.097702Z",
+      "kind": "retriever.retrieve",
+      "data": {
+        "k_sparse": 75,
+        "k_dense": 75,
+        "candidates": [
+          {
+            "path": "/Users/davidmontgomery/agro/tests/gui.spec.ts",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 1
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/api.spec.ts",
+            "start": 1,
+            "end": 27,
+            "bm25_rank": null,
+            "dense_rank": 2
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/api.spec.ts",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 3
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/gui.spec.ts",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 4
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/api.spec.ts",
+            "start": 1,
+            "end": 16,
+            "bm25_rank": null,
+            "dense_rank": 5
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 36,
+            "bm25_rank": null,
+            "dense_rank": 6
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 80,
+            "bm25_rank": null,
+            "dense_rank": 7
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/gui.spec.ts",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 8
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 77,
+            "bm25_rank": null,
+            "dense_rank": 9
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/playwright.config.ts",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 10
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 9,
+            "bm25_rank": null,
+            "dense_rank": 11
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/test_autoprofile.py",
+            "start": 1,
+            "end": 23,
+            "bm25_rank": null,
+            "dense_rank": 12
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_interactions.py",
+            "start": 1,
+            "end": 33,
+            "bm25_rank": null,
+            "dense_rank": 13
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 152,
+            "bm25_rank": null,
+            "dense_rank": 14
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_interactions.py",
+            "start": 1,
+            "end": 21,
+            "bm25_rank": null,
+            "dense_rank": 15
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_token_savings.py",
+            "start": 1,
+            "end": 133,
+            "bm25_rank": null,
+            "dense_rank": 16
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/autoprofile_v2.js",
+            "start": 1,
+            "end": 32,
+            "bm25_rank": null,
+            "dense_rank": 17
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 29,
+            "bm25_rank": null,
+            "dense_rank": 18
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/playwright.config.ts",
+            "start": 1,
+            "end": 31,
+            "bm25_rank": null,
+            "dense_rank": 19
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 19,
+            "bm25_rank": null,
+            "dense_rank": 20
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_gui_basic.py",
+            "start": 1,
+            "end": 28,
+            "bm25_rank": null,
+            "dense_rank": 21
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 56,
+            "bm25_rank": null,
+            "dense_rank": 22
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/autoprofile_v2.js",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 23
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 24
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_gui_basic.py",
+            "start": 1,
+            "end": 24,
+            "bm25_rank": null,
+            "dense_rank": 25
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_interactions.py",
+            "start": 1,
+            "end": 27,
+            "bm25_rank": null,
+            "dense_rank": 26
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 39,
+            "bm25_rank": null,
+            "dense_rank": 27
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_interactions.py",
+            "start": 1,
+            "end": 30,
+            "bm25_rank": null,
+            "dense_rank": 28
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/quick_token_test.py",
+            "start": 1,
+            "end": 35,
+            "bm25_rank": null,
+            "dense_rank": 29
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/gui.spec.ts",
+            "start": 1,
+            "end": 11,
+            "bm25_rank": null,
+            "dense_rank": 30
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_gui_basic.py",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 31
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/benchmark_improvements.py",
+            "start": 1,
+            "end": 33,
+            "bm25_rank": null,
+            "dense_rank": 32
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 42,
+            "bm25_rank": null,
+            "dense_rank": 33
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 19,
+            "bm25_rank": null,
+            "dense_rank": 34
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 33,
+            "bm25_rank": null,
+            "dense_rank": 35
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/node_mcp/server.js",
+            "start": 1,
+            "end": 36,
+            "bm25_rank": null,
+            "dense_rank": 36
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/autoprofile_v2.js",
+            "start": 1,
+            "end": 8,
+            "bm25_rank": null,
+            "dense_rank": 37
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
+            "start": 1,
+            "end": 87,
+            "bm25_rank": null,
+            "dense_rank": 38
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/eval_rag.py",
+            "start": 1,
+            "end": 21,
+            "bm25_rank": null,
+            "dense_rank": 39
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_gui_basic.py",
+            "start": 1,
+            "end": 18,
+            "bm25_rank": null,
+            "dense_rank": 40
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/server/app.py",
+            "start": 1,
+            "end": 57,
+            "bm25_rank": null,
+            "dense_rank": 41
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_interactions.py",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 42
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_backend.py",
+            "start": 1,
+            "end": 41,
+            "bm25_rank": null,
+            "dense_rank": 43
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/gui_debug.py",
+            "start": 1,
+            "end": 96,
+            "bm25_rank": null,
+            "dense_rank": 44
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_api.py",
+            "start": 1,
+            "end": 26,
+            "bm25_rank": null,
+            "dense_rank": 45
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/eval_gate_guard.py",
+            "start": 1,
+            "end": 31,
+            "bm25_rank": null,
+            "dense_rank": 46
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_backend.py",
+            "start": 1,
+            "end": 20,
+            "bm25_rank": null,
+            "dense_rank": 47
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 35,
+            "bm25_rank": null,
+            "dense_rank": 48
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "start": 1,
+            "end": 31,
+            "bm25_rank": null,
+            "dense_rank": 49
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_api.py",
+            "start": 1,
+            "end": 12,
+            "bm25_rank": null,
+            "dense_rank": 50
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T08:02:06.097720Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "BAAI/bge-reranker-v2-m3",
+        "input_topN": 40,
+        "output_topK": 20
+      }
+    },
+    {
+      "ts": "2025-10-12T08:02:07.980481Z",
+      "kind": "reranker.rank",
+      "data": {
+        "model": "local:BAAI/bge-reranker-v2-m3",
+        "scores": [
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/quick_token_test.py",
+            "start": 1,
+            "end": 35,
+            "rerank_score": 1.0
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/playwright.config.ts",
+            "start": 1,
+            "end": 31,
+            "rerank_score": 0.3010429232149544
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_token_savings.py",
+            "start": 1,
+            "end": 40,
+            "rerank_score": 0.284207330969793
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/playwright.config.ts",
+            "start": 1,
+            "end": 24,
+            "rerank_score": 0.24762577133419658
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/gui.spec.ts",
+            "start": 1,
+            "end": 32,
+            "rerank_score": 0.19301946736036424
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/api.spec.ts",
+            "start": 1,
+            "end": 16,
+            "rerank_score": 0.17306610850165116
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/api.spec.ts",
+            "start": 1,
+            "end": 24,
+            "rerank_score": 0.16282527035555963
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/measure_token_savings.py",
+            "start": 1,
+            "end": 31,
+            "rerank_score": 0.13333431009633326
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/test_autoprofile.py",
+            "start": 1,
+            "end": 23,
+            "rerank_score": 0.13141664834388728
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/api.spec.ts",
+            "start": 1,
+            "end": 27,
+            "rerank_score": 0.11698735895619268
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_token_comparison.py",
+            "start": 1,
+            "end": 28,
+            "rerank_score": 0.08421973914723455
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_token_savings.py",
+            "start": 1,
+            "end": 133,
+            "rerank_score": 0.041237353984532335
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_interactions.py",
+            "start": 1,
+            "end": 21,
+            "rerank_score": 0.0362290854290076
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_backend.py",
+            "start": 1,
+            "end": 20,
+            "rerank_score": 0.036189423431981116
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/tests/test_interactions.py",
+            "start": 1,
+            "end": 33,
+            "rerank_score": 0.03425772427119136
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/gui.spec.ts",
+            "start": 1,
+            "end": 24,
+            "rerank_score": 0.02851667580985066
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/server/app.py",
+            "start": 1,
+            "end": 27,
+            "rerank_score": 0.022076916655816892
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/gui_debug.py",
+            "start": 1,
+            "end": 8,
+            "rerank_score": 0.021643181014572827
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/netlify_deploy.py",
+            "start": 1,
+            "end": 28,
+            "rerank_score": 0.02154784546173627
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/full_comparison.py",
+            "start": 1,
+            "end": 41,
+            "rerank_score": 0.020784322185069957
+          }
+        ]
+      }
+    },
+    {
+      "ts": "2025-10-12T08:02:08.858073Z",
+      "kind": "freshness.status",
+      "data": {
+        "bm25_updated": "2025-10-12T07:49:37.401273Z",
+        "cards_updated": null,
+        "dense_updated_min": "2025-10-12T07:49:37.401273Z",
+        "dense_updated_max": "2025-10-12T07:49:37.401273Z",
+        "dense_backlog": 0
+      }
+    },
+    {
+      "ts": "2025-10-12T08:02:08.858380Z",
+      "kind": "gating.outcome",
+      "data": {
+        "confidence_top1": 1.7999999999999998,
+        "confidence_avg5": 0.602631723196133,
+        "thresholds": {
+          "top1": 0.62,
+          "avg5": 0.55,
+          "any": 0.55
+        },
+        "iterated": true,
+        "notes": ""
+      }
+    },
+    {
+      "ts": "2025-10-12T08:02:08.858727Z",
+      "kind": "packer.pack",
+      "data": {
+        "budget_tokens": 4096,
+        "diversity_penalty": 0.0,
+        "hydration_mode": "lazy",
+        "selected": [
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/quick_token_test.py",
+            "lines": "L1-L35",
+            "est_tokens": 277,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_token_savings.py",
+            "lines": "L1-L40",
+            "est_tokens": 277,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/playwright.config.ts",
+            "lines": "L1-L31",
+            "est_tokens": 170,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/playwright.config.ts",
+            "lines": "L1-L24",
+            "est_tokens": 156,
+            "reason": [
+              "high_rerank"
+            ]
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/tests/gui.spec.ts",
+            "lines": "L1-L32",
+            "est_tokens": 283,
+            "reason": [
+              "high_rerank"
+            ]
+          }
+        ],
+        "final_tokens": 1163
+      }
+    }
+  ]
+}

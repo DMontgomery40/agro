@@ -12,6 +12,12 @@ What changed
     - `server/app.py` (FastAPI app; root shim `serve_rag.py`)
     - `server/mcp/server.py` (stdio MCP)
     - `server/mcp/http.py` (HTTP MCP)
+  - `common/`: shared helpers
+    - `common/config_loader.py` (was root `config_loader.py`)
+    - `common/paths.py` (was root `path_config.py`)
+    - `common/filtering.py` (was root `filtering.py`)
+    - `common/metadata.py` (was root `metadata_enricher.py`)
+    - `common/qdrant_utils.py` (was root `qdrant_recreate_fallback.py`)
   - `retrieval/`: search + rerank + AST
     - `retrieval/hybrid_search.py`
     - `retrieval/rerank.py`
@@ -23,6 +29,11 @@ What changed
 
 - Root shims (keep CLI paths and imports stable)
   - `serve_rag.py` → re-exports `server/app.py: app`
+  - `config_loader.py` → re-exports `common/config_loader.py`
+  - `path_config.py` → re-exports `common/paths.py`
+  - `filtering.py` → re-exports `common/filtering.py`
+  - `metadata_enricher.py` → re-exports `common/metadata.py`
+  - `qdrant_recreate_fallback.py` → re-exports `common/qdrant_utils.py`
   - `chat_cli.py` (CLI chat)
   - `index_repo.py` → re-exports from `indexer/index_repo.py`
   - `build_cards.py` → re-exports from `indexer/build_cards.py`
@@ -43,6 +54,7 @@ Where to find key functionality
 
 - API/GUI service: `serve_rag.py` (mounts `/gui`, `/docs`, `/files`, config endpoints). See: serve_rag.py:1-120, 160-220, 720-840.
 - Path resolution: `path_config.py` with `repo_root()`, `files_root()`, `gui_dir()`, `docs_dir()`, `data_dir()`. See: path_config.py:1-40, 42-80.
+  (Now canonical: `common/paths.py`)
 - Indexing: `indexer/index_repo.py` (root shim at `index_repo.py`). See: index_repo.py:1-1.
 - Index stats: `server/index_stats.py` (root shim at `index_stats.py`). See: index_stats.py:1-2.
 - Retrieval: `retrieval/hybrid_search.py` (root helper `hybrid_search.py`). See: hybrid_search.py:1-60.
@@ -63,3 +75,8 @@ Definition of done (for future cleanup)
 - All internal imports prefer `server.*`, `retrieval.*`, `indexer.*`.
 - Shims no longer imported by any internal code or scripts.
 - Scripts updated to call canonical entrypoints (or keep shims by design).
+
+Archived/moved (unused stubs)
+
+- Moved to `scripts/archive/` (not referenced by runtime):
+  - `autoscaler.py`, `watchdog.py`, `runtime_config.py`, `feature_flags.py`, `vivified_rag.py`

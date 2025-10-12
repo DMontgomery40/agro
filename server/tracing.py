@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from contextvars import ContextVar
 
-from config_loader import out_dir
+from common.config_loader import out_dir
 
 
 _TRACE_VAR: ContextVar[Optional["Trace"]] = ContextVar("agro_trace", default=None)
@@ -103,4 +103,3 @@ def latest_trace_path(repo: str) -> Optional[str]:
         return str(files[0]) if files else None
     except Exception:
         return None
-
