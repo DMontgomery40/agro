@@ -588,7 +588,7 @@
             // refill provider select only if empty, preserve user choice
             if (providerSelect.options.length <= 1) setOpts(providerSelect, providers);
         }
-        setOpts(modelList, allModels);
+
         // Partition models into categories for filtering
         // Inference models: unit == '1k_tokens' and no embed/rerank fields (cost may be 0 for local)
         const isGen = (m)=> {
@@ -602,9 +602,12 @@
         const genModels = unique(models.filter(isGen).map(m => m.model));
         const rrModels = unique(models.filter(isRerank).map(m => m.model));
         const embModels = unique(models.filter(isEmbed).map(m => m.model));
-        setOpts(genList, genModels);
-        setOpts(rrList, rrModels);
-        setOpts(embList, embModels);
+
+        // Populate datalists with null checks
+        if (modelList) setOpts(modelList, allModels);
+        if (genList) setOpts(genList, genModels);
+        if (rrList) setOpts(rrList, rrModels);
+        if (embList) setOpts(embList, embModels);
 
         // Default provider only; leave model empty so datalist shows all options on first focus
         if (!$('#cost-provider').value && providers.length) $('#cost-provider').value = providers[0];
@@ -613,19 +616,19 @@
         // Filter model options when provider changes AND update the input value
         const onProv = () => {
             const modelInput = $('#cost-model');
-            if (!modelInput) return;
+            if (!modelInput || !modelList) return;
 
             const p = $('#cost-provider').value.trim().toLowerCase();
             const provModels = unique(models.filter(m => (m.provider||'').toLowerCase()===p && isGen(m)).map(m => m.model));
             if (!provModels.length) {
                 // Fall back to all inference models so the dropdown is still usable
                 const allGen = unique(models.filter(isGen).map(m => m.model));
-                setOpts(modelList, allGen);
+                if (modelList) setOpts(modelList, allGen);
                 modelInput.value = '';
                 try { showStatus(`No inference models for provider "${p}" — showing all models.`, 'warn'); } catch {}
                 return;
             }
-            setOpts(modelList, provModels);
+            if (modelList) setOpts(modelList, provModels);
             // If current value isn't a model for this provider, clear so the datalist shows all options
             if (!provModels.includes(modelInput.value)) {
                 modelInput.value = '';
@@ -659,7 +662,7 @@
                 items = mb.length ? mb : models.filter(m => isEmbed(m) && String(m.provider||'').toLowerCase()==='huggingface').map(m => m.model);
             }
             if (!items.length) items = unique(models.filter(isEmbed).map(m => m.model));
-            setOpts(embList, unique(items));
+            if (embList) setOpts(embList, unique(items));
             if (input && items.length && !items.includes(input.value)) input.value = '';
         }
         function normProviderName(p){
@@ -688,7 +691,7 @@
                 items = models.filter(m => isRerank(m) && String(m.provider||'').toLowerCase()===p).map(m => m.model);
             }
             if (!items.length) items = unique(models.filter(isRerank).map(m => m.model));
-            setOpts(rrList, unique(items));
+            if (rrList) setOpts(rrList, unique(items));
             if (input && items.length && !items.includes(input.value)) input.value = '';
         }
         const embProvSel = document.getElementById('cost-embed-provider');
@@ -1199,15 +1202,116 @@
             state.defaultProfile = d.default || null;
 
             const ul = $('#profiles-ul');
+            const tooltip = $('#profile-tooltip');
             ul.innerHTML = '';
+
             state.profiles.forEach((name) => {
                 const li = document.createElement('li');
                 li.textContent = name;
-                li.style.cssText = 'padding: 4px 0; color: #888;';
+                li.style.cssText = 'padding: 6px 8px; color: #aaa; cursor: pointer; border-radius: 4px; transition: all 0.15s ease;';
+
+                li.addEventListener('mouseenter', async (e) => {
+                    li.style.background = '#1a1a1a';
+                    li.style.color = '#00ff88';
+                    await showProfileTooltip(name, e);
+                });
+
+                li.addEventListener('mouseleave', () => {
+                    li.style.background = 'transparent';
+                    li.style.color = '#aaa';
+                    hideProfileTooltip();
+                });
+
+                li.addEventListener('click', () => loadAndApplyProfile(name));
                 ul.appendChild(li);
             });
         } catch (e) {
             console.error('Failed to load profiles:', e);
+        }
+    }
+
+    async function showProfileTooltip(name, event) {
+        const tooltip = $('#profile-tooltip');
+        if (!tooltip) return;
+
+        try {
+            // Fetch the profile data
+            const r = await fetch(api(`/api/profiles/${encodeURIComponent(name)}`));
+            if (!r.ok) return;
+
+            const d = await r.json();
+            const prof = d.profile || {};
+
+            // Build tooltip content
+            let html = `<div class="tooltip-header">${name}</div>`;
+
+            const entries = Object.entries(prof);
+            if (entries.length === 0) {
+                html += '<div style="color: #666; font-size: 11px; font-style: italic;">Empty profile</div>';
+            } else {
+                entries.forEach(([key, value]) => {
+                    const displayValue = String(value).length > 40
+                        ? String(value).substring(0, 37) + '...'
+                        : String(value);
+                    html += `
+                        <div class="tooltip-item">
+                            <div class="tooltip-key">${key}</div>
+                            <div class="tooltip-value">${displayValue}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            tooltip.innerHTML = html;
+
+            // Position tooltip near the mouse
+            const rect = event.target.getBoundingClientRect();
+            tooltip.style.left = (rect.right + 10) + 'px';
+            tooltip.style.top = rect.top + 'px';
+            tooltip.style.display = 'block';
+
+        } catch (e) {
+            console.error('Failed to load profile for tooltip:', e);
+        }
+    }
+
+    function hideProfileTooltip() {
+        const tooltip = $('#profile-tooltip');
+        if (tooltip) {
+            tooltip.style.display = 'none';
+        }
+    }
+
+    async function loadAndApplyProfile(name) {
+        try {
+            // Load the profile data
+            const r = await fetch(api(`/api/profiles/${encodeURIComponent(name)}`));
+            if (!r.ok) {
+                alert(`Failed to load profile "${name}"`);
+                return;
+            }
+            const d = await r.json();
+            const prof = d.profile || {};
+
+            // Apply the profile
+            const applyRes = await fetch(api('/api/profiles/apply'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profile: prof })
+            });
+
+            if (!applyRes.ok) {
+                alert(`Failed to apply profile "${name}"`);
+                return;
+            }
+
+            const applyData = await applyRes.json();
+            alert(`✓ Profile "${name}" applied successfully!\n\nApplied keys: ${applyData.applied_keys?.join(', ') || 'none'}`);
+
+            // Reload config to show updated values in UI
+            await loadConfig();
+        } catch (e) {
+            alert(`Error loading profile "${name}": ${e.message}`);
         }
     }
 
@@ -1697,11 +1801,118 @@
         map.forEach(([a,b]) => { const elA = document.getElementById(a), elB = document.getElementById(b); if (elA && elB) elA.addEventListener('input', () => { elB.value = elA.value; }); });
     }
 
+    // ---------------- Collapsible Sections ----------------
+    function bindCollapsibleSections() {
+        const headers = document.querySelectorAll('.collapsible-header');
+
+        headers.forEach(header => {
+            header.addEventListener('click', (e) => {
+                // Don't collapse if clicking on help icon
+                if (e.target.closest('.tooltip-wrap')) return;
+
+                const targetId = header.getAttribute('data-target');
+                const content = document.getElementById(targetId);
+
+                if (!content) return;
+
+                // Toggle collapsed state
+                const isCollapsed = content.classList.contains('collapsed');
+
+                if (isCollapsed) {
+                    content.classList.remove('collapsed');
+                    header.classList.remove('collapsed');
+                } else {
+                    content.classList.add('collapsed');
+                    header.classList.add('collapsed');
+                }
+
+                // Save state to localStorage
+                const storageKey = `collapsed-${targetId}`;
+                localStorage.setItem(storageKey, isCollapsed ? '0' : '1');
+            });
+
+            // Restore collapsed state from localStorage
+            const targetId = header.getAttribute('data-target');
+            const storageKey = `collapsed-${targetId}`;
+            const savedState = localStorage.getItem(storageKey);
+
+            if (savedState === '1') {
+                const content = document.getElementById(targetId);
+                if (content) {
+                    content.classList.add('collapsed');
+                    header.classList.add('collapsed');
+                }
+            }
+        });
+    }
+
+    // ---------------- Resizable Sidepanel ----------------
+    function bindResizableSidepanel() {
+        const handle = document.querySelector('.resize-handle');
+        if (!handle) return;
+
+        const MIN_WIDTH = 300;
+        const MAX_WIDTH = 800;
+        const STORAGE_KEY = 'agro-sidepanel-width';
+
+        // Restore saved width
+        const savedWidth = localStorage.getItem(STORAGE_KEY);
+        if (savedWidth) {
+            const width = parseInt(savedWidth, 10);
+            if (width >= MIN_WIDTH && width <= MAX_WIDTH) {
+                document.documentElement.style.setProperty('--sidepanel-width', width + 'px');
+            }
+        }
+
+        let isDragging = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        function getCurrentWidth() {
+            const rootStyle = getComputedStyle(document.documentElement);
+            const widthStr = rootStyle.getPropertyValue('--sidepanel-width').trim();
+            return parseInt(widthStr, 10) || 400;
+        }
+
+        function setWidth(width) {
+            const clampedWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width));
+            document.documentElement.style.setProperty('--sidepanel-width', clampedWidth + 'px');
+            localStorage.setItem(STORAGE_KEY, clampedWidth.toString());
+        }
+
+        handle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX;
+            startWidth = getCurrentWidth();
+            handle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = startX - e.clientX; // Reverse direction (dragging left increases width)
+            const newWidth = startWidth + deltaX;
+            setWidth(newWidth);
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            handle.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
+    }
+
     // ---------------- Init ----------------
     async function init() {
         bindTabs();
         bindActions();
         bindGlobalSearchLive();
+        bindResizableSidepanel();
+        bindCollapsibleSections();
         bindDropzone();
         const hookBtn = document.getElementById('btn-install-hooks'); if (hookBtn) hookBtn.addEventListener('click', installHooks);
         const genKwBtn = document.getElementById('btn-generate-keywords'); if (genKwBtn) genKwBtn.addEventListener('click', createKeywords);
@@ -1760,7 +1971,14 @@
                     if (!input) return;
                     const name=input.name||input.id||''; const ph=input.getAttribute('placeholder')||'';
                     const content=(title+' '+label+' '+name+' '+ph).toLowerCase();
-                    idx.push({label: `${label||name} — ${title}`, el: input, content});
+                    idx.push({
+                        label: label||name,
+                        title: title,
+                        name: name,
+                        placeholder: ph,
+                        el: input,
+                        content
+                    });
                 });
             });
             index = idx; return idx;
@@ -1777,18 +1995,39 @@
             setTimeout(()=> item.el.classList.remove('search-hit'), 1200);
             if (pop) pop.style.display='none';
         }
-        function render(){
+        function highlightText(text, query){
+            if (!query) return text;
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            return text.replace(regex, '<span class="search-highlight">$1</span>');
+        }
+        function render(query=''){
             if (!pop) return; pop.innerHTML='';
             if (!items.length){ pop.style.display='none'; return; }
-            items.slice(0,12).forEach((r,i)=>{
-                const div=document.createElement('div'); div.className='item'+(i===cursor?' active':'');
-                div.textContent=r.label; div.addEventListener('click',()=>go(r)); pop.appendChild(div);
+            items.slice(0,15).forEach((r,i)=>{
+                const div=document.createElement('div');
+                div.className='item'+(i===cursor?' active':'');
+
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'item-label';
+                labelSpan.innerHTML = highlightText(r.label || r.name, query);
+
+                const contextSpan = document.createElement('span');
+                contextSpan.className = 'item-context';
+                const contextParts = [];
+                if (r.title) contextParts.push(highlightText(r.title, query));
+                if (r.name && r.name !== r.label) contextParts.push(highlightText(r.name, query));
+                contextSpan.innerHTML = contextParts.join(' • ');
+
+                div.appendChild(labelSpan);
+                if (contextParts.length > 0) div.appendChild(contextSpan);
+                div.addEventListener('click',()=>go(r));
+                pop.appendChild(div);
             });
             pop.style.display='block';
         }
         function search(q){
             const s=q.trim().toLowerCase(); if(!s){ items=[]; render(); return; }
-            ensureIndex(); items = index.filter(x=> x.content.includes(s)); cursor=0; render();
+            ensureIndex(); items = index.filter(x=> x.content.includes(s)); cursor=0; render(s);
         }
         document.addEventListener('click', (e)=>{ if (pop && !pop.contains(e.target) && e.target!==box) pop.style.display='none'; });
         box.addEventListener('keydown', (e)=>{ if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); box.focus(); box.select(); }});

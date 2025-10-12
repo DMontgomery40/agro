@@ -4,7 +4,7 @@
 // Default chat settings
 const DEFAULT_CHAT_SETTINGS = {
     model: '',  // Empty = use GEN_MODEL
-    temperature: 0.2,
+    temperature: 0.0,
     maxTokens: 1000,
     multiQuery: 3,
     finalK: 20,
@@ -13,7 +13,11 @@ const DEFAULT_CHAT_SETTINGS = {
     showConfidence: false,
     autoScroll: true,
     syntaxHighlight: false,
-    systemPrompt: ''
+    systemPrompt: '',
+    // History settings
+    historyEnabled: true,
+    historyLimit: 100,  // Maximum number of messages to store
+    showHistoryOnLoad: true  // Auto-load history when page loads
 };
 
 let chatMessages = [];
@@ -46,12 +50,17 @@ function saveChatSettings() {
             showConfidence: document.getElementById('chat-show-confidence').value === '1',
             autoScroll: document.getElementById('chat-auto-scroll').value === '1',
             syntaxHighlight: document.getElementById('chat-syntax-highlight').value === '1',
-            systemPrompt: document.getElementById('chat-system-prompt').value
+            systemPrompt: document.getElementById('chat-system-prompt').value,
+            // History settings
+            historyEnabled: document.getElementById('chat-history-enabled').value === '1',
+            historyLimit: Math.min(1000, Math.max(1, parseInt(document.getElementById('chat-history-limit').value) || 100)),
+            showHistoryOnLoad: document.getElementById('chat-show-history-on-load').value === '1'
         };
 
         localStorage.setItem('agro_chat_settings', JSON.stringify(settings));
         chatSettings = settings;
 
+        updateStorageDisplay();
         showToast('Chat settings saved', 'success');
     } catch (e) {
         console.error('Failed to save chat settings:', e);
@@ -83,7 +92,11 @@ function applyChatSettings() {
             'chat-show-confidence': chatSettings.showConfidence ? '1' : '0',
             'chat-auto-scroll': chatSettings.autoScroll ? '1' : '0',
             'chat-syntax-highlight': chatSettings.syntaxHighlight ? '1' : '0',
-            'chat-system-prompt': chatSettings.systemPrompt
+            'chat-system-prompt': chatSettings.systemPrompt,
+            // History settings
+            'chat-history-enabled': chatSettings.historyEnabled ? '1' : '0',
+            'chat-history-limit': chatSettings.historyLimit,
+            'chat-show-history-on-load': chatSettings.showHistoryOnLoad ? '1' : '0'
         };
 
         for (const [id, value] of Object.entries(elements)) {
@@ -92,6 +105,9 @@ function applyChatSettings() {
                 el.value = value;
             }
         }
+
+        // Update storage display
+        updateStorageDisplay();
     } catch (e) {
         console.warn('Failed to apply chat settings:', e);
     }
@@ -175,7 +191,7 @@ async function sendMessage() {
 }
 
 // Add a message to the chat
-function addMessage(role, content, isLoading = false, isError = false) {
+function addMessage(role, content, isLoading = false, isError = false, saveToHistory = true) {
     const messagesContainer = document.getElementById('chat-messages');
 
     // Remove empty state if present
@@ -217,10 +233,17 @@ function addMessage(role, content, isLoading = false, isError = false) {
 
     messagesContainer.appendChild(messageDiv);
 
-    // Scroll to bottom
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    // Scroll to bottom if auto-scroll is enabled
+    if (chatSettings.autoScroll) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
 
     chatMessages.push({ id: messageId, role, content, isLoading, isError });
+
+    // Save to history if enabled and not a loading message
+    if (saveToHistory && !isLoading && !isError && chatSettings.historyEnabled) {
+        saveMessageToHistory(role, content, messageId);
+    }
 
     return messageId;
 }
@@ -297,6 +320,133 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// ========== HISTORY MANAGEMENT FUNCTIONS ==========
+
+// Save message to history
+function saveMessageToHistory(role, content, messageId) {
+    if (!chatSettings.historyEnabled) return;
+
+    try {
+        let history = JSON.parse(localStorage.getItem('agro_chat_history') || '[]');
+
+        // Add new message with metadata
+        history.push({
+            id: messageId,
+            role: role,
+            content: content,
+            timestamp: new Date().toISOString(),
+            repo: document.getElementById('chat-repo-select').value || 'auto'
+        });
+
+        // Enforce history limit
+        if (history.length > chatSettings.historyLimit) {
+            history = history.slice(-chatSettings.historyLimit);
+        }
+
+        localStorage.setItem('agro_chat_history', JSON.stringify(history));
+        updateStorageDisplay();
+    } catch (e) {
+        console.warn('Failed to save message to history:', e);
+    }
+}
+
+// Load chat history from localStorage
+function loadChatHistory() {
+    if (!chatSettings.historyEnabled || !chatSettings.showHistoryOnLoad) return;
+
+    try {
+        const history = JSON.parse(localStorage.getItem('agro_chat_history') || '[]');
+        const messagesContainer = document.getElementById('chat-messages');
+
+        if (history.length > 0) {
+            // Clear the empty state message
+            messagesContainer.innerHTML = '';
+
+            // Add separator for historical messages
+            const separator = document.createElement('div');
+            separator.style.cssText = 'text-align: center; color: #666; margin: 20px 0; font-size: 11px;';
+            separator.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                    <span>Previous conversation (${history.length} messages)</span>
+                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(separator);
+
+            // Load messages
+            history.forEach(msg => {
+                addMessage(msg.role, msg.content, false, false, false); // Don't save again
+            });
+
+            // Add separator for new session
+            const newSessionSeparator = document.createElement('div');
+            newSessionSeparator.style.cssText = 'text-align: center; color: #666; margin: 20px 0; font-size: 11px;';
+            newSessionSeparator.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                    <span>New session started</span>
+                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(newSessionSeparator);
+        }
+    } catch (e) {
+        console.warn('Failed to load chat history:', e);
+    }
+}
+
+// Clear chat history
+function clearChatHistory() {
+    if (!confirm('Clear all saved chat history? This cannot be undone.')) return;
+
+    try {
+        localStorage.removeItem('agro_chat_history');
+        updateStorageDisplay();
+        showToast('Chat history cleared', 'success');
+    } catch (e) {
+        console.error('Failed to clear chat history:', e);
+        showToast('Failed to clear history: ' + e.message, 'error');
+    }
+}
+
+// Export chat history as JSON
+function exportChatHistory() {
+    try {
+        const history = localStorage.getItem('agro_chat_history') || '[]';
+        const blob = new Blob([history], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chat-history-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Chat history exported', 'success');
+    } catch (e) {
+        console.error('Failed to export chat history:', e);
+        showToast('Failed to export history: ' + e.message, 'error');
+    }
+}
+
+// Calculate and display storage usage
+function updateStorageDisplay() {
+    try {
+        const historyStr = localStorage.getItem('agro_chat_history') || '[]';
+        const sizeInBytes = new Blob([historyStr]).size;
+        const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+        const history = JSON.parse(historyStr);
+
+        const displayElement = document.getElementById('chat-storage-display');
+        if (displayElement) {
+            displayElement.textContent = `${history.length} messages using ${sizeInKB}KB`;
+        }
+    } catch (e) {
+        console.warn('Failed to update storage display:', e);
+    }
+}
+
 // Auto-resize textarea
 function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto';
@@ -310,6 +460,9 @@ if (typeof window !== 'undefined') {
         const input = document.getElementById('chat-input');
         const sendBtn = document.getElementById('chat-send');
         const clearBtn = document.getElementById('chat-clear');
+        const historyBtn = document.getElementById('chat-history');
+        const exportHistoryBtn = document.getElementById('chat-export-history');
+        const clearHistoryBtn = document.getElementById('chat-clear-history');
         const saveSettingsBtn = document.getElementById('chat-save-settings');
         const resetSettingsBtn = document.getElementById('chat-reset-settings');
 
@@ -336,6 +489,21 @@ if (typeof window !== 'undefined') {
             clearBtn.addEventListener('click', clearChat);
         }
 
+        if (historyBtn) {
+            historyBtn.addEventListener('click', () => {
+                const dropdown = document.getElementById('history-dropdown');
+                dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+            });
+        }
+
+        if (exportHistoryBtn) {
+            exportHistoryBtn.addEventListener('click', exportChatHistory);
+        }
+
+        if (clearHistoryBtn) {
+            clearHistoryBtn.addEventListener('click', clearChatHistory);
+        }
+
         if (saveSettingsBtn) {
             saveSettingsBtn.addEventListener('click', saveChatSettings);
         }
@@ -346,6 +514,17 @@ if (typeof window !== 'undefined') {
 
         // Apply loaded settings on page load
         applyChatSettings();
+
+        // Load chat history if enabled
+        loadChatHistory();
+
+        // Hide dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#chat-history') && !e.target.closest('#history-dropdown')) {
+                const dropdown = document.getElementById('history-dropdown');
+                if (dropdown) dropdown.style.display = 'none';
+            }
+        });
     });
 }
 

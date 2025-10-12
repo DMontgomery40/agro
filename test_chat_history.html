@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat History Test</title>
+    <style>
+        body { background: #0a0a0a; color: #ddd; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #0f2f0f; border: 1px solid #00ff88; color: #00ff88; }
+        .error { background: #2f0f0f; border: 1px solid #ff6b6b; color: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <h2>Chat History Feature Test</h2>
+    <div id="test-results"></div>
+
+    <script>
+        // Mock the showToast function
+        function showToast(message, type) {
+            console.log(`Toast: ${type} - ${message}`);
+        }
+
+        // Load the chat.js functions
+    </script>
+    <script src="gui/js/chat.js"></script>
+
+    <script>
+        const resultsDiv = document.getElementById('test-results');
+
+        function addResult(message, success) {
+            const div = document.createElement('div');
+            div.className = `test-result ${success ? 'success' : 'error'}`;
+            div.textContent = `${success ? '✓' : '✗'} ${message}`;
+            resultsDiv.appendChild(div);
+        }
+
+        // Test 1: Check if default settings include history properties
+        addResult('Default settings include history properties',
+            DEFAULT_CHAT_SETTINGS.hasOwnProperty('historyEnabled') &&
+            DEFAULT_CHAT_SETTINGS.hasOwnProperty('historyLimit') &&
+            DEFAULT_CHAT_SETTINGS.hasOwnProperty('showHistoryOnLoad')
+        );
+
+        // Test 2: Check if history functions exist
+        addResult('saveMessageToHistory function exists', typeof saveMessageToHistory === 'function');
+        addResult('loadChatHistory function exists', typeof loadChatHistory === 'function');
+        addResult('clearChatHistory function exists', typeof clearChatHistory === 'function');
+        addResult('exportChatHistory function exists', typeof exportChatHistory === 'function');
+        addResult('updateStorageDisplay function exists', typeof updateStorageDisplay === 'function');
+
+        // Test 3: Test saving a message to history
+        try {
+            localStorage.setItem('agro_chat_history', '[]');
+            chatSettings.historyEnabled = true;
+            saveMessageToHistory('user', 'Test message', 'test-id-123');
+            const history = JSON.parse(localStorage.getItem('agro_chat_history'));
+            addResult('Message saved to history', history.length === 1 && history[0].content === 'Test message');
+        } catch (e) {
+            addResult('Message saved to history', false);
+        }
+
+        // Test 4: Test history limit enforcement
+        try {
+            localStorage.setItem('agro_chat_history', '[]');
+            chatSettings.historyLimit = 3;
+            for (let i = 0; i < 5; i++) {
+                saveMessageToHistory('user', `Message ${i}`, `id-${i}`);
+            }
+            const history = JSON.parse(localStorage.getItem('agro_chat_history'));
+            addResult('History limit enforced', history.length === 3 && history[0].content === 'Message 2');
+        } catch (e) {
+            addResult('History limit enforced', false);
+        }
+
+        // Clean up
+        localStorage.removeItem('agro_chat_history');
+
+        console.log('Tests completed');
+    </script>
+</body>
+</html>

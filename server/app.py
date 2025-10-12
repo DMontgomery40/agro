@@ -948,6 +948,15 @@ def profiles_list() -> Dict[str, Any]:
         names.append(p.stem)
     return {"profiles": sorted(names), "default": None}
 
+@app.get("/api/profiles/{name}")
+def profiles_get(name: str) -> Dict[str, Any]:
+    prof_dir = GUI_DIR / "profiles"
+    path = prof_dir / f"{name}.json"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Profile '{name}' not found")
+    prof = _read_json(path)
+    return {"ok": True, "name": name, "profile": prof}
+
 @app.post("/api/profiles/save")
 def profiles_save(payload: Dict[str, Any]) -> Dict[str, Any]:
     name = str(payload.get("name") or "").strip()
