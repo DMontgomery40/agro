@@ -26,6 +26,67 @@
         defaultProfile: null,
     };
 
+    // ---------------- Theme Engine ----------------
+    function resolveTheme(mode) {
+        const m = String(mode || 'auto').toLowerCase();
+        if (m === 'light' || m === 'dark') return m;
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? 'dark' : 'light';
+    }
+
+    function applyTheme(mode) {
+        const t = resolveTheme(mode);
+        try { document.documentElement.setAttribute('data-theme', t); } catch {}
+        // Best-effort normalize legacy inline dark styles to tokenized vars
+        try {
+            const mappings = [
+                ['#0a0a0a', 'var(--card-bg)'],
+                ['#0f0f0f', 'var(--code-bg)'],
+                ['#111111', 'var(--panel-bg)'],
+                ['#1a1a1a', 'var(--bg-elev2)'],
+                ['#2a2a2a', 'var(--line)'],
+                ['#333', 'var(--line)'],
+                ['#666', 'var(--fg-muted)'],
+                ['#888', 'var(--fg-muted)'],
+                ['#ddd', 'var(--fg)'],
+                ['#ffffff', 'var(--fg)'],
+                ['#5b9dff', 'var(--link)'],
+                ['#00ff88', 'var(--accent)'],
+                ['#ff9b5e', 'var(--accent)'],
+                ['#ff6b6b', 'var(--err)']
+            ];
+            const nodes = document.querySelectorAll('[style*="#0a0a0a"], [style*="#0f0f0f"], [style*="#111111"], [style*="#1a1a1a"], [style*="#2a2a2a"], [style*="#333"], [style*="#666"], [style*="#888"], [style*="#ddd"], [style*="#ffffff"], [style*="#5b9dff"], [style*="#00ff88"], [style*="#ff9b5e"], [style*="#ff6b6b"]');
+            nodes.forEach(el => {
+                let s = el.getAttribute('style') || '';
+                mappings.forEach(([k, v]) => { s = s.replaceAll(k, v); });
+                el.setAttribute('style', s);
+            });
+        } catch {}
+    }
+
+    function initThemeFromEnv(env) {
+        try {
+            const saved = localStorage.getItem('THEME_MODE');
+            const envMode = env && env.THEME_MODE ? String(env.THEME_MODE) : 'auto';
+            const mode = saved || envMode || 'auto';
+            // Set both selectors if present
+            const selTop = document.getElementById('theme-mode');
+            const selMisc = document.getElementById('misc-theme-mode');
+            if (selTop) selTop.value = mode;
+            if (selMisc) selMisc.value = mode;
+            applyTheme(mode);
+            // React to system changes when Auto
+            if (window.matchMedia) {
+                const mq = window.matchMedia('(prefers-color-scheme: dark)');
+                const onChange = () => {
+                    const current = (selTop && selTop.value) || (selMisc && selMisc.value) || mode;
+                    if (String(current||'auto').toLowerCase() === 'auto') applyTheme('auto');
+                };
+                try { mq.addEventListener('change', onChange); } catch { try { mq.addListener(onChange); } catch {} }
+            }
+        } catch {}
+    }
+
     // ---------------- Tabs ----------------
     let storageCalculatorLoaded = false;
 
@@ -269,6 +330,8 @@
             const d = await r.json();
             state.config = d;
             populateConfigForm(d);
+            // Apply theme after fields are populated so selects reflect env
+            initThemeFromEnv(d.env || {});
         } catch (e) {
             console.error('Failed to load config:', e);
         }
@@ -1981,6 +2044,19 @@
                 }
             }
         });
+
+        // Theme selectors (topbar + misc) -> live apply + sync
+        const selTop = document.getElementById('theme-mode');
+        const selMisc = document.getElementById('misc-theme-mode');
+        function onThemeChange(src) {
+            const v = src.value;
+            if (selTop && selTop !== src) selTop.value = v;
+            if (selMisc && selMisc !== src) selMisc.value = v;
+            try { localStorage.setItem('THEME_MODE', v); } catch {}
+            applyTheme(v);
+        }
+        if (selTop) selTop.addEventListener('change', () => onThemeChange(selTop));
+        if (selMisc) selMisc.addEventListener('change', () => onThemeChange(selMisc));
     }
 
     // ---------------- Resizable Sidepanel ----------------

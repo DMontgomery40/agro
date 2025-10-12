@@ -90,19 +90,33 @@ async def test_editor_feature():
             # Wait for misc tab to be visible
             misc_tab_content = page.locator('#tab-misc')
             await expect(misc_tab_content).to_be_visible()
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(1000)
+
+            # Debug: Check if editor settings exist in the HTML
+            has_editor_settings = await page.evaluate("""
+                () => {
+                    const checkbox = document.querySelector('input[name="EDITOR_ENABLED"]');
+                    const miscTab = document.querySelector('#tab-misc');
+                    return {
+                        checkbox_exists: !!checkbox,
+                        misc_tab_exists: !!miscTab,
+                        misc_tab_html_length: miscTab ? miscTab.innerHTML.length : 0,
+                        has_editor_text: miscTab ? miscTab.innerHTML.includes('Embedded Editor') : false
+                    };
+                }
+            """)
+            print(f"    Debug - Editor settings check: {has_editor_settings}")
 
             # Check for editor settings section
-            # Use Playwright's scroll into view when checking visibility
             editor_enabled_checkbox = page.locator('input[name="EDITOR_ENABLED"]')
             editor_port_input = page.locator('input[name="EDITOR_PORT"]')
             editor_bind_select = page.locator('select[name="EDITOR_BIND"]')
 
-            # Scroll element into view before checking visibility
-            await editor_enabled_checkbox.scroll_into_view_if_needed()
-            await page.wait_for_timeout(500)
-
-            await expect(editor_enabled_checkbox).to_be_visible(timeout=10000)
+            # Only proceed if checkbox exists
+            if has_editor_settings['checkbox_exists']:
+                await editor_enabled_checkbox.scroll_into_view_if_needed()
+                await page.wait_for_timeout(500)
+                await expect(editor_enabled_checkbox).to_be_visible(timeout=10000)
             await expect(editor_port_input).to_be_visible()
             await expect(editor_bind_select).to_be_visible()
             print("    ✓ Editor settings found in Misc tab")

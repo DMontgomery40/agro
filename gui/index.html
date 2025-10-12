@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AGRO — Local Configuration GUI</title>
+    <link rel="stylesheet" href="/gui/css/tokens.css">
     <style>
         * {
             margin: 0;
@@ -13,14 +14,14 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
+            background: var(--bg);
+            color: var(--fg);
             line-height: 1.6;
         }
 
         .topbar {
-            background: #111111;
-            border-bottom: 1px solid #2a2a2a;
+            background: var(--panel);
+            border-bottom: 1px solid var(--line);
             padding: 14px 24px;
             display: flex;
             justify-content: space-between;
@@ -34,10 +35,7 @@
             letter-spacing: -0.3px;
         }
 
-        .topbar .brand {
-            font-weight: 700;
-            color: #00ff88;
-        }
+        .topbar .brand { font-weight: 700; color: var(--accent); }
 
         .top-actions {
             display: flex;
@@ -46,8 +44,8 @@
         }
 
         .top-actions button {
-            background: #00ff88;
-            color: #000;
+            background: var(--accent);
+            color: var(--accent-contrast);
             border: none;
             padding: 8px 14px;
             border-radius: 6px;
@@ -59,12 +57,10 @@
             transition: all 0.2s;
         }
 
-        .top-actions button:hover {
-            background: #00dd77;
-        }
+        .top-actions button:hover { filter: brightness(0.95); }
 
         #health-status {
-            color: #999;
+            color: var(--fg-muted);
             font-size: 13px;
             font-family: 'SF Mono', monospace;
             min-width: 60px;
@@ -73,9 +69,9 @@
         #global-search {
             width: 320px;
             height: 38px;
-            background: #0c0c0c;
-            color: #e8e8e8;
-            border: 1px solid #2a2a2a;
+            background: var(--input-bg);
+            color: var(--fg);
+            border: 1px solid var(--line);
             padding: 0 14px;
             border-radius: 8px;
             font-size: 14px;
@@ -83,12 +79,7 @@
             transition: all 0.2s ease;
         }
 
-        #global-search:focus {
-            outline: none;
-            border-color: #00ff88;
-            background: #141414;
-            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
-        }
+        #global-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
 
         #global-search::placeholder {
             color: #666;
@@ -103,10 +94,10 @@
             max-height: 420px;
             overflow-y: auto;
             overflow-x: hidden;
-            background: #0a0a0a;
-            border: 1px solid #00ff88;
+            background: var(--card-bg);
+            border: 1px solid var(--line);
             border-radius: 10px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 255, 136, 0.2);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
             display: none;
             z-index: 1000;
         }
@@ -122,10 +113,7 @@
             border-bottom: none;
         }
 
-        #search-results .item:hover,
-        #search-results .item.active {
-            background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
-        }
+        #search-results .item:hover, #search-results .item.active { background: var(--bg-elev2); }
 
         #search-results .item-label {
             display: block;
@@ -142,17 +130,13 @@
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
         }
 
-        #search-results .search-highlight {
-            background: #00ff88;
-            color: #000;
+        #search-results .search-highlight { background: var(--accent); color: var(--accent-contrast);
             padding: 2px 4px;
             border-radius: 3px;
             font-weight: 600;
         }
 
-        mark.hl {
-            background: #00ff88;
-            color: #000;
+        mark.hl { background: var(--accent); color: var(--accent-contrast);
             padding: 1px 3px;
             border-radius: 2px;
         }
@@ -178,7 +162,7 @@
         .content {
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #2a2a2a;
+            border-right: 1px solid var(--line);
             overflow: visible;
         }
 
@@ -193,10 +177,7 @@
             transition: background 0.2s ease;
         }
 
-        .resize-handle:hover,
-        .resize-handle.dragging {
-            background: rgba(0, 255, 136, 0.3);
-        }
+        .resize-handle:hover, .resize-handle.dragging { background: var(--ring); }
 
         .resize-handle::after {
             content: '';
@@ -217,9 +198,9 @@
         }
 
         .tab-bar {
-            background: #111111;
+            background: var(--panel);
             padding: 10px 16px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--line);
             display: flex;
             gap: 6px;
             overflow-x: auto;
@@ -235,9 +216,9 @@
         }
 
         .tab-bar button {
-            background: #1a1a1a;
-            color: #999;
-            border: 1px solid #2a2a2a;
+            background: var(--bg-elev2);
+            color: var(--fg-muted);
+            border: 1px solid var(--line);
             padding: 9px 16px;
             border-radius: 6px;
             cursor: pointer;
@@ -247,16 +228,12 @@
             transition: all 0.15s;
         }
 
-        .tab-bar button:hover {
-            background: #222;
-            color: #fff;
-            border-color: #333;
-        }
+        .tab-bar button:hover { filter: brightness(1.05); color: var(--fg); border-color: var(--line); }
 
         .tab-bar button.active {
-            background: #00ff88;
-            color: #000;
-            border-color: #00ff88;
+            background: var(--accent);
+            color: var(--accent-contrast);
+            border-color: var(--accent);
             font-weight: 600;
         }
 
@@ -275,12 +252,12 @@
             width: 100%;
             height: 100%;
             border: none;
-            background: #0a0a0a;
+            background: var(--card-bg);
         }
 
         .settings-section {
-            background: #111111;
-            border: 1px solid #2a2a2a;
+            background: var(--panel);
+            border: 1px solid var(--line);
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
@@ -291,8 +268,8 @@
             font-weight: 600;
             margin-bottom: 16px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #2a2a2a;
-            color: #fff;
+            border-bottom: 1px solid var(--line);
+            color: var(--fg);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -326,7 +303,7 @@
 
         label {
             font-size: 12px;
-            color: #999;
+            color: var(--fg-muted);
             text-transform: uppercase;
             letter-spacing: 0.4px;
             margin-bottom: 7px;
@@ -334,9 +311,9 @@
         }
 
         input, select, textarea {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            color: #fff;
+            background: var(--input-bg);
+            border: 1px solid var(--line);
+            color: var(--fg);
             padding: 9px 12px;
             border-radius: 4px;
             font-size: 14px;
@@ -367,11 +344,7 @@
             opacity: 1;
         }
 
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #00ff88;
-            background: #1f1f1f;
-        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
 
         textarea {
             resize: vertical;
@@ -387,8 +360,8 @@
         }
 
         .action-buttons button {
-            background: #00ff88;
-            color: #000;
+            background: var(--accent);
+            color: var(--accent-contrast);
             border: none;
             padding: 11px 22px;
             border-radius: 6px;
@@ -396,12 +369,12 @@
             font-weight: 600;
             font-size: 14px;
             transition: all 0.15s;
-            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.2);
+            box-shadow: 0 2px 8px var(--ring);
         }
 
         .action-buttons button:hover {
-            background: #00dd77;
-            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+            filter: brightness(0.96);
+            box-shadow: 0 4px 12px var(--ring);
             transform: translateY(-1px);
         }
 
@@ -410,7 +383,7 @@
         }
 
         .sidepanel {
-            background: #0a0a0a;
+            background: var(--card-bg);
             padding: 20px;
             overflow-y: auto;
             position: relative;
@@ -418,14 +391,14 @@
 
         #profile-tooltip {
             position: fixed;
-            background: #0a0a0a;
-            border: 1px solid #00ff88;
+            background: var(--card-bg);
+            border: 1px solid var(--line);
             border-radius: 8px;
             padding: 12px 16px;
             max-width: 400px;
             max-height: 500px;
             overflow-y: auto;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 255, 136, 0.3);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
             z-index: 10000;
             display: none;
             pointer-events: none;
@@ -434,10 +407,10 @@
         #profile-tooltip .tooltip-header {
             font-size: 13px;
             font-weight: 600;
-            color: #00ff88;
+            color: var(--accent);
             margin-bottom: 10px;
             padding-bottom: 8px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--line);
         }
 
         #profile-tooltip .tooltip-item {
@@ -445,7 +418,7 @@
             justify-content: space-between;
             gap: 12px;
             padding: 6px 0;
-            border-bottom: 1px solid #1a1a1a;
+            border-bottom: 1px solid var(--line);
             font-size: 12px;
         }
 
@@ -454,13 +427,13 @@
         }
 
         #profile-tooltip .tooltip-key {
-            color: #888;
+            color: var(--fg-muted);
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
             flex-shrink: 0;
         }
 
         #profile-tooltip .tooltip-value {
-            color: #ddd;
+            color: var(--fg);
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
             text-align: right;
             word-break: break-all;
@@ -483,8 +456,8 @@
         }
 
         .sidepanel-section {
-            background: #111111;
-            border: 1px solid #2a2a2a;
+            background: var(--panel);
+            border: 1px solid var(--line);
             border-radius: 8px;
             padding: 16px;
             margin-bottom: 16px;
@@ -494,7 +467,7 @@
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 14px;
-            color: #00ff88;
+            color: var(--accent);
             display: flex;
             align-items: center;
             gap: 6px;
@@ -507,15 +480,13 @@
             transition: all 0.2s ease;
         }
 
-        .collapsible-header:hover {
-            color: #00ff88;
-        }
+        .collapsible-header:hover { color: var(--accent); }
 
         .collapse-icon {
             display: inline-block;
             margin-right: 8px;
             transition: transform 0.3s ease;
-            color: #00ff88;
+            color: var(--accent);
             font-size: 12px;
         }
 
@@ -538,12 +509,12 @@
         .sidepanel-section h4::before {
             content: '▸';
             font-size: 12px;
-            color: #666;
+            color: var(--fg-muted);
         }
 
         .cost-results {
-            background: #0a0a0a;
-            border: 1px solid #2a2a2a;
+            background: var(--card-bg);
+            border: 1px solid var(--line);
             border-radius: 4px;
             padding: 12px;
             margin-top: 12px;
@@ -553,7 +524,7 @@
             display: flex;
             justify-content: space-between;
             padding: 6px 0;
-            border-bottom: 1px solid #1a1a1a;
+            border-bottom: 1px solid var(--line);
         }
 
         .cost-results .result-item:last-child {
@@ -562,14 +533,14 @@
 
         .result-label {
             font-size: 12px;
-            color: #888;
+            color: var(--fg-muted);
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
 
         .result-value {
             font-size: 14px;
-            color: #00ff88;
+            color: var(--accent);
             font-weight: 600;
             font-family: 'SF Mono', monospace;
         }
@@ -584,62 +555,60 @@
         }
 
         .dropzone {
-            border: 2px dashed #00ff88;
+            border: 2px dashed var(--accent);
             padding: 24px;
             border-radius: 8px;
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
             font-size: 13px;
-            color: #999;
+            color: var(--fg-muted);
             line-height: 1.6;
         }
 
         .dropzone:hover {
-            background: #0f0f0f;
-            color: #00ff88;
-            border-color: #00dd77;
+            background: var(--code-bg);
+            color: var(--accent);
+            border-color: var(--accent);
         }
 
         .dropzone:active {
-            background: #111;
+            background: var(--panel-bg);
         }
 
         .mono {
             font-family: 'SF Mono', 'Monaco', monospace;
             font-size: 13px;
-            color: #aaa;
+            color: var(--fg-muted);
             line-height: 1.5;
         }
 
         .result-display {
-            background: #0f0f0f;
-            border: 1px solid #2a2a2a;
+            background: var(--code-bg);
+            border: 1px solid var(--line);
             border-radius: 6px;
             padding: 14px;
             margin-top: 12px;
             font-family: 'SF Mono', monospace;
             font-size: 13px;
             line-height: 1.6;
-            color: #ddd;
+            color: var(--fg);
             white-space: pre-wrap;
             word-wrap: break-word;
             max-height: none;
         }
 
         .result-display .key {
-            color: #7db3ff;
+            color: var(--link);
             font-weight: 600;
         }
 
-        .result-display .value {
-            color: #fff;
-        }
+        .result-display .value { color: var(--fg); }
 
         .result-display .section {
             margin-bottom: 10px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #1a1a1a;
+            border-bottom: 1px solid var(--line);
         }
 
         .result-display .section:last-child {
@@ -648,9 +617,9 @@
         }
 
         .small-button {
-            background: #1a1a1a;
-            color: #00ff88;
-            border: 1px solid #00ff88;
+            background: var(--bg-elev2);
+            color: var(--accent);
+            border: 1px solid var(--accent);
             padding: 7px 12px;
             border-radius: 4px;
             cursor: pointer;
@@ -664,8 +633,8 @@
         }
 
         .small-button:hover {
-            background: #00ff88;
-            color: #000;
+            background: var(--accent);
+            color: var(--accent-contrast);
         }
 
         /* Tooltips (inline to guarantee availability) */
@@ -673,23 +642,23 @@
         .help-icon {
             display: inline-flex; align-items: center; justify-content: center;
             width: 14px; height: 14px; margin-left: 6px; border-radius: 50%;
-            background: #333; color: #9ad1ff; font-size: 10px; line-height: 14px;
-            cursor: help; border: 1px solid #444; user-select: none; font-weight: 700;
+            background: var(--bg-elev2); color: var(--link); font-size: 10px; line-height: 14px;
+            cursor: help; border: 1px solid var(--line); user-select: none; font-weight: 700;
         }
-        .help-icon:hover { background: #00ff88; color: #000; border-color: #00ff88; }
+        .help-icon:hover { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
         .tooltip-bubble {
             position: absolute; z-index: 1000; top: 22px; left: 0; min-width: 260px; max-width: 460px;
-            padding: 8px 12px; background: #0b0b0b; color: #ddd; border: 1px solid #2a2a2a; border-radius: 6px;
+            padding: 8px 12px; background: var(--card-bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px;
             font-size: 12px; line-height: 1.45; box-shadow: 0 6px 18px rgba(0,0,0,0.45);
             display: none;
         }
-        .tooltip-bubble .tt-title { font-weight: 700; color: #fff; display:block; margin-bottom: 6px; }
+        .tooltip-bubble .tt-title { font-weight: 700; color: var(--fg); display:block; margin-bottom: 6px; }
         .tooltip-bubble .tt-links { margin-top: 8px; opacity: 0.9; }
-        .tooltip-bubble .tt-links a { color: #5b9dff; text-decoration: none; margin-right: 10px; }
+        .tooltip-bubble .tt-links a { color: var(--link); text-decoration: none; margin-right: 10px; }
         .tooltip-bubble .tt-links a:hover { text-decoration: underline; }
         .tooltip-visible { display: block !important; }
         .tooltip-bubble .tt-badges { margin: 6px 0 4px 0; display:flex; gap:6px; flex-wrap:wrap; }
-        .tooltip-bubble .tt-badge { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; padding: 2px 6px; border-radius: 4px; border: 1px solid #333; color: #ccc; background: #121212; }
+        .tooltip-bubble .tt-badge { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--fg-muted); background: var(--bg-elev2); }
         .tooltip-bubble .tt-badge.warn { color: #ffcf66; border-color: #654; background: #201a0e; }
         .tooltip-bubble .tt-badge.info { color: #7db3ff; border-color: #234; background: #0f141e; }
         .tooltip-bubble .tt-badge.reindex { color: #ff9b5e; border-color: #633; background: #1f130e; }
@@ -740,16 +709,16 @@
 
         select[id^="kw-all-"] option:checked,
         select[id^="kw-repo-"] option:checked {
-            background: #00ff88;
-            color: #000;
+            background: var(--accent);
+            color: var(--accent-contrast);
             font-weight: 600;
         }
 
         select[id^="kw-all-"]:focus,
         select[id^="kw-repo-"]:focus {
             outline: none;
-            border-color: #00ff88;
-            box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--ring);
         }
 
         /* History dropdown styles */
@@ -815,7 +784,7 @@
                 grid-template-columns: 1fr;
             }
             .sidepanel {
-                border-top: 1px solid #2a2a2a;
+                border-top: 1px solid var(--line);
             }
             .dash-two {
                 grid-template-columns: 1fr;
@@ -941,6 +910,11 @@
         <div class="top-actions">
             <input id="global-search" type="search" placeholder="Search settings (Ctrl+K)">
             <div id="search-results"></div>
+            <select id="theme-mode" name="THEME_MODE" title="Theme Mode" style="background: var(--input-bg); color: var(--fg); border:1px solid var(--line); padding:6px 8px; border-radius:6px;">
+                <option value="auto">Auto</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+            </select>
             <button id="btn-health">Health</button>
             <span id="health-status">—</span>
         </div>
@@ -2605,6 +2579,17 @@
             <div id="tab-misc" class="tab-content">
                 <div class="settings-section">
                     <h3>Miscellaneous</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Theme Mode</label>
+                            <select name="THEME_MODE" id="misc-theme-mode">
+                                <option value="auto">Auto (System)</option>
+                                <option value="dark">Dark</option>
+                                <option value="light">Light</option>
+                            </select>
+                            <p class="small">Controls light/dark theme globally. Top bar selector changes it live.</p>
+                        </div>
+                    </div>
                     <div class="input-row">
                         <div class="input-group">
                             <label>Edition (AGRO_EDITION)</label>
