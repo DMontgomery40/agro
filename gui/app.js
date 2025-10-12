@@ -1885,6 +1885,7 @@
             const bar1 = document.getElementById('index-bar');
             const box2 = document.getElementById('dash-index-status');
             const bar2 = document.getElementById('dash-index-bar');
+            const lastIndexedDisplay = document.getElementById('last-indexed-display');
 
             // Use the new comprehensive display if available
             const formatted = (typeof window.formatIndexStatusDisplay === 'function')
@@ -1896,6 +1897,13 @@
             if (bar1) bar1.style.width = pct + '%';
             if (box2) box2.innerHTML = formatted;
             if (bar2) bar2.style.width = pct + '%';
+
+            // Update last indexed timestamp in sidebar
+            if (lastIndexedDisplay && d.metadata && d.metadata.timestamp) {
+                const date = new Date(d.metadata.timestamp);
+                lastIndexedDisplay.textContent = date.toLocaleString();
+            }
+
             if (!d.running && indexPoll) {
                 clearInterval(indexPoll);
                 indexPoll = null;

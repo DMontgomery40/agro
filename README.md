@@ -101,34 +101,30 @@ replace what you don’t. The docs show one happy path; you can rewire models an
 git clone https://github.com/DMontgomery40/rag-service.git
 cd rag-service
 
-# 1) Start Docker (macOS without Docker Desktop)
-#     Colima provides Docker on macOS: start it once
-colima start   # if you installed `colima` via Homebrew
+# 1) One‑command bring‑up (infra + MCP + API + open GUI)
+#    Uses Colima automatically on macOS if Docker isn't running
+make dev            # or: bash scripts/dev_up.sh
 
-# 2) Bring infra + MCP up (Qdrant + Redis)
-bash scripts/up.sh
-
-# 3) One-command setup (recommended)
-#     From THIS folder, pass your repo path/name. If you want to index THIS
-#     repo itself, just use "." and a name you like.
+# 2) One‑command setup (recommended)
+#    From THIS folder, pass your repo path/name. If you want to index THIS
+#    repo itself, just use "." and a name you like.
 bash scripts/setup.sh . rag-service
 
-# 4) Start CLI chat (interactive)
+# 3) Start CLI chat (interactive)
 export REPO=rag-service THREAD_ID=my-session
 python -m venv .venv && . .venv/bin/activate  # if .venv not present yet
 python chat_cli.py
 
-# Optional: Run the HTTP API + stream
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+# Optional: manual API bring‑up instead of make dev
+make api   # runs: uvicorn serve_rag:app --host 127.0.0.1 --port 8012
 curl "http://127.0.0.1:8012/search?q=oauth&repo=rag-service"
-curl -N "http://127.0.0.1:8012/answer_stream?q=hello&repo=rag-service"
 
 # MCP tools quick check (stdio)
 printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
 ```
 
 ### Common setup hiccups (fast fixes)
-- Docker not found on macOS: install and start Colima: `brew install colima docker && colima start`.
+- Docker not found on macOS: install and start Colima: `brew install colima docker && colima start`. The new `make dev` will auto‑start Colima if available.
 - “Permission denied” on scripts: run with an interpreter: `python scripts/quick_setup.py` or `bash scripts/setup.sh`.
 - `python: command not found` on Linux: `apt update && apt install -y python3 python3-venv python3-pip`.
 - “Is it frozen?”: use streaming (`python chat_cli.py --stream`) or run `bash scripts/setup.sh ...` and watch progress.
@@ -138,6 +134,13 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 - SSE streaming (off by default)
   - Endpoint: `/answer_stream?q=...&repo=...`
   - CLI or UIs can opt-in to streaming via this endpoint; default remains blocking.
+
+### GUI settings (host/port, Docker)
+- The HTTP GUI/API is served by `serve_rag.py` (root path returns `gui/index.html`; see serve_rag.py:41-46). Use the GUI’s “Misc” tab to set:
+  - `Serve Host` and `Serve Port` (gui/index.html:1471, gui/index.html:1475)
+  - `Open Browser on Start` (gui/index.html:1482)
+  - `Auto‑start Colima (Docker)` and optional `Colima Profile` (gui/index.html:1489, gui/index.html:1497)
+- Click “Apply All Changes” to persist to `.env`, which `scripts/dev_up.sh` reads on next run.
 - OAuth bearer (off by default)
   - Enable with `OAUTH_ENABLED=true` and set `OAUTH_TOKEN=...`
   - Applies to `/answer`, `/search`, and `/answer_stream` when enabled.
