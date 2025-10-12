@@ -8,6 +8,7 @@ except Exception as e:
     raise RuntimeError("openai>=1.x is required for Responses API") from e
 
 _DEFAULT_MODEL = os.getenv("GEN_MODEL", os.getenv("ENRICH_MODEL", "gpt-4o-mini"))
+_DEFAULT_TEMPERATURE = float(os.getenv("GEN_TEMPERATURE", "0.0") or 0.0)
 
 _client = None
 _mlx_model = None
@@ -60,6 +61,13 @@ def generate_text(
         "input": user_input,
         "store": store,
     }
+    # Apply temperature from env when supported (Responses API)
+    try:
+        temp = float(os.getenv("GEN_TEMPERATURE", str(_DEFAULT_TEMPERATURE)) or _DEFAULT_TEMPERATURE)
+    except Exception:
+        temp = _DEFAULT_TEMPERATURE
+    # Not all providers honor this, but Responses API does
+    kwargs["temperature"] = temp
     if system_instructions:
         kwargs["instructions"] = system_instructions
     if reasoning_effort:
@@ -110,7 +118,7 @@ def generate_text(
                         "model": mdl,
                         "prompt": prompt,
                         "stream": True,
-                        "options": {"temperature": 0.2, "num_ctx": 8192},
+                        "options": {"temperature": temp, "num_ctx": 8192},
                     }, timeout=chunk_timeout, stream=True) as r:
                         r.raise_for_status()
                         buf = []
@@ -141,7 +149,7 @@ def generate_text(
                         "model": mdl,
                         "prompt": prompt,
                         "stream": False,
-                        "options": {"temperature": 0.2, "num_ctx": 8192},
+                        "options": {"temperature": temp, "num_ctx": 8192},
                     }, timeout=total_timeout)
                     resp.raise_for_status()
                     data = resp.json()
@@ -159,6 +167,7 @@ def generate_text(
             pass
 
     try:
+        # OpenAI Responses API (supports temperature)
         resp = client().responses.create(**kwargs)
         text = _extract_text(resp)
         return text, resp
@@ -168,7 +177,8 @@ def generate_text(
             if system_instructions:
                 messages.append({"role": "system", "content": system_instructions})
             messages.append({"role": "user", "content": user_input})
-            ckwargs: Dict[str, Any] = {"model": mdl, "messages": messages}
+            # Chat Completions fallback (supports temperature as well)
+            ckwargs: Dict[str, Any] = {"model": mdl, "messages": messages, "temperature": temp}
             if response_format and isinstance(response_format, dict):
                 ckwargs["response_format"] = response_format
             cc = client().chat.completions.create(**ckwargs)
@@ -176,4 +186,3 @@ def generate_text(
             return text, cc
         except Exception as e:
             raise RuntimeError(f"Generation failed for model={mdl}: {e}")
-

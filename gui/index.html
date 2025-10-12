@@ -71,22 +71,23 @@
         }
 
         #global-search {
-            width: 280px;
-            height: 34px;
+            width: 320px;
+            height: 38px;
             background: #0c0c0c;
-            color: #ddd;
+            color: #e8e8e8;
             border: 1px solid #2a2a2a;
-            padding: 0 12px;
-            border-radius: 6px;
+            padding: 0 14px;
+            border-radius: 8px;
             font-size: 14px;
-            font-family: inherit;
-            transition: all 0.2s;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            transition: all 0.2s ease;
         }
 
         #global-search:focus {
             outline: none;
             border-color: #00ff88;
-            background: #111;
+            background: #141414;
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
         }
 
         #global-search::placeholder {
@@ -96,26 +97,25 @@
 
         #search-results {
             position: absolute;
-            top: 42px;
+            top: 46px;
             right: 80px;
-            width: 320px;
-            max-height: 280px;
-            overflow: auto;
-            background: #0e0e0e;
-            border: 1px solid #333;
-            border-radius: 8px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            width: 480px;
+            max-height: 420px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #0a0a0a;
+            border: 1px solid #00ff88;
+            border-radius: 10px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(0, 255, 136, 0.2);
             display: none;
             z-index: 1000;
         }
 
         #search-results .item {
-            padding: 10px 12px;
+            padding: 12px 16px;
             cursor: pointer;
             border-bottom: 1px solid #1a1a1a;
-            color: #bbb;
-            font-size: 13px;
-            transition: all 0.1s;
+            transition: all 0.15s ease;
         }
 
         #search-results .item:last-child {
@@ -124,8 +124,30 @@
 
         #search-results .item:hover,
         #search-results .item.active {
-            background: #1a1a1a;
-            color: #fff;
+            background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+        }
+
+        #search-results .item-label {
+            display: block;
+            color: #ddd;
+            font-size: 14px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            margin-bottom: 4px;
+        }
+
+        #search-results .item-context {
+            display: block;
+            color: #777;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+        }
+
+        #search-results .search-highlight {
+            background: #00ff88;
+            color: #000;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
         }
 
         mark.hl {
@@ -142,10 +164,15 @@
             transition: outline 120ms ease;
         }
 
+        :root {
+            --sidepanel-width: 400px;
+        }
+
         .layout {
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr var(--sidepanel-width);
             height: calc(100vh - 65px);
+            position: relative;
         }
 
         .content {
@@ -153,6 +180,40 @@
             flex-direction: column;
             border-right: 1px solid #2a2a2a;
             overflow: visible;
+        }
+
+        .resize-handle {
+            position: absolute;
+            left: calc(100% - var(--sidepanel-width) - 3px);
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            cursor: col-resize;
+            z-index: 100;
+            transition: background 0.2s ease;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: rgba(0, 255, 136, 0.3);
+        }
+
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 40px;
+            background: #2a2a2a;
+            border-radius: 2px;
+            transition: background 0.2s ease;
+        }
+
+        .resize-handle:hover::after,
+        .resize-handle.dragging::after {
+            background: #00ff88;
         }
 
         .tab-bar {
@@ -283,8 +344,27 @@
             transition: all 0.2s;
         }
 
-        input[type="number"], input[type="text"]:not([list]) {
+        input[type="number"], input[type="text"] {
             max-width: 100%;
+        }
+
+        /* Fix for datalist inputs to prevent jankiness */
+        input[list] {
+            padding-right: 30px; /* Space for dropdown arrow */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Style the datalist dropdown arrow */
+        input[list]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            filter: invert(1);
+        }
+
+        input[list]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
         }
 
         input:focus, select:focus, textarea:focus {
@@ -333,13 +413,74 @@
             background: #0a0a0a;
             padding: 20px;
             overflow-y: auto;
+            position: relative;
+        }
+
+        #profile-tooltip {
+            position: fixed;
+            background: #0a0a0a;
+            border: 1px solid #00ff88;
+            border-radius: 8px;
+            padding: 12px 16px;
+            max-width: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 255, 136, 0.3);
+            z-index: 10000;
+            display: none;
+            pointer-events: none;
+        }
+
+        #profile-tooltip .tooltip-header {
+            font-size: 13px;
+            font-weight: 600;
+            color: #00ff88;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        #profile-tooltip .tooltip-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 6px 0;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 12px;
+        }
+
+        #profile-tooltip .tooltip-item:last-child {
+            border-bottom: none;
+        }
+
+        #profile-tooltip .tooltip-key {
+            color: #888;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            flex-shrink: 0;
+        }
+
+        #profile-tooltip .tooltip-value {
+            color: #ddd;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            text-align: right;
+            word-break: break-all;
         }
 
         /* Ensure sidepanel two-column rows never overflow */
-        .sidepanel .input-row { grid-template-columns: 1fr 1fr; }
+        .sidepanel .input-row {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px; /* Ensure spacing between columns */
+        }
+        .sidepanel .input-group {
+            min-width: 0; /* Allow flex items to shrink */
+        }
         .sidepanel .input-group input,
         .sidepanel .input-group select,
-        .sidepanel .input-group textarea { width: 100%; min-width: 0; }
+        .sidepanel .input-group textarea {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box; /* Include padding in width calculation */
+        }
 
         .sidepanel-section {
             background: #111111;
@@ -357,6 +498,41 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        /* Collapsible sections */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .collapsible-header:hover {
+            color: #00ff88;
+        }
+
+        .collapse-icon {
+            display: inline-block;
+            margin-right: 8px;
+            transition: transform 0.3s ease;
+            color: #00ff88;
+            font-size: 12px;
+        }
+
+        .collapsible-header.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            max-height: 5000px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            opacity: 0;
         }
 
         .sidepanel-section h4::before {
@@ -575,6 +751,20 @@
             border-color: #00ff88;
             box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
         }
+
+        /* History dropdown styles */
+        #history-dropdown button:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+
+        #history-dropdown button:active {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* History button active state */
+        #chat-history:hover {
+            background: #2a2a2a !important;
+        }
     </style>
     <link rel="stylesheet" href="/gui/css/storage-calculator.css">
     <style>
@@ -746,6 +936,7 @@
     </div>
 
     <div class="layout">
+        <div class="resize-handle"></div>
         <div class="content">
             <div class="tab-bar">
                 <button class="active" data-tab="dashboard">Dashboard</button>
@@ -1033,6 +1224,27 @@
                                     <option value="">Auto-detect repo</option>
                                     <option value="agro">agro</option>
                                 </select>
+
+                                <!-- History Button with Dropdown -->
+                                <div style="position: relative;">
+                                    <button id="chat-history" style="background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        History
+                                    </button>
+                                    <div id="history-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 1000; min-width: 180px;">
+                                        <button id="chat-export-history" style="display: block; width: 100%; text-align: left; background: none; border: none; color: #ddd; padding: 8px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s;">
+                                            📥 Export History
+                                        </button>
+                                        <div style="height: 1px; background: #333;"></div>
+                                        <button id="chat-clear-history" style="display: block; width: 100%; text-align: left; background: none; border: none; color: #ff6b6b; padding: 8px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s;">
+                                            🗑️ Clear History
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <button id="chat-clear" style="background: #1a1a1a; color: #ff6b6b; border: 1px solid #ff6b6b; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;">Clear</button>
                             </div>
                         </div>
@@ -1074,8 +1286,9 @@
                 </div>
 
                 <!-- Chat Settings -->
-                <div class="settings-section" style="border-left: 3px solid #ff9b5e; margin-top: 16px;">
-                    <h3>
+                <div class="settings-section collapsible-section" style="border-left: 3px solid #ff9b5e; margin-top: 16px;">
+                    <h3 class="collapsible-header" data-target="chat-settings-content">
+                        <span class="collapse-icon">▼</span>
                         <span class="accent-orange">●</span> Chat Settings
                         <span class="tooltip-wrap">
                             <span class="help-icon">?</span>
@@ -1089,6 +1302,7 @@
                             </div>
                         </span>
                     </h3>
+                    <div id="chat-settings-content" class="collapsible-content">
                     <p class="small">Configure model, retrieval, and display options for chat. Settings persist in browser localStorage.</p>
 
                     <!-- Model Selection -->
@@ -1121,7 +1335,7 @@
                                     </div>
                                 </span>
                             </label>
-                            <input type="number" id="chat-temperature" value="0.2" min="0" max="2" step="0.1">
+                            <input type="number" id="chat-temperature" value="0.0" min="0" max="2" step="0.01">
                         </div>
                     </div>
 
@@ -1280,9 +1494,85 @@
                         <textarea id="chat-system-prompt" placeholder="Leave empty for default system prompt" style="min-height: 80px;"></textarea>
                     </div>
 
+                    <!-- History Settings Section -->
+                    <div class="settings-subsection" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #2a2a2a;">
+                        <h4 style="color: #00ff88; font-size: 13px; margin-bottom: 12px;">
+                            💾 History Settings
+                            <span class="tooltip-wrap">
+                                <span class="help-icon">?</span>
+                                <div class="tooltip-bubble">
+                                    <span class="tt-title">Chat History Storage</span>
+                                    Control how chat history is stored and loaded. History is saved in browser localStorage for persistence across sessions.
+                                    <div class="tt-badges">
+                                        <span class="tt-badge info">Browser storage</span>
+                                        <span class="tt-badge info">Privacy: stays local</span>
+                                    </div>
+                                </div>
+                            </span>
+                        </h4>
+
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>
+                                    Enable History
+                                    <span class="tooltip-wrap">
+                                        <span class="help-icon">?</span>
+                                        <div class="tooltip-bubble">
+                                            <span class="tt-title">Save Chat Messages</span>
+                                            When enabled, all chat messages are saved to browser localStorage for later retrieval.
+                                        </div>
+                                    </span>
+                                </label>
+                                <select id="chat-history-enabled">
+                                    <option value="1">Enabled</option>
+                                    <option value="0">Disabled</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>
+                                    History Limit
+                                    <span class="tooltip-wrap">
+                                        <span class="help-icon">?</span>
+                                        <div class="tooltip-bubble">
+                                            <span class="tt-title">Maximum Messages</span>
+                                            Maximum number of messages to keep in history. Older messages are automatically removed when limit is reached. Range: 1-1000 messages.
+                                        </div>
+                                    </span>
+                                </label>
+                                <input type="number" id="chat-history-limit" value="100" min="1" max="1000" step="10">
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>
+                                    Load on Startup
+                                    <span class="tooltip-wrap">
+                                        <span class="help-icon">?</span>
+                                        <div class="tooltip-bubble">
+                                            <span class="tt-title">Auto-Load History</span>
+                                            Automatically display previous conversation history when opening the chat tab.
+                                        </div>
+                                    </span>
+                                </label>
+                                <select id="chat-show-history-on-load">
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Storage Usage</label>
+                                <div style="background: #0a0a0a; border: 1px solid #333; color: #888; padding: 9px 12px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', monospace;">
+                                    <span id="chat-storage-display">Calculating...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="margin-top: 16px; display: flex; gap: 8px;">
                         <button id="chat-save-settings" class="small-button" style="background: #00ff88; color: #000;">Save Settings</button>
                         <button id="chat-reset-settings" class="small-button" style="background: #1a1a1a; color: #ff6b6b; border: 1px solid #ff6b6b;">Reset to Defaults</button>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -1516,6 +1806,21 @@
                         <div class="input-group">
                             <label>OpenAI API Key</label>
                             <input type="password" name="OPENAI_API_KEY">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>
+                                Default Temperature (GEN_TEMPERATURE)
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Default Response Creativity</span>
+                                        Sets a global default temperature for generation. 0.0 = deterministic; try 0.2 sometimes, or 0.04 for light variation in docs.
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" name="GEN_TEMPERATURE" value="0.0" min="0" max="2" step="0.01">
                         </div>
                     </div>
                     <div class="input-row">
@@ -2356,7 +2661,7 @@
                     </div>
                     <div class="input-group">
                         <label>Rerank Model</label>
-                        <input type="text" id="cost-rerank-model" list="rerank-model-list" placeholder="rerank-3.5 or BAAI/bge-reranker-v2-m3">
+                        <input type="text" id="cost-rerank-model" list="rerank-model-list" placeholder="rerank-english-v3.0">
                     </div>
                 </div>
                 <div class="input-row" style="margin-bottom: 12px;">
@@ -2410,6 +2715,9 @@
                     <ul id="profiles-ul" class="mono" style="list-style: none; padding: 0;"></ul>
                 </div>
             </div>
+
+            <!-- Profile Preview Tooltip -->
+            <div id="profile-tooltip"></div>
 
             <!-- Auto-Tune (Pro) -->
             <div class="sidepanel-section">
