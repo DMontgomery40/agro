@@ -76,3 +76,9 @@ if command -v ollama >/dev/null 2>&1; then
 else
   echo "[up] Ollama not installed (skipping local Qwen)."
 fi
+
+# Start embedded editor if enabled
+if [[ -f "$ROOT_DIR/scripts/editor_up.sh" ]]; then
+  echo "[up] Starting embedded editor..."
+  bash "$ROOT_DIR/scripts/editor_up.sh" || echo "[up] Editor startup failed (non-fatal)"
+fi

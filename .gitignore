@@ -1,3 +1,7 @@
+# Editor data
+.editor_data/
+out/editor/
+
 # Python
 __pycache__/
 *.py[codz]

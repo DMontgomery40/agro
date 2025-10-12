@@ -1800,11 +1800,7 @@
                             </div>
                         `;
                         const cta = document.getElementById('cta-build-cards');
-                        if (cta) cta.addEventListener('click', async () => {
-                            switchTab('repos');
-                            const b = document.getElementById('btn-cards-build');
-                            if (b) { b.click(); showStatus('Building cards...', 'loading'); }
-                        });
+                        if (cta) cta.addEventListener('click', async () => { try { switchTab('repos'); startCardsBuild(); } catch(e) { showStatus('Unable to start cards build', 'error'); } });
                     }
 
                     // Reload keywords to populate the UI
@@ -1922,8 +1918,9 @@
 
         const btnIndex = document.getElementById('btn-index-start');
         if (btnIndex) btnIndex.addEventListener('click', startIndexing);
-        const btnCardsBuild = document.getElementById('btn-cards-build');
-        if (btnCardsBuild) btnCardsBuild.addEventListener('click', buildCards);
+        document.querySelectorAll('#btn-cards-build').forEach(btn => {
+            if (!btn.dataset.cardsBuildBound) { btn.dataset.cardsBuildBound='1'; btn.addEventListener('click', () => startCardsBuild()); }
+        });
         const btnCardsRefresh = document.getElementById('btn-cards-refresh');
         if (btnCardsRefresh) btnCardsRefresh.addEventListener('click', refreshCards);
         // Dashboard button bindings with enhanced feedback
@@ -2245,6 +2242,18 @@
             const resp = await fetch(api('/api/cards'));
             const data = await resp.json();
             const cards = Array.isArray(data.cards) ? data.cards : [];
+            const last = data.last_build || null;
+            const lastBox = document.getElementById('cards-last-build');
+            if (lastBox) {
+                if (last && last.started_at) {
+                    const when = new Date(last.started_at).toLocaleString();
+                    const cnt = (last.result && last.result.cards_written) ? ` • ${last.result.cards_written} updated` : '';
+                    lastBox.textContent = `Last build: ${when}${cnt}`;
+                    lastBox.style.display = 'block';
+                } else {
+                    lastBox.style.display = 'none';
+                }
+            }
             const cardsContainer = document.getElementById('cards-viewer');
             if (cardsContainer) {
                 cardsContainer.innerHTML = cards.length === 0 ?
@@ -2712,15 +2721,79 @@
         } catch (e) { /* ignore */ }
     }
 
-    async function buildCards() {
+    // ---------------- Cards Builder (Job + SSE) ----------------
+    let cardsJob = { id: null, timer: null, sse: null };
+    let tipsTimer = null;
+    function openCardsModal() {
+        const m = document.getElementById('cards-builder-modal'); if (!m) return;
+        m.style.display = 'block';
+        const err = document.getElementById('cards-builder-error'); if (err) err.style.display = 'none';
+        const logs = document.getElementById('cards-logs-view'); if (logs) logs.style.display = 'none';
+        [
+            'scan','chunk','sparse','dense','summarize','write','finalize'
+        ].forEach(s => { const el = document.getElementById('cards-stage-'+s); if (el) { el.style.color='#aaa'; el.style.borderColor='#2a2a2a'; el.style.background='transparent'; }});
+        const mainBar = document.getElementById('cards-main-bar'); if (mainBar) mainBar.style.width = '0%';
+        const stats = document.getElementById('cards-progress-stats'); if (stats) stats.textContent = '0 / 0 (0%)';
+        // Bind controls once
+        const minBtn = document.getElementById('cards-builder-min'); if (minBtn && !minBtn.dataset.bound) { minBtn.dataset.bound='1'; minBtn.addEventListener('click', () => { m.style.display='none'; showStatus('Cards Builder minimized', 'info'); }); }
+        const closeBtn = document.getElementById('cards-builder-close'); if (closeBtn && !closeBtn.dataset.bound) { closeBtn.dataset.bound='1'; closeBtn.addEventListener('click', () => { m.style.display='none'; stopCardsStreams(); }); }
+        const viewLogs = document.getElementById('cards-view-logs'); if (viewLogs && !viewLogs.dataset.bound) { viewLogs.dataset.bound='1'; viewLogs.addEventListener('click', async () => { try { const r = await fetch(api('/api/cards/build/logs')); const d = await r.json(); const pre = document.getElementById('cards-logs-view'); if (pre) { pre.textContent = d.content || ''; pre.style.display = 'block'; } } catch(e) { alert('Unable to load logs'); } }); }
+        const cancelBtn = document.getElementById('cards-cancel'); if (cancelBtn && !cancelBtn.dataset.bound) { cancelBtn.dataset.bound='1'; cancelBtn.addEventListener('click', async () => { if (!cardsJob.id) return; try { await fetch(api('/api/cards/build/cancel/'+cardsJob.id), { method: 'POST' }); showStatus('Cards build cancelled', 'warn'); } catch (e) { showStatus('Cancel failed: '+e.message, 'error'); } }); }
+    }
+
+    function highlightStage(stage) {
+        const all = ['scan','chunk','sparse','dense','summarize','write','finalize'];
+        all.forEach(s => { const el = document.getElementById('cards-stage-'+s); if (el) { el.style.color = (s===stage? '#fff':'#aaa'); el.style.borderColor = (s===stage?'#00ff88':'#2a2a2a'); el.style.background = (s===stage?'#0f1a14':'transparent'); }});
+    }
+
+    function updateCardsModal(data) {
         try {
-            showStatus('Building cards...', 'loading');
-            await fetch(api('/api/cards/build'), { method: 'POST' });
-            await refreshCards();
-            showStatus('Cards built successfully', 'success');
+            const { pct, total, done, tip, model, stage, throughput, eta_s } = data || {};
+            const bar = document.getElementById('cards-main-bar'); if (bar) bar.style.width = `${pct||0}%`;
+            const stats = document.getElementById('cards-progress-stats'); if (stats) stats.textContent = `${done||0} / ${total||0} (${(pct||0).toFixed(1)}%) • ${throughput||''} • ETA ${eta_s||0}s`;
+            const tipEl = document.getElementById('cards-quick-tip'); if (tipEl && tip) tipEl.textContent = tip;
+            highlightStage(stage);
+            const e1 = document.getElementById('cards-model-embed'); if (e1 && model && model.embed) e1.textContent = `embed: ${model.embed}`;
+            const e2 = document.getElementById('cards-model-enrich'); if (e2 && model && model.enrich) e2.textContent = `enrich: ${model.enrich}`;
+            const e3 = document.getElementById('cards-model-rerank'); if (e3 && model && model.rerank) e3.textContent = `rerank: ${model.rerank}`;
+        } catch {}
+    }
+
+    function stopCardsStreams() {
+        if (cardsJob.timer) { clearInterval(cardsJob.timer); cardsJob.timer = null; }
+        if (cardsJob.sse) { try { cardsJob.sse.close(); } catch{} cardsJob.sse = null; }
+    }
+
+    async function startCardsBuild(repoOverride=null) {
+        try {
+            openCardsModal();
+            const enrich = document.getElementById('cards-enrich-toggle')?.checked ? 1 : 0;
+            const repo = repoOverride || (state?.config?.env?.REPO) || 'agro';
+            const r = await fetch(api(`/api/cards/build/start?repo=${encodeURIComponent(repo)}&enrich=${enrich}`), { method: 'POST' });
+            if (r.status === 409) {
+                const d = await r.json();
+                const err = document.getElementById('cards-builder-error'); if (err) { err.style.display='block'; err.textContent = d.detail || 'Job already running'; }
+                return;
+            }
+            const d = await r.json();
+            cardsJob.id = d.job_id;
+            showStatus('Cards build started…', 'loading');
+            // Set up SSE with fallback
+            try {
+                const es = new EventSource(api(`/api/cards/build/stream/${cardsJob.id}`));
+                cardsJob.sse = es;
+                es.addEventListener('progress', (ev) => { try { const data = JSON.parse(ev.data||'{}'); updateCardsModal(data); } catch{} });
+                es.addEventListener('done', async (ev) => { stopCardsStreams(); updateCardsModal(JSON.parse(ev.data||'{}')); showStatus('Cards rebuilt', 'success'); await loadCards(); });
+                es.addEventListener('error', (ev) => { /* will use polling fallback */ });
+                es.addEventListener('cancelled', (ev) => { stopCardsStreams(); const e = document.getElementById('cards-builder-error'); if (e){ e.style.display='block'; e.textContent='Cancelled'; } });
+            } catch (e) {
+                // SSE not available; use polling
+                cardsJob.timer = setInterval(async () => {
+                    try { const s = await (await fetch(api(`/api/cards/build/status/${cardsJob.id}`))).json(); updateCardsModal(s); if ((s.status||'')==='done'){ stopCardsStreams(); await loadCards(); showStatus('Cards rebuilt', 'success'); } if ((s.status||'')==='error'){ stopCardsStreams(); const er=document.getElementById('cards-builder-error'); if(er){er.style.display='block'; er.textContent=s.error||'Error';} showStatus('Cards build failed', 'error'); } } catch {}
+                }, 1500);
+            }
         } catch (e) {
-            showStatus('Failed to build cards: ' + e.message, 'error');
-            throw e;
+            showStatus('Failed to start cards build: '+e.message, 'error');
         }
     }
 
@@ -2875,4 +2948,128 @@
         await loadPrices();
         alert('Model added to pricing catalog.');
     }
+
+    // -------- Embedded Editor --------
+    let editorHealthInterval = null;
+
+    async function checkEditorHealth() {
+        try {
+            const resp = await fetch(api('/health/editor'));
+            const data = await resp.json();
+            const badge = document.getElementById('editor-health-badge');
+            const badgeText = document.getElementById('editor-health-text');
+            const banner = document.getElementById('editor-status-banner');
+            const bannerMsg = document.getElementById('editor-status-message');
+            const iframe = document.getElementById('editor-iframe');
+
+            if (data.ok) {
+                badge.style.background = '#00ff88';
+                badge.style.color = '#000';
+                badgeText.textContent = '● Healthy';
+                banner.style.display = 'none';
+                if (!iframe.src && data.url) {
+                    iframe.src = data.url;
+                }
+            } else {
+                const isDisabled = !data.enabled;
+                badge.style.background = isDisabled ? '#666' : '#ff5555';
+                badge.style.color = '#fff';
+                badgeText.textContent = isDisabled ? '○ Disabled' : '● Error';
+                banner.style.display = 'block';
+                const reason = data.reason || data.error || 'Unknown error';
+                bannerMsg.textContent = isDisabled
+                    ? `Editor is disabled. Enable it in the Misc tab and restart.`
+                    : `Error: ${reason}. Check logs or try restarting.`;
+                iframe.src = '';
+            }
+        } catch (error) {
+            console.error('Failed to check editor health:', error);
+        }
+    }
+
+    async function openEditorWindow() {
+        try {
+            const resp = await fetch(api('/health/editor'));
+            const data = await resp.json();
+            if (data.url) {
+                window.open(data.url, '_blank');
+            } else {
+                alert('Editor URL not available');
+            }
+        } catch (error) {
+            console.error('Failed to open editor window:', error);
+        }
+    }
+
+    async function copyEditorUrl() {
+        try {
+            const resp = await fetch(api('/health/editor'));
+            const data = await resp.json();
+            if (data.url) {
+                await navigator.clipboard.writeText(data.url);
+                const btn = document.getElementById('btn-editor-copy-url');
+                const orig = btn.innerHTML;
+                btn.innerHTML = '✓ Copied!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            } else {
+                alert('Editor URL not available');
+            }
+        } catch (error) {
+            console.error('Failed to copy URL:', error);
+        }
+    }
+
+    async function restartEditor() {
+        try {
+            const btn = document.getElementById('btn-editor-restart');
+            btn.disabled = true;
+            btn.textContent = 'Restarting...';
+            const resp = await fetch(api('/api/editor/restart'), { method: 'POST' });
+            const data = await resp.json();
+            if (data.ok) {
+                console.log('✅ Editor restarted');
+                setTimeout(() => {
+                    const iframe = document.getElementById('editor-iframe');
+                    iframe.src = '';
+                    checkEditorHealth();
+                }, 3000);
+            } else {
+                console.error('❌ Restart failed:', data.error || data.stderr);
+                alert('Restart failed: ' + (data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Failed to restart editor:', error);
+            alert('Restart failed: ' + error.message);
+        } finally {
+            const btn = document.getElementById('btn-editor-restart');
+            btn.disabled = false;
+            btn.innerHTML = '↻ Restart';
+        }
+    }
+
+    const originalSwitchTab = window.switchTab;
+    window.switchTab = function(tabName) {
+        if (typeof originalSwitchTab === 'function') {
+            originalSwitchTab(tabName);
+        }
+        if (tabName === 'editor') {
+            if (!editorHealthInterval) {
+                checkEditorHealth();
+                editorHealthInterval = setInterval(checkEditorHealth, 10000);
+            }
+        } else {
+            if (editorHealthInterval) {
+                clearInterval(editorHealthInterval);
+                editorHealthInterval = null;
+            }
+        }
+    };
+
+    const btnOpenWindow = document.getElementById('btn-editor-open-window');
+    const btnCopyUrl = document.getElementById('btn-editor-copy-url');
+    const btnRestart = document.getElementById('btn-editor-restart');
+
+    if (btnOpenWindow) btnOpenWindow.addEventListener('click', openEditorWindow);
+    if (btnCopyUrl) btnCopyUrl.addEventListener('click', copyEditorUrl);
+    if (btnRestart) btnRestart.addEventListener('click', restartEditor);
 })();

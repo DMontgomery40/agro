@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any, List
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.responses import StreamingResponse
 from server.langgraph_app import build_graph
 from server.tracing import start_trace, end_trace, Trace, latest_trace_path
 from retrieval.hybrid_search import search_routed_multi
@@ -14,6 +15,7 @@ from common.paths import repo_root, gui_dir, docs_dir, files_root
 import os, json, sys
 from typing import Any, Dict
 from collections import Counter, defaultdict
+from pathlib import Path as _Path
 
 app = FastAPI(title="AGRO RAG + GUI")
 
@@ -1129,7 +1131,7 @@ def index_status() -> Dict[str, Any]:
 
 @app.post("/api/cards/build")
 def cards_build() -> Dict[str, Any]:
-    """Build cards index by running indexer.build_cards"""
+    """Legacy one-shot build (kept for compatibility). Prefer /api/cards/build/start."""
     try:
         import subprocess
         result = subprocess.run(
@@ -1146,24 +1148,169 @@ def cards_build() -> Dict[str, Any]:
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
+# -------- Cards Builder (Jobs + SSE) --------
+@app.post("/api/cards/build/start")
+def cards_build_start(repo: Optional[str] = Query(None), enrich: int = Query(1)) -> Dict[str, Any]:
+    from server.cards_builder import get_job_for_repo, start_job
+    r = (repo or os.getenv('REPO', 'agro')).strip()
+    existing = get_job_for_repo(r)
+    if existing and existing.status == 'running':
+        raise HTTPException(status_code=409, detail=f"A cards build job is already running for repo {r}")
+    try:
+        job = start_job(r, enrich=bool(int(enrich)))
+        return {"job_id": job.job_id, "repo": r}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/cards/build/stream/{job_id}")
+def cards_build_stream(job_id: str):
+    from server.cards_builder import get_job
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    def gen():
+        for evt in job.events():
+            yield evt
+    return StreamingResponse(gen(), media_type='text/event-stream')
+
+
+@app.get("/api/cards/build/status/{job_id}")
+def cards_build_status(job_id: str) -> Dict[str, Any]:
+    from server.cards_builder import get_job
+    job = get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    snap = job.snapshot()
+    snap.update({"status": job.status})
+    if job.error:
+        snap["error"] = job.error
+    return snap
+
+
+@app.post("/api/cards/build/cancel/{job_id}")
+def cards_build_cancel(job_id: str) -> Dict[str, Any]:
+    from server.cards_builder import cancel_job
+    ok = cancel_job(job_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {"ok": True}
+
+
+@app.get("/api/cards/build/logs")
+def cards_build_logs() -> Dict[str, Any]:
+    from server.cards_builder import read_logs
+    return read_logs()
+
+# ---------------- Embedded Editor ----------------
+@app.get("/health/editor")
+def editor_health() -> Dict[str, Any]:
+    """Check embedded editor health"""
+    try:
+        import requests
+
+        status_path = Path(__file__).parent.parent / "out" / "editor" / "status.json"
+
+        if not status_path.exists():
+            return {"ok": False, "error": "No status file", "enabled": False}
+
+        with open(status_path, 'r') as f:
+            status = json.load(f)
+
+        if not status.get("enabled", False):
+            return {"ok": False, "reason": status.get("reason", "disabled"), "enabled": False}
+
+        # Probe the editor URL
+        url = status.get("url", "")
+        try:
+            resp = requests.get(url, timeout=2)
+            if resp.status_code == 200:
+                return {
+                    "ok": True,
+                    "enabled": True,
+                    "port": status.get("port"),
+                    "url": url,
+                    "started_at": status.get("started_at")
+                }
+            else:
+                return {
+                    "ok": False,
+                    "error": f"HTTP {resp.status_code}",
+                    "enabled": True,
+                    "url": url
+                }
+        except requests.RequestException as e:
+            return {
+                "ok": False,
+                "error": f"Connection failed: {str(e)}",
+                "enabled": True,
+                "url": url
+            }
+    except Exception as e:
+        return {"ok": False, "error": str(e), "enabled": False}
+
+@app.post("/api/editor/restart")
+def editor_restart() -> Dict[str, Any]:
+    """Restart the embedded editor"""
+    try:
+        import subprocess
+
+        scripts_dir = Path(__file__).parent.parent / "scripts"
+
+        # Stop first
+        down_script = scripts_dir / "editor_down.sh"
+        if down_script.exists():
+            subprocess.run([str(down_script)], check=False)
+
+        # Start
+        up_script = scripts_dir / "editor_up.sh"
+        if up_script.exists():
+            result = subprocess.run(
+                [str(up_script)],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            return {
+                "ok": result.returncode == 0,
+                "stdout": result.stdout,
+                "stderr": result.stderr
+            }
+        else:
+            return {"ok": False, "error": "editor_up.sh not found"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
 @app.get("/api/cards")
 def cards_list() -> Dict[str, Any]:
     """Return cards index information"""
     try:
         from common.config_loader import out_dir
         repo = os.getenv('REPO', 'agro').strip()
-        cards_path = Path(out_dir(repo)) / "cards.jsonl"
-        
-        if not cards_path.exists():
-            return {"count": 0, "cards": [], "path": str(cards_path)}
-        
+        base = _Path(out_dir(repo))
+        cards_path = base / "cards.jsonl"
+        progress_path = (_Path(os.getenv('OUT_DIR_BASE') or _Path(__file__).resolve().parents[1] / 'out') / 'cards' / repo / 'progress.json')
+
         cards = []
-        with open(cards_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    cards.append(json.loads(line))
-        
-        return {"count": len(cards), "cards": cards[:10], "path": str(cards_path)}
+        count = 0
+        if cards_path.exists():
+            with cards_path.open('r', encoding='utf-8') as f:
+                for i, line in enumerate(f):
+                    if not line.strip():
+                        continue
+                    if len(cards) < 10:
+                        try:
+                            cards.append(json.loads(line))
+                        except Exception:
+                            pass
+                    count = i + 1
+        last_build = None
+        if progress_path.exists():
+            try:
+                last_build = json.loads(progress_path.read_text())
+            except Exception:
+                last_build = None
+        return {"count": count, "cards": cards, "path": str(cards_path), "last_build": last_build}
     except Exception as e:
         return {"count": 0, "cards": [], "error": str(e)}
 
