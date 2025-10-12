@@ -1,5 +1,5 @@
 import os
-from hybrid_search import search_routed_multi
+from retrieval.hybrid_search import search_routed_multi
 
 TESTS = [
     ('project','ai studio','easy'),
@@ -38,4 +38,3 @@ for d, arr in by_diff.items():
 overall = sum(all_scores)/max(1,len(all_scores))
 print(f"\n{'Overall Average:':20} {overall:.3f}")
 print('='*80)
-

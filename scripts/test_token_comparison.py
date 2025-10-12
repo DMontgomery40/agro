@@ -100,7 +100,7 @@ def approach2_rag_standalone(question: str, repo: str):
     Counts the generated answer + citations.
     """
     try:
-        from langgraph_app import build_graph
+        from server.langgraph_app import build_graph
 
         # Build graph and run (with required thread_id config)
         graph = build_graph()
@@ -143,7 +143,7 @@ def approach3_claude_plus_rag_direct(question: str, repo: str, top_k: int = 10):
     This is what would happen if Claude called hybrid_search directly.
     """
     try:
-        from hybrid_search import search_routed_multi
+        from retrieval.hybrid_search import search_routed_multi
 
         results = search_routed_multi(question, repo_override=repo, final_k=top_k)
 
@@ -179,7 +179,7 @@ def approach4_claude_plus_rag_mcp(question: str, repo: str, top_k: int = 10):
     IMPORTANT: MCP tool schemas are sent with EVERY request!
     """
     try:
-        from mcp_server import MCPServer
+        from server.mcp.server import MCPServer
 
         server = MCPServer()
 

@@ -13,7 +13,7 @@ How to use RAG locally vs externally:
   - Run a quick search:
     ```bash
     python - <<'PY'
-    from hybrid_search import search_routed_multi
+    from retrieval.hybrid_search import search_routed_multi
     for d in search_routed_multi("Where is OAuth validated", repo_override="project", m=4, final_k=10):
         print(f"{d['file_path']}:{d['start_line']}-{d['end_line']}  score={d['rerank_score']:.3f}")
     PY
@@ -140,7 +140,7 @@ MCP “no results” quick fix
      ```bash
      . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
        python - <<'PY'
-     from hybrid_search import search_routed_multi
+     from retrieval.hybrid_search import search_routed_multi
      for d in search_routed_multi('Where is OAuth validated', repo_override='agro', m=2, final_k=5):
          print(d['file_path'], d['start_line'], d['end_line'])
      PY
@@ -330,7 +330,7 @@ bash
 Copy code
 python eval_loop.py && \
 python - <<'PY'
-from hybrid_search import search_routed_multi
+from retrieval.hybrid_search import search_routed_multi
 docs = search_routed_multi("your query", repo_override="project", final_k=10)
 for d in docs[:5]:
     print(f"{d['rerank_score']:.3f}  {d['file_path']}:{d['start_line']}-{d['end_line']}")

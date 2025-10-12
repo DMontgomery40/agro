@@ -59,7 +59,7 @@ def get_reranker() -> Reranker:
         _RERANKER = Reranker(model_name, model_type='cross-encoder', trust_remote_code=True)
     return _RERANKER
 
-def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dict]:
+def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: object | None = None) -> List[Dict]:
     if not results:
         return []
     if RERANK_BACKEND in ('none', 'off', 'disabled'):
@@ -67,6 +67,16 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
             r['rerank_score'] = float(1.0 - (i * 0.01))
         return results[:top_k]
     model_name = DEFAULT_MODEL
+    # --- tracing: record input set size
+    try:
+        if trace is not None and hasattr(trace, 'add'):
+            trace.add('reranker.rank', {
+                'model': model_name,
+                'input_topN': len(results or []),
+                'output_topK': int(top_k),
+            })
+    except Exception:
+        pass
     if RERANK_BACKEND == 'cohere':
         try:
             import cohere
@@ -87,7 +97,23 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
                 score = float(getattr(item, 'relevance_score', 0.0))
                 results[idx]['rerank_score'] = (score / max_s) if max_s else 0.0
             results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
-            return results[:top_k]
+            top = results[:top_k]
+            try:
+                if trace is not None and hasattr(trace, 'add'):
+                    trace.add('reranker.rank', {
+                        'model': f'cohere:{COHERE_MODEL}',
+                        'scores': [
+                            {
+                                'path': r.get('file_path'),
+                                'start': r.get('start_line'),
+                                'end': r.get('end_line'),
+                                'rerank_score': float(r.get('rerank_score', 0.0) or 0.0),
+                            } for r in top
+                        ]
+                    })
+            except Exception:
+                pass
+            return top
         except Exception:
             pass
     pipe = _maybe_init_hf_pipeline(model_name)
@@ -114,7 +140,23 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
                     for r in results:
                         r['rerank_score'] = float(r.get('rerank_score', 0.0)) / abs(mx)
             results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
-            return results[:top_k]
+            top = results[:top_k]
+            try:
+                if trace is not None and hasattr(trace, 'add'):
+                    trace.add('reranker.rank', {
+                        'model': f'hf:{model_name}',
+                        'scores': [
+                            {
+                                'path': r.get('file_path'),
+                                'start': r.get('start_line'),
+                                'end': r.get('end_line'),
+                                'rerank_score': float(r.get('rerank_score', 0.0) or 0.0),
+                            } for r in top
+                        ]
+                    })
+            except Exception:
+                pass
+            return top
         except Exception:
             pass
     docs = []
@@ -142,4 +184,20 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10) -> List[Dic
             for r in results:
                 r['rerank_score'] = float(r.get('rerank_score', 0.0)) / abs(mx)
     results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
-    return results[:top_k]
+    top = results[:top_k]
+    try:
+        if trace is not None and hasattr(trace, 'add'):
+            trace.add('reranker.rank', {
+                'model': f'local:{model_name}',
+                'scores': [
+                    {
+                        'path': r.get('file_path'),
+                        'start': r.get('start_line'),
+                        'end': r.get('end_line'),
+                        'rerank_score': float(r.get('rerank_score', 0.0) or 0.0),
+                    } for r in top
+                ]
+            })
+    except Exception:
+        pass
+    return top

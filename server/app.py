@@ -960,7 +960,7 @@ def golden_test(payload: Dict[str, Any]) -> Dict[str, Any]:
     if use_multi:
         docs = search_routed_multi(q, repo_override=repo, m=4, final_k=final_k)
     else:
-        from hybrid_search import search_routed
+        from retrieval.hybrid_search import search_routed
         docs = search_routed(q, repo_override=repo, final_k=final_k)
 
     paths = [d.get("file_path", "") for d in docs]

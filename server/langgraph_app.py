@@ -4,8 +4,8 @@ from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
 from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.redis import RedisSaver
-from hybrid_search import search_routed_multi as hybrid_search_routed_multi
-from env_model import generate_text
+from retrieval.hybrid_search import search_routed_multi as hybrid_search_routed_multi
+from server.env_model import generate_text
 from server.index_stats import get_index_stats
 
 # Load environment from repo root .env without hard-coded paths

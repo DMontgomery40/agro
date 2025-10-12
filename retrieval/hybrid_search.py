@@ -17,7 +17,7 @@ import bm25s
 from bm25s.tokenization import Tokenizer
 from Stemmer import Stemmer
 from .rerank import rerank_results as ce_rerank
-from env_model import generate_text
+from server.env_model import generate_text
 
 
 def _classify_query(q: str) -> str:
@@ -443,4 +443,3 @@ def search_routed_multi(query: str, repo_override: str | None = None, m: int = 4
         return reranked
     except Exception:
         return uniq[:final_k]
-
