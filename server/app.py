@@ -68,9 +68,9 @@ def health():
 @app.get("/health/langsmith")
 def health_langsmith() -> Dict[str, Any]:
     enabled = str(os.getenv('LANGCHAIN_TRACING_V2','0')).strip().lower() in {'1','true','on'}
-    project = os.getenv('LANGCHAIN_PROJECT')
+    project = os.getenv('LANGCHAIN_PROJECT') or os.getenv('LANGSMITH_PROJECT')
     endpoint = os.getenv('LANGCHAIN_ENDPOINT') or 'https://api.smith.langchain.com'
-    key = os.getenv('LANGCHAIN_API_KEY')
+    key = os.getenv('LANGCHAIN_API_KEY') or os.getenv('LANGSMITH_API_KEY')
     installed = True
     can_connect = None
     identity: Dict[str, Any] = {}
@@ -130,7 +130,7 @@ def api_langsmith_latest(
     try:
         from langsmith import Client  # type: ignore
         cl = Client()
-        proj = (project or os.getenv('LANGCHAIN_PROJECT') or os.getenv('REPO','agro'))
+        proj = (project or os.getenv('LANGCHAIN_PROJECT') or os.getenv('LANGSMITH_PROJECT') or os.getenv('REPO','agro'))
         # list_runs returns generator; take first
         runs = list(cl.list_runs(project_name=proj, limit=1))
         if not runs:
@@ -160,7 +160,7 @@ def api_langsmith_runs(
     try:
         from langsmith import Client  # type: ignore
         cl = Client()
-        proj = (project or os.getenv('LANGCHAIN_PROJECT') or os.getenv('REPO','agro'))
+        proj = (project or os.getenv('LANGCHAIN_PROJECT') or os.getenv('LANGSMITH_PROJECT') or os.getenv('REPO','agro'))
         out = []
         for r in cl.list_runs(project_name=proj, limit=limit):
             rid = getattr(r, 'id', None) or getattr(r, 'run_id', None)

@@ -35,7 +35,7 @@ class Trace:
             'langsmith' if ((os.getenv('LANGCHAIN_TRACING_V2','0') or '0').strip().lower() in {'1','true','on'}) else 'local'))
         # Optional LangSmith client (best effort)
         self._ls_client = None
-        self._ls_project = os.getenv('LANGCHAIN_PROJECT', 'agro')
+        self._ls_project = os.getenv('LANGCHAIN_PROJECT') or os.getenv('LANGSMITH_PROJECT') or 'agro'
         self._ls_run_id: Optional[str] = None
         self._ls_url: Optional[str] = None
         try:
