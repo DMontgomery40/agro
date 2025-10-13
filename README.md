@@ -1,155 +1,131 @@
-![AGRO Banner](docs/images/agro-hero-banner.png)
+![AGRO Banner](assets/agro-hero-banner.png)
+
+# AGRO is a local‑first RAG engine for codebases.
+
+#### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Multiple Transports, Chat Interface, and Modular-everything. 
+And it even has a VSCode instance embedded in the GUI (you don't have to turn it on just wanted to see if I could do it ; )
 
 
----
 
-This is a RAG (Retrieval-Augmented Generation) engine that:
-- Maintains **strict separation** between repositories (never mixes them)
-- Uses **hybrid search** (BM25 + dense embeddings + reranking)
-- Provides **MCP tools** (stdio + HTTP modes) for Codex and Claude Code
-- Includes **eval harness** with regression tracking
-- Supports **multi-query expansion** and **local code hydration**
-- Features **interactive CLI chat** with conversation memory
-
-### Positioning (what we are — and aren’t)
-- RAG-first: this repo is the retrieval + answer engine (your runtime).
-- Codex/Claude are clients that call into this engine via MCP; they “wrap” the RAG, not the other way around.
-- We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
-- Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
-
-### Storage Planning Tool
-
-AGRO enables significant flexibility in configuration—but with great power comes great storage bills. Depending on your choices (embeddings, hydration, replication, etc.), you could easily reach 20× your original repository size. Commercial RAGs are expensive for precisely this reason.
-
-**Use our interactive storage calculator to plan your deployment:**
-
-[![AGRO Storage Calculator](docs/images/rag-calculator-screenshot.png)](https://vivified.dev/rag-calculator.html)
-
-**[→ Open the AGRO Storage Calculator](https://vivified.dev/rag-calculator.html)**
-
-The calculator lets you:
-- Estimate storage needs for your specific configuration
-- Compare minimal vs. low-latency deployment strategies
-- Factor in replication, hydration, and precision settings
-- See exactly how much storage each component requires
-
-## RAG for Code — Comparative Matrix
-
-*Legend:* ✅ = present/native · 🟨 = partial / configurable / undocumented · ❌ = absent
-
-| Feature ↓ · Tool → | **AGRO (rag-service)** | **Sourcegraph Cody** | **GitHub Copilot Ent.** | **Cursor** | **Codeium / Windsurf** | **Tabnine** | **Continue.dev (OSS)** | **LlamaIndex – Code (OSS)** | **Claude Code** | **JetBrains AI Assistant** |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **OSS code available** | 🟨 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| **Commercial plan exists** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | 🟨 | ✅ | ✅ |
-| **Dense embeddings** | ✅ | ❌ | 🟨 | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ |
-| **Hybrid (sparse + dense)** | ✅ | ❌ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 |
-| **AST / code-graph chunking** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | 🟨 | ✅ | ❌ | ✅ |
-| **Reranker present** | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | ✅ | ✅ | 🟨 | 🟨 |
-| **Incremental / streaming re-index** | ✅ | 🟨 | 🟨 | ✅ | ✅ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 |
-| **Symbol graph / LSP integration** | ❌ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | ❌ | ✅ |
-| **Multi-language** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Cross-file reasoning** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ | ✅ |
-| **Citations include path+line** | ✅ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 |
-| **Vector DB explicitly noted** | ✅ | ❌ | 🟨 | ✅ | 🟨 | ✅ | 🟨 | ✅ | ❌ | 🟨 |
-| **IDE / CLI available** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ | ✅ |
-| **MCP / API connectors** | ✅ | ✅ | 🟨 | ✅ | ✅ | 🟨 | ✅ | ❌ | ✅ | ✅ |
-| **GitHub / CI hooks** | 🟨 | ✅ | ✅ | 🟨 | ✅ | 🟨 | ✅ | 🟨 | 🟨 | 🟨 |
-| **Local-first option** | ✅ | ✅ | ❌ | 🟨 | ✅ | ✅ | ✅ | ✅ | 🟨 | ❌ |
-| **Telemetry / data controls** | 🟨 | 🟨 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ |
-| **Auth / SSO** | 🟨 | ✅ | ✅ | 🟨 | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| **Eval harness present** | ✅ | 🟨 | 🟨 | ❌ | 🟨 | 🟨 | 🟨 | ✅ | ❌ | ❌ |
-| **Active maintenance (≤12 mo)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-
-## Modular by design
-
-Every component in this stack is swappable. Models, rerankers, vector DB, streaming transport, and even the orchestration 
-graph are suggestions, not requirements. Treat this repo as a reference implementation you can piece apart: keep what you like, 
-replace what you don’t. The docs show one happy path; you can rewire models and services to suit your environment.
-
----
-
-## Table of Contents
-
-1. [Quick Start](#quick-start)
-2. [Architecture](#architecture)
-3. [Setup from Scratch](#setup-from-scratch)
-4. [Configure RAG Ignore](#configure-rag-ignore)
-5. [MCP Integration](#mcp-integration)
-6. [CLI Chat Interface](#cli-chat-interface)
-7. [Evaluation & Testing](#evaluation--testing)
-8. [Daily Workflows](#daily-workflows)
-9. [Troubleshooting](#troubleshooting)
-10. [Model Selection](#model-selection)
-11. [Performance & Cost](#performance--cost)
-
----
-
-## Quick Start
-
-**Prerequisites**
-- Python 3.11+
-- Docker Engine + Compose
-  - macOS (no Docker Desktop): `brew install colima docker` then `colima start`
-  - macOS (Docker Desktop): install Docker Desktop and start it
-  - Linux: install Docker and Compose via your distro
-- Optional local inference: Ollama installed and running (`ollama list`)
-  - Linux without Python: `apt update && apt install -y python3 python3-venv python3-pip`
-
+### (Really) Quick Start
 ```bash
-# 0) Get the code
-git clone https://github.com/DMontgomery40/rag-service.git
-cd rag-service
+git clone https://github.com/DMontgomery40/agro.git
+cd agro
+Make dev
 
-# 1) Start Docker (macOS without Docker Desktop)
-#     Colima provides Docker on macOS: start it once
-colima start   # if you installed `colima` via Homebrew
-
-# 2) Bring infra + MCP up (Qdrant + Redis)
-bash scripts/up.sh
-
-# 3) One-command setup (recommended)
-#     From THIS folder, pass your repo path/name. If you want to index THIS
-#     repo itself, just use "." and a name you like.
-bash scripts/setup.sh . rag-service
-
-# 4) Start CLI chat (interactive)
-export REPO=rag-service THREAD_ID=my-session
-python -m venv .venv && . .venv/bin/activate  # if .venv not present yet
-python chat_cli.py
-
-# Optional: Run the HTTP API + stream
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012
-curl "http://127.0.0.1:8012/search?q=oauth&repo=rag-service"
-curl -N "http://127.0.0.1:8012/answer_stream?q=hello&repo=rag-service"
-
-# MCP tools quick check (stdio)
-printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
+# Starts: Infra, MCP, API, UV, and GUI
+# GUI at http://127.0.0.1:8012/ 
 ```
 
-### Common setup hiccups (fast fixes)
-- Docker not found on macOS: install and start Colima: `brew install colima docker && colima start`.
-- “Permission denied” on scripts: run with an interpreter: `python scripts/quick_setup.py` or `bash scripts/setup.sh`.
-- `python: command not found` on Linux: `apt update && apt install -y python3 python3-venv python3-pip`.
-- “Is it frozen?”: use streaming (`python chat_cli.py --stream`) or run `bash scripts/setup.sh ...` and watch progress.
 
-### Optional (Additive) Features
 
-- SSE streaming (off by default)
-  - Endpoint: `/answer_stream?q=...&repo=...`
-  - CLI or UIs can opt-in to streaming via this endpoint; default remains blocking.
-- OAuth bearer (off by default)
-  - Enable with `OAUTH_ENABLED=true` and set `OAUTH_TOKEN=...`
-  - Applies to `/answer`, `/search`, and `/answer_stream` when enabled.
-- Node proxy (HTTP+SSE), optional
-  - `docker compose -f docker-compose.services.yml --profile api --profile node up -d`
-  - Proxies `/mcp/answer`, `/mcp/search`, `/mcp/answer_stream` to Python API.
-- Docker (opt-in)
-  - Python API image via `Dockerfile`
-  - Node proxy via `Dockerfile.node`
-  - Compose file: `docker-compose.services.yml` (profiles: `api`, `mcp-http`, `node`)
+## **Fully-local model support, or any SOTA API Model, mix, match, and set profiles based on task**
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### Profile: `Docs-search` (Fast, local-first, low-cost)
+```yaml
+gen_model: gpt-4o-mini
+embedding: BGE-small-en-v1.5  #local
+vectors: 384-d 
+precision: int4
+rerank_model: BAAI/bge-reranker-v2-m3
+retrieval: BM25    # Sparse-only
+local_hydration: 2%
+multiquery: 2
+top_k: 3
+```
+
+</td>
+<td width="50%" valign="top">
+
+#### Profile: `Plan_Refactor` (High-quality, full-stack)
+```yaml
+gen_model: gpt-5-high-latest                
+embedding: text-embedding-3-large 
+vectors: 3072-d
+precision: float32
+rerank_model: cohere/rerank-3.5
+retrieval: BM25+Redis+Qdrant
+multiquery: 10 
+top_k: 20
+max_semantic_cards: 50
+conf_top1: 0.80  # Confidence gating
+conf_avg5: 0.52
+```
+
+</td>
+</tr>
+</table>
+
+## And crucially, the ability to estimate the impact of that 'refactor' profile, *before* you run it
+
+<div align="center">
+  <a href="assets/cost_est.png" target="_blank">
+    <img src="assets/cost_est.png" alt="Cost Estimation" width="48%" />
+  </a>
+  <a href="assets/stor.png" target="_blank">
+    <img src="assets/stor.png" alt="Storage Calculation" width="48%" />
+  </a>
+</div>
+
+<br>
+
+
+
+
+## MCP servers and API endpoints
+### (Python and Node.js) supporting HTTP, SSE, STDIO, and WebSocket transports
+  - ***Per-transport configuration:*** choose different models and search backends for each mode
+
+<a href="assets/onboarding_carosel/mcp_transport_changing_model_per_transport.png" target="_blank">
+  <img src="assets/onboarding_carosel/mcp_transport_changing_model_per_transport.png" alt="Configure Models Per Transport" />
+</a>
+
+### Robust API with optional OAuth 2.0 
+
+
+
+**Full Documentation:**
+- **Interactive API Docs:** http://127.0.0.1:8012/docs (Swagger UI)
+- **Complete API Reference:** [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
+
+
+
+## Highlights
+
+- Repo isolation and citations as guardrails — not “best effort”.
+- ***Massive*** reduction in token use with Claude Code / Codex; Rate Limits extended greatly or potentially no longer an issue at all
+- Greatly increased accuracy in the code that CC/Codex deliver
+- More in docs on how to set rules of CC/Codex so that they take full advantage of it
+
+## Dashboard
+
+![Dashboard](assets/dashboard.png)
+
+## Documentation
+
+- Start here: [Docs Index](docs/README.md)
+- **Complete API Reference**: [API_REFERENCE.md](docs/API_REFERENCE.md) ← All endpoints with examples
+- Quickstart for Codex/Claude (MCP): [QUICKSTART_MCP.md](docs/QUICKSTART_MCP.md)
+- Settings UI & API: [API_GUI.md](docs/API_GUI.md)
+- Evals & cost: [PERFORMANCE_AND_COST.md](docs/PERFORMANCE_AND_COST.md)
+- Tracing: [LANGSMITH_SETUP.md](docs/LANGSMITH_SETUP.md)
+- CLI chat: [CLI_CHAT.md](docs/CLI_CHAT.md)
+- Models: [MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md), [GEN_MODEL_COMPARISON.md](docs/GEN_MODEL_COMPARISON.md)
+
+Onboarding wizard screenshots: see the [Docs Index](docs/README.md) for links to the 5‑step carousel.
 
 ---
+
+Notes for integrators
+- MCP tools are declared in server/mcp/server.py:1-24.
+- Retrieval entry points live in retrieval/hybrid_search.py:1-22.
+- Indexer entry is indexer/index_repo.py:1-28.
+- HTTP MCP server is in server/mcp/http.py:1-23.
+
 
 ## Architecture
 
@@ -160,7 +136,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
              │ MCP stdio            │ MCP HTTP     │ HTTP (SSE)                
              ▼                       ▼              ▼                           
 ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐ 
-│   mcp_server.py     │     │  mcp_server_http.py │     │     serve_rag.py    │ 
+│   mcp_server.py     │     │  mcp_server_http.py │     │     server/app.py    │ 
 │   (stdio mode)      │     │  (HTTP mode)        │     │  (FastAPI /answer*) │ 
 └──────────┬──────────┘     └──────────┬──────────┘     └──────────┬──────────┘ 
            │                            │                           │            
@@ -191,20 +167,22 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
 
 | Component | Purpose | File |
 |-----------|---------|------|
-| **MCP Server (stdio)** | Tool server for local agents | `mcp_server.py` |
-| **MCP Server (HTTP)** | Tool server for remote agents | `mcp_server_http.py` |
-| **FastAPI** | HTTP REST API (`/health`, `/search`, `/answer`) | `serve_rag.py` |
-| **LangGraph** | Iterative retrieval pipeline with Redis checkpoints | `langgraph_app.py` |
-| **Hybrid Search** | BM25 + dense + rerank with repo routing | `hybrid_search.py` |
-| **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `index_repo.py` |
+| **MCP Server (stdio)** | Tool server for local agents | `server/mcp/server.py` |
+| **MCP Server (HTTP)** | Tool server for remote agents | `server/mcp/http.py` |
+| **FastAPI** | HTTP REST API and GUI (`/health`, `/search`, `/answer`, `/api/*`) | `server/app.py` |
+| **LangGraph** | Iterative retrieval pipeline with Redis checkpoints | `server/langgraph_app.py` |
+| **Hybrid Search** | BM25 + dense + rerank with repo routing | `retrieval/hybrid_search.py` |
+| **Indexer** | Chunks code, builds BM25, embeds, upserts Qdrant | `indexer/index_repo.py` |
 | **CLI Chat** | Interactive terminal chat with memory | `chat_cli.py` |
 | **Eval Harness** | Golden tests with regression tracking | `eval_loop.py` |
-| **Cards Builder** | Summarizes chunks into `cards.jsonl` and builds BM25 over cards for high‑level retrieval | `build_cards.py` |
-| **Reranker** | Cross‑encoder re‑ranking (Cohere rerank‑3.5 or local), plus filename/path/card/feature bonuses | `rerank.py` |
-| **Embedding Cache** | Caches OpenAI embeddings to avoid re‑embedding unchanged chunks | `embed_cache.py` |
-| **AST Chunker** | Language‑aware code chunking across ecosystems | `ast_chunker.py` |
-| **Filtering** | Centralized file/dir pruning and source gating | `filtering.py` |
-| **Generation Shim** | OpenAI Responses/Chat or local Qwen via Ollama with resilient fallbacks | `env_model.py` |
+| **Cards Builder** | Summarizes chunks and builds card-level BM25 index | `indexer/build_cards.py` |
+| **Reranker** | Cross-encoder reranking with path and layer bonuses | `retrieval/rerank.py` |
+| **Embedding Cache** | Caches embeddings to avoid recomputation | `retrieval/embed_cache.py` |
+| **AST Chunker** | Language-aware code chunking | `retrieval/ast_chunker.py` |
+| **Filtering** | File and directory exclusion rules | `common/filtering.py` |
+| **Config Loader** | Repository paths and settings management | `common/config_loader.py` |
+| **Tracing** | Capture retrieval and generation traces | `server/tracing.py` |
+| **Generation** | OpenAI API wrapper with fallbacks | `server/env_model.py` |
 
 ---
 
@@ -218,10 +196,10 @@ hand-writing a compose file.
 
 ```bash
 # Create directory structure
-mkdir -p /path/to/rag-service/{infra,data/qdrant,data/redis}
+mkdir -p /path/to/agro/{infra,data/qdrant,data/redis}
 
 # Create docker-compose.yml
-cat > /path/to/rag-service/infra/docker-compose.yml <<'YAML'
+cat > /path/to/agro/infra/docker-compose.yml <<'YAML'
 version: "3.8"
 services:
   qdrant:
@@ -235,7 +213,7 @@ services:
       - QDRANT__STORAGE__USE_MMAP=false
       - QDRANT__STORAGE__ON_DISK_PERSISTENCE=true
     volumes:
-      - /path/to/rag-service/data/qdrant:/qdrant/storage
+      - /path/to/agro/data/qdrant:/qdrant/storage
   redis:
     image: redis/redis-stack:7.2.0-v10
     container_name: rag-redis
@@ -245,11 +223,11 @@ services:
     environment:
       - REDIS_ARGS=--appendonly yes
     volumes:
-      - /path/to/rag-service/data/redis:/data
+      - /path/to/agro/data/redis:/data
 YAML
 
 # Start services
-cd /path/to/rag-service/infra
+cd /path/to/agro/infra
 docker compose up -d
 
 # Verify
@@ -260,7 +238,7 @@ docker exec rag-redis redis-cli ping       # Should return PONG
 ### Phase 2: Python Environment
 
 ```bash
-cd /path/to/rag-service
+cd /path/to/agro
 
 # Create venv (if not exists)
 python3 -m venv .venv
@@ -279,6 +257,8 @@ python -c "import langgraph, qdrant_client, bm25s, sentence_transformers; print(
 
 ### Phase 3: Environment Variables
 
+Note: Prefer setting these in the GUI (Misc tab → Apply All Changes). Only use a manual `.env` when scripting or debugging.
+
 Create `.env` file:
 
 ```bash
@@ -288,7 +268,7 @@ QDRANT_URL=http://127.0.0.1:6333
 REDIS_URL=redis://127.0.0.1:6379/0
 
 # RAG Configuration
-REPO=repo-a                     # Default repo for operations
+REPO=agro                     # Default repo for operations
 MQ_REWRITES=4                   # Multi-query expansion count
 
 # Reranker (default: Cohere with local fallback)
@@ -339,7 +319,7 @@ Automatically excludes common directories and file types:
 Edit this file to add glob patterns for your repos:
 
 ```bash
-cd /path/to/rag-service
+cd /path/to/agro
 cat data/exclude_globs.txt
 
 # Add your patterns:
@@ -372,16 +352,20 @@ echo "**/migrations/**" >> data/exclude_globs.txt
 
 #### 3. Auto-Generate Keywords (Optional)
 
+<a href="assets/onboarding_carosel/auto-generate-keywords.png" target="_blank">
+  <img src="assets/onboarding_carosel/auto-generate-keywords.png" alt="Auto-Generate Keywords" />
+</a>
+
 The `scripts/` folder contains tools to analyze your codebase and generate optimal configurations:
 
 ```bash
-cd /path/to/rag-service/scripts
+cd /path/to/agro/scripts
 
 # Analyze a repo to find important keywords
-python analyze_keywords.py /path/to/your/repo-a
+python analyze_keywords.py /path/to/your/agro
 
 # Enhanced version with more insights
-python analyze_keywords_v2.py /path/to/your/repo-a
+python analyze_keywords_v2.py /path/to/your/agro
 
 # Output shows:
 # - Most common file types
@@ -394,8 +378,8 @@ python analyze_keywords_v2.py /path/to/your/repo-a
 
 ```bash
 # Re-index affected repos
-REPO=repo-a python index_repo.py
-REPO=repo-b python index_repo.py
+REPO=agro python index_repo.py
+REPO=agro python index_repo.py
 
 # Verify collections
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
@@ -407,22 +391,22 @@ curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
 . .venv/bin/activate
 
 # Index first repo (replace with your repo name)
-REPO=repo-a python index_repo.py
+REPO=agro python index_repo.py
 # This will:
-#   - Scan /path/to/your/repo-a (configured in index_repo.py)
+#   - Scan /path/to/your/agro (configured in index_repo.py)
 #   - Chunk code files (Python, JS, TS, Ruby, Go, etc.)
 #   - Build BM25 index
 #   - Generate embeddings (OpenAI text-embedding-3-large by default)
-#   - Upsert to Qdrant collection: code_chunks_repo-a
-#   - Save chunks to: out/repo-a/chunks.jsonl
+#   - Upsert to Qdrant collection: code_chunks_agro
+#   - Save chunks to: out/agro/chunks.jsonl
 
 # Index second repo
-REPO=repo-b python index_repo.py
-# Same process, separate collection: code_chunks_repo-b
+REPO=agro python index_repo.py
+# Same process, separate collection: code_chunks_agro
 
 # Verify collections exist
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
-# Should show: code_chunks_repo-a, code_chunks_repo-b
+# Should show: code_chunks_agro, code_chunks_agro
 ```
 
 **Configure repo paths:**
@@ -431,8 +415,8 @@ Edit the beginning of `index_repo.py` to set your repo locations:
 
 ```python
 REPOS = {
-    'repo-a': '/path/to/your/first-repo',
-    'repo-b': '/path/to/your/second-repo',
+    'agro': '/path/to/your/first-repo',
+    'agro': '/path/to/your/second-repo',
 }
 ```
 
@@ -445,15 +429,15 @@ REPOS = {
 ### Quick Start
 
 ```bash
-. .venv/bin/activate
 
-# Install rich library for terminal UI (if not already installed)
-pip install rich
+cd agro/scripts
+./up.sh
 
-# Start chat
-export REPO=repo-a
-export THREAD_ID=my-session
-python chat_cli.py
+# installs requirement.txt, creates venv, and starts tui
+
+cd agro && python3 cli_chat.py 
+
+# if you've already got venv up and pulled requirements.txt, this works as well
 ```
 
 ### Features
@@ -461,35 +445,23 @@ python chat_cli.py
 - **Conversation Memory**: Redis-backed, persists across sessions
 - **Rich Terminal UI**: Markdown rendering, color-coded confidence scores
 - **Citation Display**: Shows file paths and rerank scores
-- **Repo Switching**: `/repo repo-b` to switch between repos mid-conversation
-- **Multiple Sessions**: Use different `THREAD_ID` values for parallel conversations
+- **Repo Switching**: `/repo agro` to switch between repos mid-conversation
+- **Multiple Sessions**: Use different `THREAD_ID` values for parallel conversations, or to 
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
 | `your question` | Ask directly |
-| `/repo <name>` | Switch repository (e.g., `/repo repo-b`) |
-| `/clear` | Clear conversation history (new thread) |
+| `/repo <name>` | Switch repository (e.g., `/repo agro`) |
+| `/clear` | (new thread) |
 | `/help` | Show available commands |
+| `/theme` | tokyonights is my favorite |
+| `/trace` | Langsmith most recent trace |
+| `/save` | Pick up convo later |
 | `/exit`, `/quit` | Exit chat |
 
-### Example Session
 
-```
-repo-a > Where is OAuth token validation handled?
-
-[Claude retrieves and displays answer with citations]
-
-📄 Top Sources:
-  1. auth/oauth.py:42-67 (score: 0.85)
-  2. middleware/token.py:89-120 (score: 0.78)
-
-repo-a > /repo repo-b
-✓ Switched to repo: repo-b
-
-repo-b > How do we handle webhook retries?
-```
 
 See **[docs/CLI_CHAT.md](docs/CLI_CHAT.md)** for detailed usage.
 
@@ -530,12 +502,12 @@ Full LangGraph pipeline (retrieval → generation)
 **Returns:**
 ```json
 {
-  "answer": "[repo: repo-a]\nOAuth tokens are validated in...",
+  "answer": "[repo: agro]\nOAuth tokens are validated in...",
   "citations": [
     "auth/oauth.py:42-67",
     "middleware/token.py:89-120"
   ],
-  "repo": "repo-a",
+  "repo": "agro",
   "confidence": 0.78
 }
 ```
@@ -553,10 +525,10 @@ Retrieval-only (no generation, faster for debugging)
       "end_line": 89,
       "language": "ruby",
       "rerank_score": 0.82,
-      "repo": "repo-b"
+      "repo": "agro"
     }
   ],
-  "repo": "repo-b",
+  "repo": "agro",
   "count": 5
 }
 ```
@@ -619,8 +591,8 @@ Edit the config file (create if it doesn't exist):
 {
   "mcpServers": {
     "rag-service": {
-      "command": "/path/to/rag-service/.venv/bin/python",
-      "args": ["/path/to/rag-service/mcp_server.py"],
+      "command": "/path/to/agro/.venv/bin/python",
+      "args": ["/path/to/agro/mcp_server.py"],
       "env": {
         "OPENAI_API_KEY": "sk-proj-...",
         "OLLAMA_URL": "http://127.0.0.1:11434/api",
@@ -646,7 +618,7 @@ Edit the config file (create if it doesn't exist):
 3. Look for MCP tools indicator
 4. Test by asking:
    ```
-   Use rag_search to find code related to "authentication" in repo-a
+   Use rag_search to find code related to "authentication" in agro
    ```
 
 Claude Code will call the tool and display results.
@@ -672,8 +644,8 @@ codex --version
 
 ```bash
 codex mcp add rag-service -- \
-  /path/to/rag-service/.venv/bin/python \
-  /path/to/rag-service/mcp_server.py
+  /path/to/agro/.venv/bin/python \
+  /path/to/agro/mcp_server.py
 ```
 
 This adds the server to `~/.codex/config.toml`.
@@ -695,22 +667,22 @@ codex
 
 Then try:
 ```
-User: Use rag_search to find code about "API endpoints" in repo-b
+User: Use rag_search to find code about "API endpoints" in agro
 
-User: Use rag_answer to explain how authentication works in repo-a
+User: Use rag_answer to explain how authentication works in agro
 ```
 
 ### MCP Example Usage
 
 **Example 1: Debug retrieval**
 ```
-User: Use rag.search to see what code comes up for "webhook handling" in repo-b,
+User: Use rag.search to see what code comes up for "webhook handling" in agro,
       show me the top 5 results
 ```
 
 **Example 2: Get full answer**
 ```
-User: Use rag.answer to explain how we validate OAuth tokens in repo-a
+User: Use rag.answer to explain how we validate OAuth tokens in agro
 ```
 
 **Example 3: Trigger deployment**
@@ -744,6 +716,23 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 
 ## Evaluation & Testing
 
+### In GUI 
+
+<a href="assets/evals.png" target="_blank">
+  <img src="assets/evals.png" alt="Evaluation Interface" />
+</a>
+
+**GUI Controls:**
+- **Run Full Evaluation** - Tests all golden questions, shows top-1 and top-K accuracy
+- **Save as Baseline** - Saves current results for regression tracking
+- **Compare to Baseline** - Shows regressions (questions that broke) and improvements vs saved baseline
+- **Export Results** - Downloads eval results as JSON
+
+**Supporting Features:**
+- **Generate Keywords** - Auto-generates search keywords from codebase (LLM or heuristic mode)
+- **Build Cards** - Creates semantic code cards (high-level summaries) for better high-level retrieval
+- **Refresh Cards** - Reloads existing cards from disk
+
 ### Quick Eval Run
 
 ```bash
@@ -764,18 +753,22 @@ python eval_loop.py
 
 ### Creating Golden Tests
 
+<a href="assets/onboarding_carosel/golden-tests-gui.png" target="_blank">
+  <img src="assets/onboarding_carosel/golden-tests-gui.png" alt="Golden Tests GUI" />
+</a>
+
 Golden tests are in `golden.json`:
 
 ```json
 [
   {
     "q": "Where is OAuth token validated?",
-    "repo": "repo-a",
+    "repo": "agro",
     "expect_paths": ["auth", "oauth", "token", "validation"]
   },
   {
     "q": "How do we handle webhook retries?",
-    "repo": "repo-b",
+    "repo": "agro",
     "expect_paths": ["webhook", "retry", "queue", "handler"]
   }
 ]
@@ -823,16 +816,16 @@ python eval_loop.py --json > results.json
 
 ```bash
 # Use the helper script (starts infra + MCP)
-cd /path/to/rag-service
+cd /path/to/agro
 bash scripts/up.sh
 
 # Or manually:
-cd /path/to/rag-service/infra
+cd /path/to/agro/infra
 docker compose up -d
 
 # Start CLI chat
 . .venv/bin/activate
-export REPO=repo-a THREAD_ID=work-$(date +%Y%m%d)
+export REPO=agro THREAD_ID=work-$(date +%Y%m%d)
 python chat_cli.py
 ```
 
@@ -842,7 +835,7 @@ python chat_cli.py
 . .venv/bin/activate
 
 # Re-index affected repo
-REPO=repo-a python index_repo.py
+REPO=agro python index_repo.py
 
 # Run eval to check for regressions
 python eval_loop.py --compare
@@ -854,19 +847,41 @@ python eval_loop.py --compare
 - After significant refactors
 - Daily/nightly via cron (optional)
 
+### Cross-Branch Indexing (Shared)
+
+Use a single shared index that works across branches to avoid stale/missing results:
+
+```bash
+# One-time build (BM25-only; fast; no APIs)
+. .venv/bin/activate
+REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
+  python index_repo.py
+
+# Ensure environment for tools and MCP
+source scripts/select_index.sh shared  # sets OUT_DIR_BASE & COLLECTION_NAME
+
+# Bring infra + MCP up with shared profile
+bash scripts/up.sh && bash scripts/status.sh
+```
+
+GUI path (accessibility):
+- Open the GUI at `/` (FastAPI serve) → Tab “Infrastructure”.
+- Set `Active Repository`, `Out Dir Base=./out.noindex-shared`, and optionally `Collection Name`.
+- Click “Apply All Changes” to persist to `.env` and `repos.json`.
+
 ### Debugging a Bad Answer
 
 ```bash
 # 1. Use rag_search to see what was retrieved
 python -c "
-from hybrid_search import search_routed_multi
-results = search_routed_multi('your question', repo_override='repo-a', final_k=10)
+from retrieval.hybrid_search import search_routed_multi
+results = search_routed_multi('your question', repo_override='agro', final_k=10)
 for r in results[:5]:
     print(f\"{r['rerank_score']:.3f} {r['file_path']}:{r['start_line']}\")
 "
 
 # 2. Check if expected file is in index
-grep "path/to/file.py" out/repo-a/chunks.jsonl
+grep "path/to/file.py" out/agro/chunks.jsonl
 
 # 3. If missing, check if .ragignore is excluding it
 cat data/exclude_globs.txt
@@ -905,7 +920,7 @@ docker restart rag-redis
 curl -s http://127.0.0.1:6333/collections | jq
 
 # Re-index if missing
-REPO=repo-a python index_repo.py
+REPO=agro python index_repo.py
 ```
 
 ### Indexing Issues
@@ -961,8 +976,31 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 docker exec rag-redis redis-cli ping
 
 # Test graph initialization
-python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')"
+python -c "from server.langgraph_app import build_graph; build_graph(); print('✓ OK')"
 ```
+
+**MCP rag_search returns no results (count: 0):**
+1. Verify the index exists under the shared profile:
+   ```bash
+   ls -lh out.noindex-shared/agro/chunks.jsonl
+   ```
+2. Ensure the environment MCP sees includes the shared index path:
+   - EITHER run `source scripts/select_index.sh shared` before starting MCP
+   - OR set in GUI → Infrastructure tab → `Out Dir Base=./out.noindex-shared` → “Apply All Changes”
+3. Restart MCP: `bash scripts/up.sh` (this now sources the shared profile automatically).
+4. Retest search quickly:
+   ```bash
+   . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
+     python - <<'PY'
+   from retrieval.hybrid_search import search_routed_multi
+   print(len(search_routed_multi('Where is OAuth validated', repo_override='agro', m=2, final_k=5)))
+   PY
+   ```
+5. If empty and chunks missing, re-index:
+   ```bash
+   . .venv/bin/activate && REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
+     python index_repo.py
+   ```
 
 ### Retrieval Quality Issues
 
@@ -970,7 +1008,7 @@ python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')
 
 1. **Check index freshness:**
    ```bash
-   ls -lh out/repo-a/chunks.jsonl out/repo-b/chunks.jsonl
+   ls -lh out/agro/chunks.jsonl out/agro/chunks.jsonl
    # If old, re-index
    ```
 
@@ -982,58 +1020,14 @@ python -c "from langgraph_app import build_graph; build_graph(); print('✓ OK')
 3. **Inspect retrieved docs:**
    ```bash
    python -c "
-   from hybrid_search import search_routed_multi
-   docs = search_routed_multi('your query', repo_override='repo-a', final_k=10)
+   from retrieval.hybrid_search import search_routed_multi
+   docs = search_routed_multi('your query', repo_override='agro', final_k=10)
    for d in docs[:5]:
        print(f\"{d['rerank_score']:.3f} {d['file_path']}\")
    "
    ```
 
 4. **Adjust parameters** (see [Advanced Configuration](#advanced-configuration) section)
-
-### Ollama Issues (Apple Silicon)
-
-**High GPU usage / thermal load:**
-
-Both MLX and Ollama use GPU (Metal) on Apple Silicon for LLM inference, not the Neural Engine (ANE). This causes:
-- High GPU utilization (often maxing out)
-- Heat generation and fan noise
-- Note: ANE is not used for large language models - it's for smaller, CoreML-optimized models
-
-**Performance**: MLX and Ollama have similar thermal profiles as both use Metal GPU. MLX may have better memory efficiency due to tighter Apple Silicon integration.
-
-**Ollama keeps restarting after kill:**
-
-If `pkill -9 ollama` or `killall -9 ollama` results in Ollama immediately respawning:
-
-```bash
-# Root cause: Homebrew's launchd service with KeepAlive=true
-
-# Proper fix: Stop the service
-brew services stop ollama
-
-# Verify it's stopped
-ps aux | grep ollama  # Should show nothing
-pgrep ollama          # Should return empty
-
-# Check launchd status
-launchctl list | grep ollama  # Should show nothing after stop
-```
-
-**Why this happens:**
-- Homebrew installs Ollama as a background service (launchd)
-- The service is configured with `KeepAlive=true`
-- When killed, launchd immediately restarts it
-- `brew services stop` properly unloads the service
-
-**Alternative**: If you still want to use Ollama occasionally:
-```bash
-# Stop the background service permanently
-brew services stop ollama
-
-# Run Ollama manually only when needed
-ollama serve  # Run in foreground, Ctrl+C to stop
-```
 
 ---
 
@@ -1097,6 +1091,10 @@ See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 
 ## Advanced Configuration
 
+<a href="assets/onboarding_carosel/advanced_config.png" target="_blank">
+  <img src="assets/onboarding_carosel/advanced_config.png" alt="Advanced Configuration" />
+</a>
+
 ### Environment Variables Reference
 
 | Variable | Default | Description |
@@ -1106,7 +1104,7 @@ See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 | `GEN_MODEL` | `qwen3-coder:30b` | Generation model |
 | `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant server |
 | `REDIS_URL` | `redis://127.0.0.1:6379/0` | Redis connection |
-| `REPO` | `repo-a` | Active repo name |
+| `REPO` | `agro` | Active repo name |
 | `MQ_REWRITES` | `4` | Multi-query expansion count |
 | `RERANK_BACKEND` | `cohere` | `cohere` \| `hf` \| `local` |
 | `COHERE_API_KEY` | — | For Cohere reranking |
@@ -1156,7 +1154,7 @@ Then re-index.
 | `mcp_server.py` | **MCP stdio server for local agents** |
 | `mcp_server_http.py` | **MCP HTTP server for remote agents** |
 | `chat_cli.py` | **Interactive CLI chat with memory** |
-| `serve_rag.py` | FastAPI HTTP server |
+| `server/app.py` | FastAPI HTTP server |
 | `langgraph_app.py` | LangGraph retrieval pipeline |
 | `hybrid_search.py` | Hybrid search (BM25 + dense + rerank) |
 | `index_repo.py` | Indexing script |
@@ -1193,11 +1191,11 @@ bash scripts/down.sh                    # Stop everything
 
 # === Indexing ===
 . .venv/bin/activate
-REPO=repo-a python index_repo.py
-REPO=repo-b python index_repo.py
+REPO=agro python index_repo.py
+REPO=agro python index_repo.py
 
 # === CLI Chat (Recommended) ===
-export REPO=repo-a THREAD_ID=work-session
+export REPO=agro THREAD_ID=work-session
 python chat_cli.py
 
 # === API Server (Optional) ===
@@ -1217,8 +1215,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 
 # === Keyword Generation ===
 cd scripts
-python analyze_keywords.py /path/to/repo-a
-python analyze_keywords_v2.py /path/to/repo-a
+python analyze_keywords.py /path/to/agro
+python analyze_keywords_v2.py /path/to/agro
 ```
 
 ---
@@ -1263,8 +1261,7 @@ python analyze_keywords_v2.py /path/to/repo-a
 
 ---
 
-**Version:** 2.0.0  
-**Last Updated:** October 8, 2025
+**Version:** 2.1.0
 
 ---
 
@@ -1302,4 +1299,3 @@ python analyze_keywords_v2.py /path/to/repo-a
 | **Auth / SSO** | 🟨 | ✅ | ✅ | 🟨 | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
 | **Eval harness present** | ✅ | 🟨 | 🟨 | ❌ | 🟨 | 🟨 | 🟨 | ✅ | ❌ | ❌ |
 | **Active maintenance (≤12 mo)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
