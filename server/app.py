@@ -11,6 +11,12 @@ from server.tracing import start_trace, end_trace, Trace, latest_trace_path
 from retrieval.hybrid_search import search_routed_multi
 from common.config_loader import load_repos, out_dir
 from server.index_stats import get_index_stats as _get_index_stats
+from typing import cast
+try:
+    # Optional import; used for MCP wrapper endpoints
+    from server.mcp.server import MCPServer as _MCPServer
+except Exception:
+    _MCPServer = None  # type: ignore
 from common.paths import repo_root, gui_dir, docs_dir, files_root
 import os, json, sys
 from typing import Any, Dict
@@ -58,6 +64,44 @@ def health():
         return {"status": "healthy", "graph_loaded": g is not None, "ts": __import__('datetime').datetime.utcnow().isoformat() + 'Z'}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
+
+@app.get("/health/langsmith")
+def health_langsmith() -> Dict[str, Any]:
+    enabled = str(os.getenv('LANGCHAIN_TRACING_V2','0')).strip().lower() in {'1','true','on'}
+    project = os.getenv('LANGCHAIN_PROJECT')
+    endpoint = os.getenv('LANGCHAIN_ENDPOINT') or 'https://api.smith.langchain.com'
+    key = os.getenv('LANGCHAIN_API_KEY')
+    installed = True
+    can_connect = None
+    identity: Dict[str, Any] = {}
+    error = None
+    try:
+        from langsmith import Client  # type: ignore
+    except Exception:
+        installed = False
+    if installed and enabled and key:
+        try:
+            cl = Client()  # picks up env automatically
+            # whoami is a lightweight call; if it fails, we capture the error
+            who = getattr(cl, 'whoami', None)
+            if callable(who):
+                identity = who() or {}
+                can_connect = True
+            else:
+                can_connect = None
+        except Exception as e:
+            error = str(e)
+            can_connect = False
+    return {
+        'enabled': enabled,
+        'installed': installed,
+        'project': project,
+        'endpoint': endpoint,
+        'key_present': bool(key),
+        'can_connect': can_connect,
+        'identity': identity,
+        'error': error,
+    }
 
 @app.get("/answer", response_model=Answer)
 def answer(
@@ -219,6 +263,41 @@ def search(
         for d in docs
     ]
     return {"results": results, "repo": repo, "count": len(results)}
+
+# ---------------- MCP wrapper (HTTP) ----------------
+@app.get("/api/mcp/rag_search")
+def api_mcp_rag_search(
+    q: str = Query(..., description="Question"),
+    repo: Optional[str] = Query(None, description="Repository override: agro|agro"),
+    top_k: int = Query(10, description="Number of results to return"),
+    force_local: Optional[bool] = Query(False, description="Bypass MCP class and call local retrieval directly")
+):
+    """HTTP wrapper that mirrors MCP rag_search.
+
+    - Tries to use MCPServer.handle_rag_search if available
+    - Falls back to local retrieval if MCP server class is unavailable or force_local
+    """
+    try:
+        if not force_local and _MCPServer is not None:
+            mcp = cast(object, _MCPServer)()  # type: ignore
+            res = mcp.handle_rag_search(repo=(repo or os.getenv('REPO','agro')), question=q, top_k=top_k)  # type: ignore[attr-defined]
+            return res
+    except Exception:
+        # fall through to local
+        pass
+    docs = search_routed_multi(q, repo_override=repo or os.getenv('REPO','agro'), m=4, final_k=top_k)
+    results = [
+        {
+            "file_path": d.get("file_path", ""),
+            "start_line": d.get("start_line", 0),
+            "end_line": d.get("end_line", 0),
+            "language": d.get("language", ""),
+            "rerank_score": float(d.get("rerank_score", 0.0) or 0.0),
+            "repo": d.get("repo", repo),
+        }
+        for d in docs
+    ]
+    return {"results": results, "repo": repo or os.getenv('REPO','agro'), "count": len(results)}
 
 # ---------------- Trace API ----------------
 @app.get("/api/traces")
