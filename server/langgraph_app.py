@@ -151,7 +151,10 @@ def generate_node(state: RAGState) -> Dict:
         content = "\n".join(lines)
         header = f"[repo: {repo_hdr}]"
         return {'generation': header + "\n" + content}
-    citations = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" for d in ctx])
+    def _cite(d):
+        mark = " (card)" if d.get('card_hit') else ""
+        return f"- {d['file_path']}:{d['start_line']}-{d['end_line']}{mark}"
+    citations = "\n".join([_cite(d) for d in ctx])
     context_text = "\n\n".join([d.get('code','') for d in ctx])
     # Use custom system prompt if provided, otherwise use default
     sys = os.getenv('SYSTEM_PROMPT') or 'You answer strictly from the provided code context. Always cite file paths and line ranges you used.'
@@ -164,7 +167,7 @@ def generate_node(state: RAGState) -> Dict:
         alt_docs = hybrid_search_routed_multi(q, repo_override=repo, m=4, final_k=10)
         if alt_docs:
             ctx2 = alt_docs[:5]
-            citations2 = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" for d in ctx2])
+            citations2 = "\n".join([f"- {d['file_path']}:{d['start_line']}-{d['end_line']}" + (" (card)" if d.get('card_hit') else "") for d in ctx2])
             context_text2 = "\n\n".join([d.get('code','') for d in ctx2])
             user2 = f"Question:\n{q}\n\nContext:\n{context_text2}\n\nCitations (paths and line ranges):\n{citations2}\n\nAnswer:"
             # Use same system prompt as first generation attempt

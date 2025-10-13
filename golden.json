@@ -15,7 +15,8 @@
     "q": "Where is the mcp server?",
     "repo": "agro",
     "expect_paths": [
-      "/server/mcp"
+      "/server/mcp",
+      "/node_mcp"
     ]
   },
   {
@@ -80,7 +81,8 @@
     "expect_paths": [
       "server/app.py",
       "api/cards",
-      "indexer/build_cards.py"
+      "indexer/build_cards.py",
+      "/gui"
     ]
   },
   {
@@ -127,7 +129,8 @@
     "repo": "agro",
     "expect_paths": [
       "server/app.py",
-      "api/traces"
+      "api/traces",
+      "gui/app.js"
     ]
   }
 ]
