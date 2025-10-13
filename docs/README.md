@@ -5,13 +5,14 @@ This is the long‑form reference that pairs with the streamlined, tech‑forwar
 - Start Here
 
 - Launch everything (infra + MCP + API + GUI):
-  - `cd agro/scripts && ./dev_up`
-- Open the GUI at `http://127.0.0.1:8012/` (server/app.py:1-27)
-- Configure settings in the GUI and click “Apply All Changes.”
+  - `cd agro/scripts/ && ./dev_up.sh`
+  - Open the GUI at `http://127.0.0.1:8012/` (server/app.py:1-27)
+  - Configure settings in the GUI and click “Apply All Changes.”
 
 ## Navigation
 
 - Quickstart for agents (Codex/Claude): [QUICKSTART_MCP.md](QUICKSTART_MCP.md)
+- **Complete API Reference**: [API_REFERENCE.md](API_REFERENCE.md) ← **Start here for API docs**
 - Settings UI & API contract: [API_GUI.md](API_GUI.md)
 - CLI Chat usage: [CLI_CHAT.md](CLI_CHAT.md)
 - Performance & cost tuning: [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md)
@@ -53,6 +54,18 @@ For the high‑level overview and positioning, see ../README.md.
 **Start here if:** You're setting up from scratch or need comprehensive reference.
 
 ---
+
+## Onboarding Wizard (5 steps)
+
+Links to the wizard carousel images used in onboarding. Open each to view full size.
+
+- [Step 1](../assets/onboarding_carosel/step1.png)
+- [Step 2](../assets/onboarding_carosel/step2.png)
+- [Step 3](../assets/onboarding_carosel/step3.png)
+- [Step 4](../assets/onboarding_carosel/step4.png)
+- [Step 5](../assets/onboarding_carosel/step5.png)
+
+These are referenced from the main README as links only (no inline gallery).
 
 ### MCP Integration
 
