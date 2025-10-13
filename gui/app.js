@@ -1496,58 +1496,9 @@
     }
 
     // ---------------- Secrets Ingest (Drag & Drop) ----------------
-    function bindDropzone() {
-        const dz = $('#dropzone');
-        const fi = $('#file-input');
-
-        function openPicker() {
-            fi.click();
-        }
-
-        dz.addEventListener('click', openPicker);
-
-        dz.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dz.style.background = '#111111';
-        });
-
-        dz.addEventListener('dragleave', (e) => {
-            dz.style.background = '';
-        });
-
-        dz.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            dz.style.background = '';
-            const file = e.dataTransfer.files?.[0];
-            if (file) await ingestFile(file);
-        });
-
-        fi.addEventListener('change', async (e) => {
-            const file = e.target.files?.[0];
-            if (file) await ingestFile(file);
-            fi.value = '';
-        });
-    }
-
-    async function ingestFile(file) {
-        const persist = $('#persist-secrets').checked;
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('persist', String(persist));
-
-        try {
-            const r = await fetch(api('/api/secrets/ingest'), {
-                method: 'POST',
-                body: fd
-            });
-
-            const d = await r.json();
-            $('#ingest-out').textContent = JSON.stringify(d, null, 2);
-            await loadConfig();
-        } catch (e) {
-            alert('Secrets ingest failed: ' + e.message);
-        }
-    }
+    // Delegated to Secrets module (gui/js/secrets.js)
+    const bindDropzone = window.Secrets?.bindDropzone || (() => {});
+    const ingestFile = window.Secrets?.ingestFile || (async () => {});
 
     // ---------------- Quick Action Helpers ----------------
     function setButtonState(btn, state) {
