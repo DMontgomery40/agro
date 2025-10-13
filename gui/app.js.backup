@@ -110,14 +110,16 @@
 
     function switchTab(tabName) {
         const groups = {
-            start: ['onboarding'],
+            models: ['generation','embeddings','reranking'],
+            retrieval: ['retrieval','confidence'],
+            repos: ['repos','indexing'],
+            // Show full Tools group: base panel + eval + misc
+            // Note: there is no 'tab-calculator' anymore; storage has its own tab
+            tools: ['tools','eval','misc'],
+            infra: ['infra'],
             dashboard: ['dashboard'],
             chat: ['chat'],
-            config: ['config-models'],  // Show only first subtab initially
-            data: ['data-indexing'],
-            devtools: ['devtools-editor'],  // Show only first subtab initially
-            analytics: ['analytics-cost'],  // Show only first subtab initially
-            settings: ['settings-general']  // Show only first subtab initially
+            storage: ['storage']
         };
         const show = groups[tabName] || [tabName];
         $$('.tab-content').forEach(el => el.classList.remove('active'));
@@ -127,12 +129,12 @@
         if (btn) btn.classList.add('active');
 
         // Load storage calculator when the tab is opened
-        if (tabName === 'analytics') {
+        if (tabName === 'storage') {
             loadStorageCalculator();
         }
 
         // Initialize onboarding when first opened
-        if (tabName === 'start') {
+        if (tabName === 'onboarding') {
             ensureOnboardingInit();
         }
     }
@@ -146,26 +148,6 @@
         });
         const traceBtn = document.getElementById('btn-trace-latest');
         if (traceBtn){ traceBtn.addEventListener('click', loadLatestTrace); }
-    }
-
-    function bindSubtabs() {
-        $$('.subtab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const subtab = btn.getAttribute('data-subtab');
-                const parent = btn.getAttribute('data-parent');
-
-                // Hide all tabs
-                $$('.tab-content').forEach(el => el.classList.remove('active'));
-
-                // Show the selected subtab
-                const target = document.getElementById(`tab-${subtab}`);
-                if (target) target.classList.add('active');
-
-                // Update button states for this parent group
-                $$(`.subtab-btn[data-parent="${parent}"]`).forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-            });
-        });
     }
 
     // ---------------- Tooltips (modular) ----------------
@@ -2157,7 +2139,6 @@
     // ---------------- Init ----------------
     async function init() {
         bindTabs();
-        bindSubtabs();
         bindActions();
         bindGlobalSearchLive();
         bindResizableSidepanel();
