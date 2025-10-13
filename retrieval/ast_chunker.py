@@ -11,6 +11,7 @@ LANG_MAP = {
     ".ts": "typescript", ".tsx": "typescript",
     ".go": "go", ".java": "java", ".rs": "rust",
     ".c": "c", ".h": "c", ".cpp": "cpp", ".cc": "cpp", ".hpp": "cpp",
+    ".md": "markdown",
 }
 
 OVERLAP_LINES = 20
