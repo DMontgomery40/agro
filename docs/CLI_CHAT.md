@@ -2,12 +2,16 @@
 
 Interactive terminal chat for the RAG service with conversation memory.
 
-## Installation
+## Run It
+
+After Quick Start (`cd agro/scripts && ./dev_up`), activate the venv and start chat:
 
 ```bash
-cd /Users/path/to/repo-b_folder/rag-service
+cd ../  # repo root if you are still in scripts/
 . .venv/bin/activate
-pip install rich
+export REPO=agro
+export THREAD_ID=my-session
+python chat_cli.py
 ```
 
 ## Usage
@@ -15,7 +19,7 @@ pip install rich
 ### Basic Usage
 
 ```bash
-export REPO=repo-a
+export REPO=agro
 export THREAD_ID=my-session
 python chat_cli.py
 ```
@@ -24,7 +28,7 @@ python chat_cli.py
 
 | Command | Description |
 |---------|-------------|
-| `/repo <name>` | Switch repository (repo-a or repo-b) |
+| `/repo <name>` | Switch repository (e.g., agro) |
 | `/clear` | Clear conversation history (starts new thread) |
 | `/save` | Save checkpoint (automatic with Redis) |
 | `/help` | Show available commands |

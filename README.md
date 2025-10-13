@@ -1,89 +1,47 @@
-![AGRO Banner](docs/images/agro-hero-banner.png)
+![AGRO Banner](assets/agro-hero-banner.png)
 
+AGRO is a local‑first, GUI‑driven RAG engine for codebases. It keeps repos strictly isolated, retrieves with hybrid search, and plugs into Codex/Claude via MCP — all with citations down to path+line. It’s built for people who care about retrieval quality, latency, and cost.
 
----
+- Strict repo boundaries with path+line citations
+- Offline‑friendly hybrid retrieval (BM25, optional vectors, rerank)
+- GUI-first: change every knob in the Settings UI — not code
+- One‑command bring‑up; MCP tools for Codex/Claude; HTTP API
+- Evals, traces, storage planning, and a terminal chat CLI
 
-This is a RAG (Retrieval-Augmented Generation) engine that:
-- Maintains **strict separation** between repositories (never mixes them)
-- Uses **hybrid search** (BM25 + dense embeddings + reranking)
-- Provides **MCP tools** (stdio + HTTP modes) for Codex and Claude Code
-- Includes **eval harness** with regression tracking
-- Supports **multi-query expansion** and **local code hydration**
-- Features **interactive CLI chat** with conversation memory
+See feature screenshots in the relevant docs:
+- GUI overview and settings: [API GUI](docs/API_GUI.md)
+- Terminal chat: [CLI Chat](docs/CLI_CHAT.md)
+- Tracing and tuning: [LangSmith Setup](docs/LANGSMITH_SETUP.md)
+- Evals and comparisons: [Performance & Cost](docs/PERFORMANCE_AND_COST.md)
 
-### Positioning (what we are — and aren’t)
-- RAG-first: this repo is the retrieval + answer engine (your runtime).
-- Codex/Claude are clients that call into this engine via MCP; they “wrap” the RAG, not the other way around.
-- We are not an agent framework. We expose MCP tools (rag_answer, rag_search); external UIs invoke them.
-- Your code and indexes remain local; MCP registration simply plugs your RAG into external UIs.
+## Quick Start
 
-### Storage Planning Tool
+```bash
+git clone https://github.com/DMontgomery40/agro.git
+cd agro/scripts && ./dev_up
+```
 
-AGRO enables significant flexibility in configuration—but with great power comes great storage bills. Depending on your choices (embeddings, hydration, replication, etc.), you could easily reach 20× your original repository size. Commercial RAGs are expensive for precisely this reason.
+The server exposes the GUI at http://127.0.0.1:8012/ and health at http://127.0.0.1:8012/health (server/app.py:1-27).
 
-**Use our interactive storage calculator to plan your deployment:**
+## Why AGRO (the technical bits)
+
+- Retrieval that degrades gracefully offline: BM25 works without vectors; Qdrant is optional. Reranking can be local, Cohere, or off.
+- Repo isolation as a guardrail, not a hope-and-pray convention. Answers always cite file and line.
+- MCP tools as first‑class citizens for agents: rag_search and rag_answer.
+- Everything configurable in the GUI — if a setting doesn’t fit elsewhere, it lives in “Misc”.
+
+Storage tends to balloon in RAG. Use the calculator to plan:
 
 [![AGRO Storage Calculator](docs/images/rag-calculator-screenshot.png)](https://vivified.dev/rag-calculator.html)
 
-**[→ Open the AGRO Storage Calculator](https://vivified.dev/rag-calculator.html)**
+## Deeper Docs
 
-The calculator lets you:
-- Estimate storage needs for your specific configuration
-- Compare minimal vs. low-latency deployment strategies
-- Factor in replication, hydration, and precision settings
-- See exactly how much storage each component requires
-
-## RAG for Code — Comparative Matrix
-
-*Legend:* ✅ = present/native · 🟨 = partial / configurable / undocumented · ❌ = absent
-
-| Feature ↓ · Tool → | **AGRO (rag-service)** | **Sourcegraph Cody** | **GitHub Copilot Ent.** | **Cursor** | **Codeium / Windsurf** | **Tabnine** | **Continue.dev (OSS)** | **LlamaIndex – Code (OSS)** | **Claude Code** | **JetBrains AI Assistant** |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **OSS code available** | 🟨 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
-| **Commercial plan exists** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | 🟨 | ✅ | ✅ |
-| **Dense embeddings** | ✅ | ❌ | 🟨 | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ |
-| **Hybrid (sparse + dense)** | ✅ | ❌ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 |
-| **AST / code-graph chunking** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | 🟨 | ✅ | ❌ | ✅ |
-| **Reranker present** | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | ✅ | ✅ | 🟨 | 🟨 |
-| **Incremental / streaming re-index** | ✅ | 🟨 | 🟨 | ✅ | ✅ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 |
-| **Symbol graph / LSP integration** | ❌ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | ❌ | ✅ |
-| **Multi-language** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Cross-file reasoning** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ | ✅ |
-| **Citations include path+line** | ✅ | ✅ | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 | 🟨 |
-| **Vector DB explicitly noted** | ✅ | ❌ | 🟨 | ✅ | 🟨 | ✅ | 🟨 | ✅ | ❌ | 🟨 |
-| **IDE / CLI available** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ | ✅ |
-| **MCP / API connectors** | ✅ | ✅ | 🟨 | ✅ | ✅ | 🟨 | ✅ | ❌ | ✅ | ✅ |
-| **GitHub / CI hooks** | 🟨 | ✅ | ✅ | 🟨 | ✅ | 🟨 | ✅ | 🟨 | 🟨 | 🟨 |
-| **Local-first option** | ✅ | ✅ | ❌ | 🟨 | ✅ | ✅ | ✅ | ✅ | 🟨 | ❌ |
-| **Telemetry / data controls** | 🟨 | 🟨 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🟨 | ✅ |
-| **Auth / SSO** | 🟨 | ✅ | ✅ | 🟨 | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
-| **Eval harness present** | ✅ | 🟨 | 🟨 | ❌ | 🟨 | 🟨 | 🟨 | ✅ | ❌ | ❌ |
-| **Active maintenance (≤12 mo)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
-
-## Modular by design
-
-Every component in this stack is swappable. Models, rerankers, vector DB, streaming transport, and even the orchestration 
-graph are suggestions, not requirements. Treat this repo as a reference implementation you can piece apart: keep what you like, 
-replace what you don’t. The docs show one happy path; you can rewire models and services to suit your environment.
-
----
-
-## Table of Contents
-
-1. [Quick Start](#quick-start)
-2. [Architecture](#architecture)
-3. [Setup from Scratch](#setup-from-scratch)
-4. [Configure RAG Ignore](#configure-rag-ignore)
-5. [MCP Integration](#mcp-integration)
-6. [CLI Chat Interface](#cli-chat-interface)
-7. [Evaluation & Testing](#evaluation--testing)
-8. [Daily Workflows](#daily-workflows)
-9. [Troubleshooting](#troubleshooting)
-10. [Model Selection](#model-selection)
-11. [Performance & Cost](#performance--cost)
-
----
+- Start here: [Docs Index](docs/README.md)
+- MCP quickstart (Codex/Claude): [QUICKSTART_MCP.md](docs/QUICKSTART_MCP.md)
+- Settings UI & API: [API_GUI.md](docs/API_GUI.md)
+- Performance & cost: [PERFORMANCE_AND_COST.md](docs/PERFORMANCE_AND_COST.md)
+- Models: [MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md), [GEN_MODEL_COMPARISON.md](docs/GEN_MODEL_COMPARISON.md)
+- CLI chat: [CLI_CHAT.md](docs/CLI_CHAT.md)
 
 ## Package Layout
 
@@ -108,13 +66,13 @@ See MIGRATION.md for detailed path mappings.
 - Env/model helpers: `from server.env_model import generate_text`
 - Indexer entry: `from indexer.index_repo import main as index_main`
 - MCP server (stdio): `from server.mcp.server import MCPServer`
-- FastAPI app: `from server.app import app` (root shim: `serve_rag.py`)
+- FastAPI app: `from server.app import app`
 
 Shims remain at root for backward compatibility; prefer canonical imports in new code.
 
 ---
 
-## Quick Start
+## Manual Bring-Up (Alternative)
 
 **Prerequisites**
 - Python 3.11+
@@ -130,9 +88,7 @@ Shims remain at root for backward compatibility; prefer canonical imports in new
 git clone https://github.com/DMontgomery40/agro.git
 cd agro
 
-# 1) One‑command bring‑up (infra + MCP + API + open GUI)
-#    Uses Colima automatically on macOS if Docker isn't running
-make dev            # or: bash scripts/dev_up.sh
+# Use this section only if you want to run pieces by hand for debugging.
 
 # 2) One‑command setup (recommended)
 #    From THIS folder, pass your repo path/name. If you want to index THIS
@@ -145,11 +101,11 @@ python -m venv .venv && . .venv/bin/activate  # if .venv not present yet
 python chat_cli.py
 
 # Optional: manual API bring‑up instead of make dev
-make api   # runs: uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+make api   # runs: uvicorn server.app:app --host 127.0.0.1 --port 8012
 curl "http://127.0.0.1:8012/search?q=oauth&repo=rag-service"
 
 # MCP tools quick check (stdio)
-printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python mcp_server.py | head -n1
+printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python -m server.mcp.server | head -n1
 ```
 
 ### Common setup hiccups (fast fixes)
@@ -165,7 +121,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
   - CLI or UIs can opt-in to streaming via this endpoint; default remains blocking.
 
 ### GUI settings (host/port, Docker)
-- The HTTP GUI/API is served by `serve_rag.py` (root path returns `gui/index.html`; see serve_rag.py:41-46). Use the GUI’s “Misc” tab to set:
+- The HTTP GUI/API is served by `server/app.py` (root path returns `gui/index.html`; server/app.py:1-27). Use the GUI’s “Misc” tab to set:
   - `Serve Host` and `Serve Port` (gui/index.html:1471, gui/index.html:1475)
   - `Open Browser on Start` (gui/index.html:1482)
   - `Auto‑start Colima (Docker)` and optional `Colima Profile` (gui/index.html:1489, gui/index.html:1497)
@@ -192,7 +148,7 @@ printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python m
              │ MCP stdio            │ MCP HTTP     │ HTTP (SSE)                
              ▼                       ▼              ▼                           
 ┌─────────────────────┐     ┌─────────────────────┐     ┌─────────────────────┐ 
-│   mcp_server.py     │     │  mcp_server_http.py │     │     serve_rag.py    │ 
+│   mcp_server.py     │     │  mcp_server_http.py │     │     server/app.py    │ 
 │   (stdio mode)      │     │  (HTTP mode)        │     │  (FastAPI /answer*) │ 
 └──────────┬──────────┘     └──────────┬──────────┘     └──────────┬──────────┘ 
            │                            │                           │            
@@ -312,6 +268,8 @@ python -c "import langgraph, qdrant_client, bm25s, sentence_transformers; print(
 ```
 
 ### Phase 3: Environment Variables
+
+Note: Prefer setting these in the GUI (Misc tab → Apply All Changes). Only use a manual `.env` when scripting or debugging.
 
 Create `.env` file:
 
@@ -1235,7 +1193,7 @@ Then re-index.
 | `mcp_server.py` | **MCP stdio server for local agents** |
 | `mcp_server_http.py` | **MCP HTTP server for remote agents** |
 | `chat_cli.py` | **Interactive CLI chat with memory** |
-| `serve_rag.py` | FastAPI HTTP server |
+| `server/app.py` | FastAPI HTTP server |
 | `langgraph_app.py` | LangGraph retrieval pipeline |
 | `hybrid_search.py` | Hybrid search (BM25 + dense + rerank) |
 | `index_repo.py` | Indexing script |

@@ -9,12 +9,12 @@ ALL features, settings, variables, and parameters, must be put in the GUI.  **Th
 
 How to use RAG locally vs externally:
 - Local Python (preferred in-repo):
-  - `cd path/to/your/rag-service && . .venv/bin/activate`
+  - ` . .venv/bin/activate`
   - Run a quick search:
     ```bash
     python - <<'PY'
     from retrieval.hybrid_search import search_routed_multi
-    for d in search_routed_multi("Where is OAuth validated", repo_override="project", m=4, final_k=10):
+    for d in search_routed_multi("Where is OAuth validated", repo_override="project", m=2, final_k=5):
         print(f"{d['file_path']}:{d['start_line']}-{d['end_line']}  score={d['rerank_score']:.3f}")
     PY
     ```

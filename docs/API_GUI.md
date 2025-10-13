@@ -1,6 +1,16 @@
 # Settings GUI API (Local-Only)
 
+All feature flags, settings, variables, and parameters are controlled in the GUI. Do not edit code to change configuration. If a knob doesn’t fit a category, it belongs in the GUI “Misc” tab.
+
 This contract powers the local admin GUI. All routes are localhost-only and unauthenticated.
+
+![Dashboard](../assets/dashboard.png)
+
+### Chat Tab (GUI Chat, not terminal)
+
+The Chat tab embeds a full chat experience inside the GUI (not a terminal). It shows citations, repo selector, history controls, and a Send button.
+
+![GUI Chat](../assets/chat_built_in.png)
 
 ## Endpoints
 
@@ -125,3 +135,6 @@ Response:
 - Writes are transactional with preflight validation and a diff preview.
 - `requires_reindex` is true when `repos[].path`, `EMBEDDING_TYPE`, or card-building knobs change.
 
+See also
+- Tracing & tuning (LangSmith): [LANGSMITH_SETUP.md](LANGSMITH_SETUP.md)
+- Performance & cost: [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md)

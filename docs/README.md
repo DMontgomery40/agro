@@ -1,62 +1,54 @@
-# 📚 RAG Service Documentation
+# 📚 AGRO Documentation
 
-**Complete documentation index for the multi-repo RAG system with MCP integration.**
+This is the long‑form reference that pairs with the streamlined, tech‑forward README. Everything config‑related is done in the Settings GUI — not by editing code. If you can’t find a knob, it belongs in the “Misc” tab.
 
-> Why I did made this: 
+- Start Here
 
-| Approach | Tokens/Query | Queries Before Rate Limit* | Latency | Quality |
-|----------|--------------|---------------------------|---------|---------|
-| **Claude/Codex Alone** | 12,700 | 100 | 5-10s | Variable |
-| **Claude/Codex + RAG** | 1,141 | **1,110** | 2.9s | Excellent* |
-| **DIFFERENCE** | **-11,559 (-91%)** | **+1,010 (+1,010%)** | **-5s** | Same |
+- Launch everything (infra + MCP + API + GUI):
+  - `cd agro/scripts && ./dev_up`
+- Open the GUI at `http://127.0.0.1:8012/` (server/app.py:1-27)
+- Configure settings in the GUI and click “Apply All Changes.”
 
-> * It's not about getting a perfect answer from RAG (though you can). But more importantly, getting Claude/Codex the exact right context so IT can give you a perfect answer.
----
+## Navigation
 
-## 📖 Table of Contents (note that everything below "install" is obviously stupid shit Claude wrote that I left in, in case a few people actually find it useful)
+- Quickstart for agents (Codex/Claude): [QUICKSTART_MCP.md](QUICKSTART_MCP.md)
+- Settings UI & API contract: [API_GUI.md](API_GUI.md)
+- CLI Chat usage: [CLI_CHAT.md](CLI_CHAT.md)
+- Performance & cost tuning: [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md)
+- Model choices & comparisons: [MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md), [GEN_MODEL_COMPARISON.md](GEN_MODEL_COMPARISON.md)
+- LangSmith setup (traces): [LANGSMITH_SETUP.md](LANGSMITH_SETUP.md)
+- Remote MCP (HTTP): [REMOTE_MCP.md](REMOTE_MCP.md)
 
-- [Quick Start Guide](#-quick-start-guide)
-- [Core Documentation](#-core-documentation)
-  - [Setup & Getting Started](#setup--getting-started)
-  - [MCP Integration](#mcp-integration)
-  - [Interactive Usage](#interactive-usage)
-  - [Model Selection & Cost](#model-selection--cost)
-  - [Operations & Monitoring](#operations--monitoring)
-- [Documentation by Use Case](#-documentation-by-use-case)
-- [File Reference](#-file-reference)
+## Indexing & Repos
 
----
+- Indexer entry point: indexer/index_repo.py
+- Shared index profile helper: scripts/select_index.sh
+- Repo config persistence: POST /api/config (server/app.py:1-27)
 
-## Quick Start Guide
+## HTTP API (local)
 
-**Just getting started?**
+- FastAPI app with GUI + REST: server/app.py:1-27
+- Core routes: `/health`, `/search`, `/answer`, `/answer_stream`, `/api/*`
 
-1. **Setup** → Read [../README.md](../README.md) for complete setup instructions
-2. **Quick Commands** → Run `bash scripts/up.sh` to start infrastructure
-3. **Index Repos** → Run `REPO=repo-a python index_repo.py`
-4. **Connect Agents** → See [QUICKSTART_MCP.md](QUICKSTART_MCP.md)
+## MCP Tools (for agents)
 
----
+- Stdio server: server/mcp/server.py:1-24
+- Tools exposed:
+  - `rag_search(repo, question, top_k)`
+  - `rag_answer(repo, question)`
 
-## 📘 Core Documentation
+## Evals & Tracing
 
-### Setup & Getting Started
+- Eval harness: eval_loop.py
+- Golden tests: golden.json
+- Local traces and LangSmith integration: server/tracing.py, docs/LANGSMITH_SETUP.md
 
-#### [../README.md](../README.md) - Main Setup Guide (1105 lines)
-**THE complete reference for setup, configuration, and daily usage.**
+## Assets
 
-**Contents:**
-- ✅ Prerequisites and installation
-- ✅ Infrastructure setup (Docker Compose)
-- ✅ Environment configuration
-- ✅ `.ragignore` system (critical setup step)
-- ✅ Repository indexing
-- ✅ MCP integration (Codex + Claude Code)
-- ✅ CLI chat interface
-- ✅ Evaluation and testing
-- ✅ Daily workflows
-- ✅ Complete troubleshooting guide
-- ✅ Advanced configuration
+The root `assets/` folder contains screenshots you can embed in issues, PRs, or external docs:
+- assets/dashboard.png, assets/chat_built_in.png, assets/tune_and_trace.png, assets/evals.png, assets/storage_calc.png
+
+For the high‑level overview and positioning, see ../README.md.
 
 **Start here if:** You're setting up from scratch or need comprehensive reference.
 
