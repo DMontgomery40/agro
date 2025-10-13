@@ -2813,6 +2813,49 @@
             </div>
 
 
+            <!-- Tab: Reranking -->
+            <div id="tab-reranking" class="tab-content">
+                <div class="settings-section">
+                    <h3>Reranking Configuration</h3>
+                    <p class="small">Reranking reorders retrieved chunks by relevance using a cross‑encoder (Cohere/local/HF). Improves precision/confidence.</p>
+                    <button class="small-button" id="btn-add-rerank-model" style="margin-bottom:12px;">Add Rerank Model</button>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Rerank Backend</label>
+                            <select name="RERANK_BACKEND">
+                                <option value="local">Local</option>
+                                <option value="cohere">Cohere</option>
+                                <option value="hf">Hugging Face</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Local Reranker Model</label>
+                            <input type="text" name="RERANKER_MODEL" placeholder="BAAI/bge-reranker-v2-m3" list="rerank-model-list">
+                            <datalist id="rerank-model-list"></datalist>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Cohere API Key</label>
+                            <input type="password" name="COHERE_API_KEY">
+                        </div>
+                        <div class="input-group">
+                            <label>Cohere Rerank Model</label>
+                            <input type="text" name="COHERE_RERANK_MODEL" placeholder="rerank-3.5">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>HF Trust Remote Code</label>
+                            <select name="TRANSFORMERS_TRUST_REMOTE_CODE">
+                                <option value="1">On</option>
+                                <option value="0">Off</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Tab: Configuration - Retrieval -->
             <div id="tab-config-retrieval" class="tab-content">
@@ -3159,6 +3202,29 @@
                 </div>
             </div>
 
+            <!-- Tab: Confidence -->
+            <div id="tab-confidence" class="tab-content">
+                <div class="settings-section">
+                    <h3>Confidence Gating</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Confidence Top-1 Threshold</label>
+                            <input type="number" name="CONF_TOP1" value="0.62" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="input-group">
+                            <label>Confidence Avg-5 Threshold</label>
+                            <input type="number" name="CONF_AVG5" value="0.55" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Confidence Any Threshold</label>
+                            <input type="number" name="CONF_ANY" value="0.55" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- Tab: Configuration - Infrastructure -->
             <div id="tab-config-infra" class="tab-content">
@@ -3298,6 +3364,36 @@
                     <div id="index-status" class="result-display" style="min-height: 80px;"></div>
                     <div class="progress" style="margin-top:12px; background:#111; border:1px solid #2a2a2a; border-radius:4px; height:12px;">
                         <div id="index-bar" style="height:100%; width:0%; background:#ff9b5e; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Evaluation -->
+            <div id="tab-eval" class="tab-content">
+                <div class="settings-section">
+                    <h3>Evaluation Configuration</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Golden Questions Path</label>
+                            <input type="text" name="GOLDEN_PATH" value="golden.json">
+                        </div>
+                        <div class="input-group">
+                            <label>Baseline Path</label>
+                            <input type="text" name="BASELINE_PATH" value="eval_baseline.json">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Eval Multi-Query</label>
+                            <select name="EVAL_MULTI">
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Eval Final K</label>
+                            <input type="number" name="EVAL_FINAL_K" value="5">
+                        </div>
                     </div>
                 </div>
             </div>
