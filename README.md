@@ -79,7 +79,10 @@ conf_avg5: 0.52
 ## MCP servers and API endpoints
 ### (Python and Node.js) supporting HTTP, SSE, STDIO, and WebSocket transports
   - ***Per-transport configuration:*** choose different models and search backends for each mode
-  - Evals, traces, hybrid-searches, and a terminal chat CLI
+
+<a href="assets/onboarding_carosel/mcp_transport_changing_model_per_transport.png" target="_blank">
+  <img src="assets/onboarding_carosel/mcp_transport_changing_model_per_transport.png" alt="Configure Models Per Transport" />
+</a>
 
 ### Robust API with optional OAuth 2.0 
 
@@ -348,6 +351,10 @@ echo "**/migrations/**" >> data/exclude_globs.txt
 ```
 
 #### 3. Auto-Generate Keywords (Optional)
+
+<a href="assets/onboarding_carosel/auto-generate-keywords.png" target="_blank">
+  <img src="assets/onboarding_carosel/auto-generate-keywords.png" alt="Auto-Generate Keywords" />
+</a>
 
 The `scripts/` folder contains tools to analyze your codebase and generate optimal configurations:
 
@@ -709,6 +716,23 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 
 ## Evaluation & Testing
 
+### In GUI 
+
+<a href="assets/evals.png" target="_blank">
+  <img src="assets/evals.png" alt="Evaluation Interface" />
+</a>
+
+**GUI Controls:**
+- **Run Full Evaluation** - Tests all golden questions, shows top-1 and top-K accuracy
+- **Save as Baseline** - Saves current results for regression tracking
+- **Compare to Baseline** - Shows regressions (questions that broke) and improvements vs saved baseline
+- **Export Results** - Downloads eval results as JSON
+
+**Supporting Features:**
+- **Generate Keywords** - Auto-generates search keywords from codebase (LLM or heuristic mode)
+- **Build Cards** - Creates semantic code cards (high-level summaries) for better high-level retrieval
+- **Refresh Cards** - Reloads existing cards from disk
+
 ### Quick Eval Run
 
 ```bash
@@ -728,6 +752,10 @@ python eval_loop.py
 ```
 
 ### Creating Golden Tests
+
+<a href="assets/onboarding_carosel/golden-tests-gui.png" target="_blank">
+  <img src="assets/onboarding_carosel/golden-tests-gui.png" alt="Golden Tests GUI" />
+</a>
 
 Golden tests are in `golden.json`:
 
@@ -1001,50 +1029,6 @@ python -c "from server.langgraph_app import build_graph; build_graph(); print('â
 
 4. **Adjust parameters** (see [Advanced Configuration](#advanced-configuration) section)
 
-### Ollama Issues (Apple Silicon)
-
-**High GPU usage / thermal load:**
-
-Both MLX and Ollama use GPU (Metal) on Apple Silicon for LLM inference, not the Neural Engine (ANE). This causes:
-- High GPU utilization (often maxing out)
-- Heat generation and fan noise
-- Note: ANE is not used for large language models - it's for smaller, CoreML-optimized models
-
-**Performance**: MLX and Ollama have similar thermal profiles as both use Metal GPU. MLX may have better memory efficiency due to tighter Apple Silicon integration.
-
-**Ollama keeps restarting after kill:**
-
-If `pkill -9 ollama` or `killall -9 ollama` results in Ollama immediately respawning:
-
-```bash
-# Root cause: Homebrew's launchd service with KeepAlive=true
-
-# Proper fix: Stop the service
-brew services stop ollama
-
-# Verify it's stopped
-ps aux | grep ollama  # Should show nothing
-pgrep ollama          # Should return empty
-
-# Check launchd status
-launchctl list | grep ollama  # Should show nothing after stop
-```
-
-**Why this happens:**
-- Homebrew installs Ollama as a background service (launchd)
-- The service is configured with `KeepAlive=true`
-- When killed, launchd immediately restarts it
-- `brew services stop` properly unloads the service
-
-**Alternative**: If you still want to use Ollama occasionally:
-```bash
-# Stop the background service permanently
-brew services stop ollama
-
-# Run Ollama manually only when needed
-ollama serve  # Run in foreground, Ctrl+C to stop
-```
-
 ---
 
 ## Model Selection
@@ -1106,6 +1090,10 @@ See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 ---
 
 ## Advanced Configuration
+
+<a href="assets/onboarding_carosel/advanced_config.png" target="_blank">
+  <img src="assets/onboarding_carosel/advanced_config.png" alt="Advanced Configuration" />
+</a>
 
 ### Environment Variables Reference
 
