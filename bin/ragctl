@@ -51,13 +51,13 @@ case "$cmd" in
     if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
       . "$ROOT_DIR/.venv/bin/activate"
     fi
-    REPO="$repo_name" exec python "$ROOT_DIR/index_repo.py"
+    REPO="$repo_name" exec python -m indexer.index_repo
     ;;
   api)
     if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
       . "$ROOT_DIR/.venv/bin/activate"
     fi
-    exec python -m uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+    exec python -m uvicorn server.app:app --host 127.0.0.1 --port 8012
     ;;
   chat)
     if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
@@ -69,7 +69,7 @@ case "$cmd" in
     if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
       . "$ROOT_DIR/.venv/bin/activate"
     fi
-    printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python "$ROOT_DIR/mcp_server.py"
+    printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python -m server.mcp.server
     ;;
   -*|--*)
     usage; exit 2 ;;
@@ -79,4 +79,3 @@ case "$cmd" in
     echo "Unknown command: $cmd" >&2
     usage; exit 2 ;;
 esac
-

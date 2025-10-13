@@ -134,10 +134,10 @@
       ENRICH_MODEL: L('Enrichment Model', 'Model used for enrichment when enabled (provider‑specific). Use a smaller local model for cost‑free summaries; cloud models improve quality.'),
       ENRICH_MODEL_OLLAMA: L('Enrichment Model (Ollama)', 'Specific Ollama model to use for enrichment if ENRICH_BACKEND targets Ollama.'),
       ENRICH_CODE_CHUNKS: L('Enrich Code Chunks', 'When enabled, stores per‑chunk summaries/keywords during indexing to support features like cards and improved reranking.', [
-        ['Cards Builder (source)', '/files/build_cards.py']
+        ['Cards Builder (source)', '/files/indexer/build_cards.py']
       ]),
       CARDS_MAX: L('Cards Max', 'Maximum number of summary cards to consider when boosting retrieval results.', [
-        ['Cards Builder (source)', '/files/build_cards.py']
+        ['Cards Builder (source)', '/files/indexer/build_cards.py']
       ]),
       SKIP_DENSE: L('Skip Dense Embeddings', 'When set, indexer skips dense embeddings/Qdrant upsert to build a fast BM25‑only index.'),
       VENDOR_MODE: L('Vendor Mode', 'Bias for first‑party vs vendor‑origin code in reranking. Options: prefer_first_party | prefer_vendor.'),

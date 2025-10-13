@@ -52,10 +52,10 @@ if docker ps --format '{{.Names}}' | grep -qi redis; then
 fi
 
 echo "[up] Starting MCP server in background ..."
-if pgrep -f "python mcp_server.py" >/dev/null; then
+if pgrep -f "server.mcp.server" >/dev/null; then
   echo "[up] MCP already running."
 else
-  nohup bash -lc ". .venv/bin/activate && python mcp_server.py" >/tmp/mcp_server.log 2>&1 &
+  nohup bash -lc ". .venv/bin/activate && python -m server.mcp.server" >/tmp/mcp_server.log 2>&1 &
   sleep 1
 fi
 

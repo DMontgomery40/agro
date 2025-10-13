@@ -128,13 +128,12 @@ def codex_register(rag_root: Path, progress: Progress, task_id) -> None:
         time.sleep(0.3)
         return
     py = _venv_python(rag_root)
-    server = rag_root / 'mcp_server.py'
     name = 'rag-service'
     progress.update(task_id, description='Registering MCP with Codex')
     try:
         # remove existing silently
         subprocess.run(['codex', 'mcp', 'remove', name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        subprocess.check_call(['codex', 'mcp', 'add', name, '--', str(py), str(server)])
+        subprocess.check_call(['codex', 'mcp', 'add', name, '--', str(py), '-m', 'server.mcp.server'])
     except subprocess.CalledProcessError as e:
         console.print(f"[yellow]Codex registration failed:[/yellow] {e}")
 
@@ -161,7 +160,6 @@ def claude_register(rag_root: Path, progress: Progress, task_id) -> None:
         return
     cfgp.parent.mkdir(parents=True, exist_ok=True)
     py = _venv_python(rag_root)
-    server = rag_root / 'mcp_server.py'
     # Load existing
     data = {}
     if cfgp.exists():
@@ -176,7 +174,7 @@ def claude_register(rag_root: Path, progress: Progress, task_id) -> None:
     ms = data.get('mcpServers') or {}
     ms['rag-service'] = {
         'command': str(py),
-        'args': [str(server)],
+        'args': ['-m', 'server.mcp.server'],
         'env': {
             'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY', '')
         }
@@ -252,7 +250,7 @@ def main():
             env = os.environ.copy()
             env['REPO'] = name
             try:
-                subprocess.check_call([str(_venv_python(rag_root)), str(rag_root / 'index_repo.py')], env=env, cwd=str(rag_root))
+                subprocess.check_call([str(_venv_python(rag_root)), '-m', 'indexer.index_repo'], env=env, cwd=str(rag_root))
                 console.print(f"[green]✓[/green] Indexed repo: [bold]{name}[/bold]")
             except subprocess.CalledProcessError as e:
                 console.print(f"[red]Indexing failed:[/red] {e}")
@@ -270,7 +268,7 @@ def main():
     console.print(Panel(
         "Setup complete. Next steps:\n"
         " • Type 'codex' and try: Use rag_search to find OAuth in your repo\n"
-        f" • Or run API: uvicorn serve_rag:app --host 127.0.0.1 --port 8012\n"
+        f" • Or run API: uvicorn server.app:app --host 127.0.0.1 --port 8012\n"
         f" • CLI streaming: python chat_cli.py --stream --api-url http://127.0.0.1:8012\n",
         title="You're ready!", border_style="green"
     ))

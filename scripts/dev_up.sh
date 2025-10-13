@@ -3,7 +3,7 @@ set -euo pipefail
 
 # One-shot developer launcher:
 # - Starts infra (Qdrant + Redis) and MCP via scripts/up.sh
-# - Ensures venv and launches uvicorn serve_rag:app
+# - Ensures venv and launches uvicorn server.app:app
 # - Waits for /health and opens the GUI in a browser
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -38,11 +38,11 @@ PORT="${UVICORN_PORT:-${PORT:-8012}}"
 OPEN_BROWSER="${OPEN_BROWSER:-1}"
 
 # 5) Start uvicorn if not already running
-if pgrep -f "uvicorn .*serve_rag:app" >/dev/null; then
+if pgrep -f "uvicorn .*server\.app:app" >/dev/null; then
   log "Uvicorn already running."
 else
   log "Starting uvicorn on $HOST:$PORT ..."
-  nohup uvicorn serve_rag:app --host "$HOST" --port "$PORT" \
+  nohup uvicorn server.app:app --host "$HOST" --port "$PORT" \
     > /tmp/uvicorn_server.log 2>&1 &
   sleep 1
 fi

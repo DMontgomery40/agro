@@ -2,8 +2,8 @@
 set -euo pipefail
 
 echo "[status] MCP server:"
-if pgrep -f "python mcp_server.py" >/dev/null; then
-  echo "  running (pid(s): $(pgrep -f "python mcp_server.py" | paste -sd, -))"
+if pgrep -f "server.mcp.server" >/dev/null; then
+  echo "  running (pid(s): $(pgrep -f "server.mcp.server" | paste -sd, -))"
 else
   echo "  not running"
 fi
@@ -13,4 +13,3 @@ docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}' | sed '1,1!b; s/ 
 
 echo "[status] Qdrant collections:"
 curl -s http://127.0.0.1:6333/collections || echo "(qdrant not reachable)"
-

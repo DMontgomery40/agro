@@ -17,7 +17,7 @@ if [ -d .venv ]; then . .venv/bin/activate; fi
 export REPO=agro EMBEDDING_TYPE=local SKIP_DENSE=1
 # Use shared profile by default
 export OUT_DIR_BASE="./out.noindex-shared"
-python index_repo.py >/dev/null 2>&1 || true
+python -m indexer.index_repo >/dev/null 2>&1 || true
 H
 
 cat > "$HOOKS_DIR/post-commit" << 'H'
@@ -29,7 +29,7 @@ cd "$repo_root" || exit 0
 if [ -d .venv ]; then . .venv/bin/activate; fi
 export REPO=agro EMBEDDING_TYPE=local SKIP_DENSE=1
 export OUT_DIR_BASE="./out.noindex-shared"
-python index_repo.py >/dev/null 2>&1 || true
+python -m indexer.index_repo >/dev/null 2>&1 || true
 H
 
 chmod +x "$HOOKS_DIR/post-checkout" "$HOOKS_DIR/post-commit"

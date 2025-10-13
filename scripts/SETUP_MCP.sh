@@ -7,7 +7,7 @@ set -e
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RAG_ROOT="${ROOT_DIR}"
 VENV_PYTHON="${RAG_ROOT}/.venv/bin/python"
-MCP_SERVER="${RAG_ROOT}/mcp_server.py"
+MCP_SERVER_MODULE="server.mcp.server"
 
 echo "🚀 Setting up MCP server for RAG service"
 echo ""
@@ -19,10 +19,7 @@ if [ ! -f "$VENV_PYTHON" ]; then
     exit 1
 fi
 
-if [ ! -f "$MCP_SERVER" ]; then
-    echo "❌ Error: MCP server not found at $MCP_SERVER"
-    exit 1
-fi
+# Module path is used; no file check required
 
 echo "✅ Files verified"
 echo ""
@@ -39,11 +36,11 @@ if command -v codex &> /dev/null; then
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             codex mcp remove project-rag || true
-            codex mcp add project-rag -- "$VENV_PYTHON" "$MCP_SERVER"
+            codex mcp add project-rag -- "$VENV_PYTHON" -m "$MCP_SERVER_MODULE"
             echo "   ✅ Re-registered with Codex"
         fi
     else
-        codex mcp add project-rag -- "$VENV_PYTHON" "$MCP_SERVER"
+        codex mcp add project-rag -- "$VENV_PYTHON" -m "$MCP_SERVER_MODULE"
         echo "   ✅ Registered with Codex"
     fi
 
@@ -87,7 +84,7 @@ else
   "mcpServers": {
     "project-rag": {
       "command": "$VENV_PYTHON",
-      "args": ["$MCP_SERVER"],
+      "args": ["-m", "server.mcp.server"],
       "env": {
         "OPENAI_API_KEY": "your-api-key-here"
       }
@@ -107,7 +104,7 @@ EOF
   "mcpServers": {
     "project-rag": {
       "command": "$VENV_PYTHON",
-      "args": ["$MCP_SERVER"],
+      "args": ["-m", "server.mcp.server"],
       "env": {
         "OPENAI_API_KEY": "your-api-key-here"
       }
@@ -130,7 +127,7 @@ fi
 
 echo ""
 echo "🧪 Testing MCP server..."
-echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | "$VENV_PYTHON" "$MCP_SERVER" 2>&1 | head -20
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | "$VENV_PYTHON" -m "$MCP_SERVER_MODULE" 2>&1 | head -20
 
 echo ""
 echo "✅ Setup complete!"

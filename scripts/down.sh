@@ -11,7 +11,7 @@ if [[ -f "$ROOT_DIR/scripts/editor_down.sh" ]]; then
 fi
 
 echo "[down] Stopping MCP server ..."
-pkill -f "python mcp_server.py" 2>/dev/null || true
+pkill -f "server.mcp.server" 2>/dev/null || true
 
 echo "[down] Stopping infra (Qdrant + Redis) ..."
 (
@@ -20,4 +20,3 @@ echo "[down] Stopping infra (Qdrant + Redis) ..."
 )
 
 echo "[down] Done."
-
