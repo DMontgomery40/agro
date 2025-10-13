@@ -13,65 +13,10 @@
     console.log('[app.js] Initializing with API:', window.CoreUtils.API_BASE);
 
     // ---------------- Theme Engine ----------------
-    function resolveTheme(mode) {
-        const m = String(mode || 'auto').toLowerCase();
-        if (m === 'light' || m === 'dark') return m;
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        return prefersDark ? 'dark' : 'light';
-    }
-
-    function applyTheme(mode) {
-        const t = resolveTheme(mode);
-        try { document.documentElement.setAttribute('data-theme', t); } catch {}
-        // Best-effort normalize legacy inline dark styles to tokenized vars
-        try {
-            const mappings = [
-                ['#0a0a0a', 'var(--card-bg)'],
-                ['#0f0f0f', 'var(--code-bg)'],
-                ['#111111', 'var(--panel-bg)'],
-                ['#1a1a1a', 'var(--bg-elev2)'],
-                ['#2a2a2a', 'var(--line)'],
-                ['#333', 'var(--line)'],
-                ['#666', 'var(--fg-muted)'],
-                ['#888', 'var(--fg-muted)'],
-                ['#ddd', 'var(--fg)'],
-                ['#ffffff', 'var(--fg)'],
-                ['#5b9dff', 'var(--link)'],
-                ['#00ff88', 'var(--accent)'],
-                ['#ff9b5e', 'var(--accent)'],
-                ['#ff6b6b', 'var(--err)']
-            ];
-            const nodes = document.querySelectorAll('[style*="#0a0a0a"], [style*="#0f0f0f"], [style*="#111111"], [style*="#1a1a1a"], [style*="#2a2a2a"], [style*="#333"], [style*="#666"], [style*="#888"], [style*="#ddd"], [style*="#ffffff"], [style*="#5b9dff"], [style*="#00ff88"], [style*="#ff9b5e"], [style*="#ff6b6b"]');
-            nodes.forEach(el => {
-                let s = el.getAttribute('style') || '';
-                mappings.forEach(([k, v]) => { s = s.replaceAll(k, v); });
-                el.setAttribute('style', s);
-            });
-        } catch {}
-    }
-
-    function initThemeFromEnv(env) {
-        try {
-            const saved = localStorage.getItem('THEME_MODE');
-            const envMode = env && env.THEME_MODE ? String(env.THEME_MODE) : 'auto';
-            const mode = saved || envMode || 'auto';
-            // Set both selectors if present
-            const selTop = document.getElementById('theme-mode');
-            const selMisc = document.getElementById('misc-theme-mode');
-            if (selTop) selTop.value = mode;
-            if (selMisc) selMisc.value = mode;
-            applyTheme(mode);
-            // React to system changes when Auto
-            if (window.matchMedia) {
-                const mq = window.matchMedia('(prefers-color-scheme: dark)');
-                const onChange = () => {
-                    const current = (selTop && selTop.value) || (selMisc && selMisc.value) || mode;
-                    if (String(current||'auto').toLowerCase() === 'auto') applyTheme('auto');
-                };
-                try { mq.addEventListener('change', onChange); } catch { try { mq.addListener(onChange); } catch {} }
-            }
-        } catch {}
-    }
+    // Delegated to Theme module (gui/js/theme.js)
+    const resolveTheme = window.Theme?.resolveTheme || (() => 'dark');
+    const applyTheme = window.Theme?.applyTheme || (() => {});
+    const initThemeFromEnv = window.Theme?.initThemeFromEnv || (() => {});
 
     // ---------------- Tabs ----------------
     let storageCalculatorLoaded = false;
@@ -209,32 +154,13 @@
     }
 
     // ---------------- Git Hooks ----------------
-    async function refreshHooksStatus(){
-        try{
-            const d = await (await fetch(api('/api/git/hooks/status'))).json();
-            const el = $('#hooks-status'); if (el) el.textContent = (d.post_checkout && d.post_commit) ? `Installed @ ${d.dir}` : 'Not installed';
-        }catch{ const el=$('#hooks-status'); if(el) el.textContent='Status unavailable'; }
-    }
-
-    async function installHooks(){
-        try{
-            const r = await fetch(api('/api/git/hooks/install'), { method:'POST' });
-            const d = await r.json();
-            alert(d.message || 'Hooks installed');
-            await refreshHooksStatus();
-        }catch(e){ alert('Failed to install hooks: ' + e.message); }
-    }
+    // Delegated to GitHooks module (gui/js/git-hooks.js)
+    const refreshHooksStatus = window.GitHooks?.refreshHooksStatus || (async () => {});
+    const installHooks = window.GitHooks?.installHooks || (async () => {});
 
     // ---------------- Health ----------------
-    async function checkHealth() {
-        try {
-            const r = await fetch(api('/health'));
-            const d = await r.json();
-            $('#health-status').textContent = d.ok || d.status === 'healthy' ? `OK @ ${d.ts || new Date().toISOString()}` : 'Not OK';
-        } catch (e) {
-            $('#health-status').textContent = 'Error';
-        }
-    }
+    // Delegated to Health module (gui/js/health.js)
+    const checkHealth = window.Health?.checkHealth || (async () => {});
 
     // ---------------- Routing Trace Panel ----------------
     function _fmtTable(rows, headers){
@@ -2398,25 +2324,8 @@
     }
 
     // ---------------- Autotune ----------------
-    async function refreshAutotune() {
-        try {
-            const r = await fetch(api('/api/autotune/status'));
-            if (!r.ok) {
-                if (r.status === 403 || r.status === 402) {
-                    $('#autotune-mode').textContent = 'Pro required (set Edition to pro)';
-                } else {
-                    $('#autotune-mode').textContent = '—';
-                }
-                $('#autotune-enabled').checked = false;
-                return;
-            }
-            const d = await r.json();
-            $('#autotune-enabled').checked = !!d.enabled;
-            $('#autotune-mode').textContent = d.current_mode || '—';
-        } catch (e) {
-            $('#autotune-mode').textContent = '—';
-        }
-    }
+    // Delegated to Autotune module (gui/js/autotune.js)
+    const refreshAutotune = window.Autotune?.refreshAutotune || (async () => {});
 
     // ---------------- Dashboard Summary ----------------
     async function refreshDashboard() {
@@ -2725,35 +2634,8 @@
     }
 
     // ---------------- Keywords ----------------
-    async function loadKeywords() {
-        try {
-            const r = await fetch(api('/api/keywords'));
-            const d = await r.json();
-            state.keywordsCatalog = d;
-            const list = document.getElementById('keywords-list');
-            if (list) {
-                list.innerHTML = '';
-                (d.keywords || []).forEach(k => {
-                    const opt = document.createElement('option'); opt.value = k; list.appendChild(opt);
-                });
-            }
-            const kc = document.getElementById('keywords-count');
-            if (kc) kc.textContent = String((d.keywords||[]).length);
-            // repaint per-repo managers if present
-            ($$('#repos-section > div') || []).forEach(div => {
-                const srcSel = div.querySelector('[id^="kw-src-"]');
-                const filter = div.querySelector('[id^="kw-filter-"]');
-                const allSel = div.querySelector('[id^="kw-all-"]');
-                const fld = div.querySelector('[name^="repo_keywords_"]');
-                if (srcSel && filter && allSel && fld) {
-                    const cat = (srcSel.value||'all');
-                    const catMap = d; let base = cat==='all' ? (d.keywords||[]) : (d[cat]||[]);
-                    const f=(filter.value||'').toLowerCase(); const inRepo=new Set((fld.value||'').split(',').map(s=>s.trim()).filter(Boolean));
-                    allSel.innerHTML=''; base.filter(k=>!inRepo.has(k)&&(!f||k.toLowerCase().includes(f))).slice(0,500).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;allSel.appendChild(o);});
-                }
-            });
-        } catch (e) { console.warn('keywords load failed', e); }
-    }
+    // Delegated to Keywords module (gui/js/keywords.js)
+    const loadKeywords = window.Keywords?.loadKeywords || (async () => {});
 
     // ---------------- Indexing + Cards ----------------
     let indexPoll = null;
