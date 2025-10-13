@@ -1,143 +1,128 @@
 ![AGRO Banner](assets/agro-hero-banner.png)
 
-AGRO is a local‑first, GUI‑driven RAG engine for codebases. It keeps repos strictly isolated, retrieves with hybrid search, and plugs into Codex/Claude via MCP — all with citations down to path+line. It’s built for people who care about retrieval quality, latency, and cost.
+# AGRO is a local‑first RAG engine for codebases.
 
-- Strict repo boundaries with path+line citations
-- Offline‑friendly hybrid retrieval (BM25, optional vectors, rerank)
-- GUI-first: change every knob in the Settings UI — not code
-- One‑command bring‑up; MCP tools for Codex/Claude; HTTP API
-- Evals, traces, storage planning, and a terminal chat CLI
+#### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Multiple Transports, Chat Interface, and Modular-everything. 
+And it even has a VSCode instance embedded in the GUI (you don't have to turn it on just wanted to see if I could do it ; )
 
-See feature screenshots in the relevant docs:
-- GUI overview and settings: [API GUI](docs/API_GUI.md)
-- Terminal chat: [CLI Chat](docs/CLI_CHAT.md)
-- Tracing and tuning: [LangSmith Setup](docs/LANGSMITH_SETUP.md)
-- Evals and comparisons: [Performance & Cost](docs/PERFORMANCE_AND_COST.md)
 
-## Quick Start
 
+### (Really) Quick Start
 ```bash
-git clone https://github.com/DMontgomery40/agro.git
-cd agro/scripts && ./dev_up
-```
-
-The server exposes the GUI at http://127.0.0.1:8012/ and health at http://127.0.0.1:8012/health (server/app.py:1-27).
-
-## Why AGRO (the technical bits)
-
-- Retrieval that degrades gracefully offline: BM25 works without vectors; Qdrant is optional. Reranking can be local, Cohere, or off.
-- Repo isolation as a guardrail, not a hope-and-pray convention. Answers always cite file and line.
-- MCP tools as first‑class citizens for agents: rag_search and rag_answer.
-- Everything configurable in the GUI — if a setting doesn’t fit elsewhere, it lives in “Misc”.
-
-Storage tends to balloon in RAG. Use the calculator to plan:
-
-[![AGRO Storage Calculator](docs/images/rag-calculator-screenshot.png)](https://vivified.dev/rag-calculator.html)
-
-## Deeper Docs
-
-- Start here: [Docs Index](docs/README.md)
-- MCP quickstart (Codex/Claude): [QUICKSTART_MCP.md](docs/QUICKSTART_MCP.md)
-- Settings UI & API: [API_GUI.md](docs/API_GUI.md)
-- Performance & cost: [PERFORMANCE_AND_COST.md](docs/PERFORMANCE_AND_COST.md)
-- Models: [MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md), [GEN_MODEL_COMPARISON.md](docs/GEN_MODEL_COMPARISON.md)
-- CLI chat: [CLI_CHAT.md](docs/CLI_CHAT.md)
-
-## Package Layout
-
-Code is organized into modules with backward-compatible shims at root level:
-
-- **Core modules**
-  - `server/` → FastAPI app, LangGraph orchestration, model wrappers, MCP servers
-  - `retrieval/` → Hybrid search, reranking, AST chunking, embedding cache
-  - `indexer/` → Repository indexing, card building
-  - `common/` → Shared utilities (config, paths, filtering, metadata)
-- **Root shims** → Maintain compatibility with existing imports and commands
-- **GUI** → Web interface in `gui/` with config persistence to `.env` and `repos.json`
-
-The GUI provides tabs for Infrastructure, Models, Retrieval, Repos & Indexing, Eval, and Misc settings. Changes are persisted via the backend API in `server/app.py`.
-
-See MIGRATION.md for detailed path mappings.
-
-## Imports Cheatsheet (Canonical)
-
-- Build graph (LangGraph): `from server.langgraph_app import build_graph`
-- Search (hybrid retrieval): `from retrieval.hybrid_search import search_routed, search_routed_multi`
-- Env/model helpers: `from server.env_model import generate_text`
-- Indexer entry: `from indexer.index_repo import main as index_main`
-- MCP server (stdio): `from server.mcp.server import MCPServer`
-- FastAPI app: `from server.app import app`
-
-Shims remain at root for backward compatibility; prefer canonical imports in new code.
-
----
-
-## Manual Bring-Up (Alternative)
-
-**Prerequisites**
-- Python 3.11+
-- Docker Engine + Compose
-  - macOS (no Docker Desktop): `brew install colima docker` then `colima start`
-  - macOS (Docker Desktop): install Docker Desktop and start it
-  - Linux: install Docker and Compose via your distro
-- Optional local inference: Ollama installed and running (`ollama list`)
-  - Linux without Python: `apt update && apt install -y python3 python3-venv python3-pip`
-
-```bash
-# 0) Get the code
 git clone https://github.com/DMontgomery40/agro.git
 cd agro
+Make dev
 
-# Use this section only if you want to run pieces by hand for debugging.
-
-# 2) One‑command setup (recommended)
-#    From THIS folder, pass your repo path/name. If you want to index THIS
-#    repo itself, just use "." and a name you like.
-bash scripts/setup.sh . rag-service
-
-# 3) Start CLI chat (interactive)
-export REPO=rag-service THREAD_ID=my-session
-python -m venv .venv && . .venv/bin/activate  # if .venv not present yet
-python chat_cli.py
-
-# Optional: manual API bring‑up instead of make dev
-make api   # runs: uvicorn server.app:app --host 127.0.0.1 --port 8012
-curl "http://127.0.0.1:8012/search?q=oauth&repo=rag-service"
-
-# MCP tools quick check (stdio)
-printf '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n' | python -m server.mcp.server | head -n1
+# Starts: Infra, MCP, API, UV, and GUI
+# GUI at http://127.0.0.1:8012/ 
 ```
 
-### Common setup hiccups (fast fixes)
-- Docker not found on macOS: install and start Colima: `brew install colima docker && colima start`. The new `make dev` will auto‑start Colima if available.
-- “Permission denied” on scripts: run with an interpreter: `python scripts/quick_setup.py` or `bash scripts/setup.sh`.
-- `python: command not found` on Linux: `apt update && apt install -y python3 python3-venv python3-pip`.
-- “Is it frozen?”: use streaming (`python chat_cli.py --stream`) or run `bash scripts/setup.sh ...` and watch progress.
 
-### Optional (Additive) Features
 
-- SSE streaming (off by default)
-  - Endpoint: `/answer_stream?q=...&repo=...`
-  - CLI or UIs can opt-in to streaming via this endpoint; default remains blocking.
+## **Fully-local model support, or any SOTA API Model, mix, match, and set profiles based on task**
 
-### GUI settings (host/port, Docker)
-- The HTTP GUI/API is served by `server/app.py` (root path returns `gui/index.html`; server/app.py:1-27). Use the GUI’s “Misc” tab to set:
-  - `Serve Host` and `Serve Port` (gui/index.html:1471, gui/index.html:1475)
-  - `Open Browser on Start` (gui/index.html:1482)
-  - `Auto‑start Colima (Docker)` and optional `Colima Profile` (gui/index.html:1489, gui/index.html:1497)
-- Click “Apply All Changes” to persist to `.env`, which `scripts/dev_up.sh` reads on next run.
-- OAuth bearer (off by default)
-  - Enable with `OAUTH_ENABLED=true` and set `OAUTH_TOKEN=...`
-  - Applies to `/answer`, `/search`, and `/answer_stream` when enabled.
-- Node proxy (HTTP+SSE), optional
-  - `docker compose -f docker-compose.services.yml --profile api --profile node up -d`
-  - Proxies `/mcp/answer`, `/mcp/search`, `/mcp/answer_stream` to Python API.
-- Docker (opt-in)
-  - Python API image via `Dockerfile`
-  - Node proxy via `Dockerfile.node`
-  - Compose file: `docker-compose.services.yml` (profiles: `api`, `mcp-http`, `node`)
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### Profile: `Docs-search` (Fast, local-first, low-cost)
+```yaml
+gen_model: gpt-4o-mini
+embedding: BGE-small-en-v1.5  #local
+vectors: 384-d 
+precision: int4
+rerank_model: BAAI/bge-reranker-v2-m3
+retrieval: BM25    # Sparse-only
+local_hydration: 2%
+multiquery: 2
+top_k: 3
+```
+
+</td>
+<td width="50%" valign="top">
+
+#### Profile: `Plan_Refactor` (High-quality, full-stack)
+```yaml
+gen_model: gpt-5-high-latest                
+embedding: text-embedding-3-large 
+vectors: 3072-d
+precision: float32
+rerank_model: cohere/rerank-3.5
+retrieval: BM25+Redis+Qdrant
+multiquery: 10 
+top_k: 20
+max_semantic_cards: 50
+conf_top1: 0.80  # Confidence gating
+conf_avg5: 0.52
+```
+
+</td>
+</tr>
+</table>
+
+## And crucially, the ability to estimate the impact of that 'refactor' profile, *before* you run it
+
+<div align="center">
+  <a href="assets/cost_est.png" target="_blank">
+    <img src="assets/cost_est.png" alt="Cost Estimation" width="48%" />
+  </a>
+  <a href="assets/stor.png" target="_blank">
+    <img src="assets/stor.png" alt="Storage Calculation" width="48%" />
+  </a>
+</div>
+
+<br>
+
+
+
+
+## MCP servers and API endpoints
+### (Python and Node.js) supporting HTTP, SSE, STDIO, and WebSocket transports
+  - ***Per-transport configuration:*** choose different models and search backends for each mode
+  - Evals, traces, hybrid-searches, and a terminal chat CLI
+
+### Robust API with optional OAuth 2.0 
+
+
+
+**Full Documentation:**
+- **Interactive API Docs:** http://127.0.0.1:8012/docs (Swagger UI)
+- **Complete API Reference:** [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
+
+
+
+## Highlights
+
+- Repo isolation and citations as guardrails — not “best effort”.
+- ***Massive*** reduction in token use with Claude Code / Codex; Rate Limits extended greatly or potentially no longer an issue at all
+- Greatly increased accuracy in the code that CC/Codex deliver
+- More in docs on how to set rules of CC/Codex so that they take full advantage of it
+
+## Dashboard
+
+![Dashboard](assets/dashboard.png)
+
+## Documentation
+
+- Start here: [Docs Index](docs/README.md)
+- **Complete API Reference**: [API_REFERENCE.md](docs/API_REFERENCE.md) ← All endpoints with examples
+- Quickstart for Codex/Claude (MCP): [QUICKSTART_MCP.md](docs/QUICKSTART_MCP.md)
+- Settings UI & API: [API_GUI.md](docs/API_GUI.md)
+- Evals & cost: [PERFORMANCE_AND_COST.md](docs/PERFORMANCE_AND_COST.md)
+- Tracing: [LANGSMITH_SETUP.md](docs/LANGSMITH_SETUP.md)
+- CLI chat: [CLI_CHAT.md](docs/CLI_CHAT.md)
+- Models: [MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md), [GEN_MODEL_COMPARISON.md](docs/GEN_MODEL_COMPARISON.md)
+
+Onboarding wizard screenshots: see the [Docs Index](docs/README.md) for links to the 5‑step carousel.
 
 ---
+
+Notes for integrators
+- MCP tools are declared in server/mcp/server.py:1-24.
+- Retrieval entry points live in retrieval/hybrid_search.py:1-22.
+- Indexer entry is indexer/index_repo.py:1-28.
+- HTTP MCP server is in server/mcp/http.py:1-23.
+
 
 ## Architecture
 
@@ -280,7 +265,7 @@ QDRANT_URL=http://127.0.0.1:6333
 REDIS_URL=redis://127.0.0.1:6379/0
 
 # RAG Configuration
-REPO=repo-a                     # Default repo for operations
+REPO=agro                     # Default repo for operations
 MQ_REWRITES=4                   # Multi-query expansion count
 
 # Reranker (default: Cohere with local fallback)
@@ -370,10 +355,10 @@ The `scripts/` folder contains tools to analyze your codebase and generate optim
 cd /path/to/agro/scripts
 
 # Analyze a repo to find important keywords
-python analyze_keywords.py /path/to/your/repo-a
+python analyze_keywords.py /path/to/your/agro
 
 # Enhanced version with more insights
-python analyze_keywords_v2.py /path/to/your/repo-a
+python analyze_keywords_v2.py /path/to/your/agro
 
 # Output shows:
 # - Most common file types
@@ -386,8 +371,8 @@ python analyze_keywords_v2.py /path/to/your/repo-a
 
 ```bash
 # Re-index affected repos
-REPO=repo-a python index_repo.py
-REPO=repo-b python index_repo.py
+REPO=agro python index_repo.py
+REPO=agro python index_repo.py
 
 # Verify collections
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
@@ -399,22 +384,22 @@ curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
 . .venv/bin/activate
 
 # Index first repo (replace with your repo name)
-REPO=repo-a python index_repo.py
+REPO=agro python index_repo.py
 # This will:
-#   - Scan /path/to/your/repo-a (configured in index_repo.py)
+#   - Scan /path/to/your/agro (configured in index_repo.py)
 #   - Chunk code files (Python, JS, TS, Ruby, Go, etc.)
 #   - Build BM25 index
 #   - Generate embeddings (OpenAI text-embedding-3-large by default)
-#   - Upsert to Qdrant collection: code_chunks_repo-a
-#   - Save chunks to: out/repo-a/chunks.jsonl
+#   - Upsert to Qdrant collection: code_chunks_agro
+#   - Save chunks to: out/agro/chunks.jsonl
 
 # Index second repo
-REPO=repo-b python index_repo.py
-# Same process, separate collection: code_chunks_repo-b
+REPO=agro python index_repo.py
+# Same process, separate collection: code_chunks_agro
 
 # Verify collections exist
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
-# Should show: code_chunks_repo-a, code_chunks_repo-b
+# Should show: code_chunks_agro, code_chunks_agro
 ```
 
 **Configure repo paths:**
@@ -423,8 +408,8 @@ Edit the beginning of `index_repo.py` to set your repo locations:
 
 ```python
 REPOS = {
-    'repo-a': '/path/to/your/first-repo',
-    'repo-b': '/path/to/your/second-repo',
+    'agro': '/path/to/your/first-repo',
+    'agro': '/path/to/your/second-repo',
 }
 ```
 
@@ -437,15 +422,15 @@ REPOS = {
 ### Quick Start
 
 ```bash
-. .venv/bin/activate
 
-# Install rich library for terminal UI (if not already installed)
-pip install rich
+cd agro/scripts
+./up.sh
 
-# Start chat
-export REPO=repo-a
-export THREAD_ID=my-session
-python chat_cli.py
+# installs requirement.txt, creates venv, and starts tui
+
+cd agro && python3 cli_chat.py 
+
+# if you've already got venv up and pulled requirements.txt, this works as well
 ```
 
 ### Features
@@ -453,35 +438,23 @@ python chat_cli.py
 - **Conversation Memory**: Redis-backed, persists across sessions
 - **Rich Terminal UI**: Markdown rendering, color-coded confidence scores
 - **Citation Display**: Shows file paths and rerank scores
-- **Repo Switching**: `/repo repo-b` to switch between repos mid-conversation
-- **Multiple Sessions**: Use different `THREAD_ID` values for parallel conversations
+- **Repo Switching**: `/repo agro` to switch between repos mid-conversation
+- **Multiple Sessions**: Use different `THREAD_ID` values for parallel conversations, or to 
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
 | `your question` | Ask directly |
-| `/repo <name>` | Switch repository (e.g., `/repo repo-b`) |
-| `/clear` | Clear conversation history (new thread) |
+| `/repo <name>` | Switch repository (e.g., `/repo agro`) |
+| `/clear` | (new thread) |
 | `/help` | Show available commands |
+| `/theme` | tokyonights is my favorite |
+| `/trace` | Langsmith most recent trace |
+| `/save` | Pick up convo later |
 | `/exit`, `/quit` | Exit chat |
 
-### Example Session
 
-```
-repo-a > Where is OAuth token validation handled?
-
-[Claude retrieves and displays answer with citations]
-
-📄 Top Sources:
-  1. auth/oauth.py:42-67 (score: 0.85)
-  2. middleware/token.py:89-120 (score: 0.78)
-
-repo-a > /repo repo-b
-✓ Switched to repo: repo-b
-
-repo-b > How do we handle webhook retries?
-```
 
 See **[docs/CLI_CHAT.md](docs/CLI_CHAT.md)** for detailed usage.
 
@@ -522,12 +495,12 @@ Full LangGraph pipeline (retrieval → generation)
 **Returns:**
 ```json
 {
-  "answer": "[repo: repo-a]\nOAuth tokens are validated in...",
+  "answer": "[repo: agro]\nOAuth tokens are validated in...",
   "citations": [
     "auth/oauth.py:42-67",
     "middleware/token.py:89-120"
   ],
-  "repo": "repo-a",
+  "repo": "agro",
   "confidence": 0.78
 }
 ```
@@ -545,10 +518,10 @@ Retrieval-only (no generation, faster for debugging)
       "end_line": 89,
       "language": "ruby",
       "rerank_score": 0.82,
-      "repo": "repo-b"
+      "repo": "agro"
     }
   ],
-  "repo": "repo-b",
+  "repo": "agro",
   "count": 5
 }
 ```
@@ -638,7 +611,7 @@ Edit the config file (create if it doesn't exist):
 3. Look for MCP tools indicator
 4. Test by asking:
    ```
-   Use rag_search to find code related to "authentication" in repo-a
+   Use rag_search to find code related to "authentication" in agro
    ```
 
 Claude Code will call the tool and display results.
@@ -687,22 +660,22 @@ codex
 
 Then try:
 ```
-User: Use rag_search to find code about "API endpoints" in repo-b
+User: Use rag_search to find code about "API endpoints" in agro
 
-User: Use rag_answer to explain how authentication works in repo-a
+User: Use rag_answer to explain how authentication works in agro
 ```
 
 ### MCP Example Usage
 
 **Example 1: Debug retrieval**
 ```
-User: Use rag.search to see what code comes up for "webhook handling" in repo-b,
+User: Use rag.search to see what code comes up for "webhook handling" in agro,
       show me the top 5 results
 ```
 
 **Example 2: Get full answer**
 ```
-User: Use rag.answer to explain how we validate OAuth tokens in repo-a
+User: Use rag.answer to explain how we validate OAuth tokens in agro
 ```
 
 **Example 3: Trigger deployment**
@@ -762,12 +735,12 @@ Golden tests are in `golden.json`:
 [
   {
     "q": "Where is OAuth token validated?",
-    "repo": "repo-a",
+    "repo": "agro",
     "expect_paths": ["auth", "oauth", "token", "validation"]
   },
   {
     "q": "How do we handle webhook retries?",
-    "repo": "repo-b",
+    "repo": "agro",
     "expect_paths": ["webhook", "retry", "queue", "handler"]
   }
 ]
@@ -824,7 +797,7 @@ docker compose up -d
 
 # Start CLI chat
 . .venv/bin/activate
-export REPO=repo-a THREAD_ID=work-$(date +%Y%m%d)
+export REPO=agro THREAD_ID=work-$(date +%Y%m%d)
 python chat_cli.py
 ```
 
@@ -834,7 +807,7 @@ python chat_cli.py
 . .venv/bin/activate
 
 # Re-index affected repo
-REPO=repo-a python index_repo.py
+REPO=agro python index_repo.py
 
 # Run eval to check for regressions
 python eval_loop.py --compare
@@ -874,13 +847,13 @@ GUI path (accessibility):
 # 1. Use rag_search to see what was retrieved
 python -c "
 from retrieval.hybrid_search import search_routed_multi
-results = search_routed_multi('your question', repo_override='repo-a', final_k=10)
+results = search_routed_multi('your question', repo_override='agro', final_k=10)
 for r in results[:5]:
     print(f\"{r['rerank_score']:.3f} {r['file_path']}:{r['start_line']}\")
 "
 
 # 2. Check if expected file is in index
-grep "path/to/file.py" out/repo-a/chunks.jsonl
+grep "path/to/file.py" out/agro/chunks.jsonl
 
 # 3. If missing, check if .ragignore is excluding it
 cat data/exclude_globs.txt
@@ -919,7 +892,7 @@ docker restart rag-redis
 curl -s http://127.0.0.1:6333/collections | jq
 
 # Re-index if missing
-REPO=repo-a python index_repo.py
+REPO=agro python index_repo.py
 ```
 
 ### Indexing Issues
@@ -1007,7 +980,7 @@ python -c "from server.langgraph_app import build_graph; build_graph(); print('�
 
 1. **Check index freshness:**
    ```bash
-   ls -lh out/repo-a/chunks.jsonl out/repo-b/chunks.jsonl
+   ls -lh out/agro/chunks.jsonl out/agro/chunks.jsonl
    # If old, re-index
    ```
 
@@ -1020,7 +993,7 @@ python -c "from server.langgraph_app import build_graph; build_graph(); print('�
    ```bash
    python -c "
    from retrieval.hybrid_search import search_routed_multi
-   docs = search_routed_multi('your query', repo_override='repo-a', final_k=10)
+   docs = search_routed_multi('your query', repo_override='agro', final_k=10)
    for d in docs[:5]:
        print(f\"{d['rerank_score']:.3f} {d['file_path']}\")
    "
@@ -1143,7 +1116,7 @@ See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 | `GEN_MODEL` | `qwen3-coder:30b` | Generation model |
 | `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant server |
 | `REDIS_URL` | `redis://127.0.0.1:6379/0` | Redis connection |
-| `REPO` | `repo-a` | Active repo name |
+| `REPO` | `agro` | Active repo name |
 | `MQ_REWRITES` | `4` | Multi-query expansion count |
 | `RERANK_BACKEND` | `cohere` | `cohere` \| `hf` \| `local` |
 | `COHERE_API_KEY` | — | For Cohere reranking |
@@ -1230,11 +1203,11 @@ bash scripts/down.sh                    # Stop everything
 
 # === Indexing ===
 . .venv/bin/activate
-REPO=repo-a python index_repo.py
-REPO=repo-b python index_repo.py
+REPO=agro python index_repo.py
+REPO=agro python index_repo.py
 
 # === CLI Chat (Recommended) ===
-export REPO=repo-a THREAD_ID=work-session
+export REPO=agro THREAD_ID=work-session
 python chat_cli.py
 
 # === API Server (Optional) ===
@@ -1254,8 +1227,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 
 # === Keyword Generation ===
 cd scripts
-python analyze_keywords.py /path/to/repo-a
-python analyze_keywords_v2.py /path/to/repo-a
+python analyze_keywords.py /path/to/agro
+python analyze_keywords_v2.py /path/to/agro
 ```
 
 ---
