@@ -1,0 +1,19 @@
+{
+  "repo": "agro",
+  "stage": "finalize",
+  "total": 442,
+  "done": 442,
+  "pct": 100.0,
+  "model": {
+    "embed": "text-embedding-3-large",
+    "enrich": "gpt-4o-mini",
+    "rerank": "rerank-english-v3.0"
+  },
+  "tip": "Flip Enrich code chunks on for semantic cards; then Build, not Refresh.",
+  "started_at": "2025-10-12T22:31:21Z",
+  "eta_s": 0,
+  "throughput": "3532.0 chunks/min",
+  "result": {
+    "cards_written": 5
+  }
+}

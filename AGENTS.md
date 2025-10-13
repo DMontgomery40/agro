@@ -19,7 +19,7 @@ How to use RAG locally vs externally:
     PY
     ```
 - MCP tools (for agents/IDE/outside this repo):
-  - One-time: `codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && codex mcp list`
+  - One-time: `codex mcp add rag-service -- python -m server.mcp.server && codex mcp list`
   - Then call `rag_search` / `rag_answer` with `repo` and `question`.
 - Bring up infra + MCP (always-on helper):
   - `cd path/to/your/rag-service && bash scripts/up.sh`
@@ -27,7 +27,7 @@ How to use RAG locally vs externally:
 - Index after code changes (required for fresh results):
   - `cd path/to/your/rag-service && . .venv/bin/activate && REPO=project python index_repo.py && REPO=project python index_repo.py`
 - Optional HTTP answers (no search endpoint):
-  - `cd path/to/your/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
+  - `cd path/to/your/rag-service && . .venv/bin/activate && uvicorn server.app:app --host 127.0.0.1 --port 8012`
   - `curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=project"`
 
 
@@ -79,7 +79,7 @@ echo "verify collections" && curl -s http://127.0.0.1:6333/collections | jq '.re
 bash
 Copy code
 cd path/to/your/rag-service && . .venv/bin/activate && \
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+uvicorn server.app:app --host 127.0.0.1 --port 8012`
 Smoke check (second terminal):
 
 bash
@@ -91,12 +91,12 @@ bash
 Copy code
 cd path/to/your/rag-service && . .venv/bin/activate && \
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
-python mcp_server.py
+python -m server.mcp.server
 Register with Codex CLI (one-time):
 
 bash
 Copy code
-codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && \
+codex mcp add rag-service -- python -m server.mcp.server && \
 codex mcp list
 5) Eval loop (local)
 bash

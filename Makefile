@@ -21,7 +21,7 @@ index:
 
 # Start API locally (requires venv)
 api:
-	. .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+	. .venv/bin/activate && uvicorn server.app:app --host 127.0.0.1 --port 8012
 
 # Start everything (infra + MCP + API + open browser)
 dev:

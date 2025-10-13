@@ -28,21 +28,22 @@ What changed
     - `indexer/build_cards.py`
 
 - Root shims (keep CLI paths and imports stable)
-  - `serve_rag.py` → re-exports `server/app.py: app`
+- Removed root shims. Use canonical modules:
+  - API app: `uvicorn server.app:app`
   - `config_loader.py` → re-exports `common/config_loader.py`
   - `path_config.py` → re-exports `common/paths.py`
   - `filtering.py` → re-exports `common/filtering.py`
   - `metadata_enricher.py` → re-exports `common/metadata.py`
   - `qdrant_recreate_fallback.py` → re-exports `common/qdrant_utils.py`
   - `chat_cli.py` (CLI chat)
-  - `index_repo.py` → re-exports from `indexer/index_repo.py`
-  - `build_cards.py` → re-exports from `indexer/build_cards.py`
-  - `hybrid_search.py` → forwards to `retrieval/hybrid_search.py` (plus adapters)
+- Indexing: `python -m indexer.index_repo`
+- Cards: `python -m indexer.build_cards`
+- Retrieval: import from `retrieval.hybrid_search`
   - `env_model.py` → re-exports from `server/env_model.py`
   - `langgraph_app.py` → re-exports `server/langgraph_app.py`
   - `index_stats.py` → re-exports `server/index_stats.py`
-  - `mcp_server.py` → shim to `server/mcp/server.py`
-  - `mcp_server_http.py` → shim to `server/mcp/http.py`
+- MCP (stdio): `python -m server.mcp.server`
+- MCP (HTTP): `python -m server.mcp.http`
 
 Why shims remain
 
@@ -52,13 +53,13 @@ Why shims remain
 
 Where to find key functionality
 
-- API/GUI service: `serve_rag.py` (mounts `/gui`, `/docs`, `/files`, config endpoints). See: serve_rag.py:1-120, 160-220, 720-840.
+- API/GUI service: `server/app.py` (mounts `/gui`, `/docs`, `/files`, config endpoints).
 - Path resolution: `path_config.py` with `repo_root()`, `files_root()`, `gui_dir()`, `docs_dir()`, `data_dir()`. See: path_config.py:1-40, 42-80.
   (Now canonical: `common/paths.py`)
 - Indexing: `indexer/index_repo.py` (root shim at `index_repo.py`). See: index_repo.py:1-1.
 - Index stats: `server/index_stats.py` (root shim at `index_stats.py`). See: index_stats.py:1-2.
-- Retrieval: `retrieval/hybrid_search.py` (root helper `hybrid_search.py`). See: hybrid_search.py:1-60.
-- MCP: `server/mcp/server.py` (stdio), `server/mcp/http.py` (HTTP). Root shims remain: `mcp_server.py`, `mcp_server_http.py`.
+- Retrieval: `retrieval/hybrid_search.py`.
+  - MCP: `server/mcp/server.py` (stdio), `server/mcp/http.py` (HTTP).
 
 GUI-first configuration (accessibility)
 

@@ -2,7 +2,7 @@
 
 ## What Got Implemented ✓
 
-1. **MCP Server** (`mcp_server.py`) - stdio-based tool server
+1. **MCP Server** (module: `server.mcp.server`) - stdio-based tool server
 2. **MCP Tools**:
    - `rag_answer(repo, question)` → full answer + citations
    - `rag_search(repo, question, top_k)` → retrieval only
@@ -22,7 +22,7 @@
   - `make api`            (runs uvicorn)
 - Configure host/port and Docker preference in the GUI → Misc tab → “Apply All Changes”. These persist to `.env` and are read on next run.
 - Index both repos (once per code change):
-  - `REPO=project python index_repo.py && REPO=project python index_repo.py`
+  - `REPO=project python -m indexer.index_repo && REPO=project python -m indexer.index_repo`
 - Defaults:
   - Generation → Qwen 3 via Ollama (`GEN_MODEL` + `OLLAMA_URL`)
   - Rerank → Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
@@ -32,7 +32,7 @@ Shared index across branches (recommended)
   ```bash
   . .venv/bin/activate
   REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
-    python index_repo.py
+    python -m indexer.index_repo
   # Export consistent env for MCP/tools
   source scripts/select_index.sh shared
   ```
@@ -51,12 +51,7 @@ codex mcp list
 . .venv/bin/activate
 
 # List available tools
-python -c "
-from server.mcp.server import MCPServer
-import json
-req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
-print(json.dumps(MCPServer().handle_request(req)['result']['tools'], indent=2))
-"
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m server.mcp.server
 ```
 
 ### New Tools: Quick Examples
@@ -83,7 +78,7 @@ python eval_loop.py --baseline
 python eval_loop.py --compare
 
 # Watch mode (auto re-run on changes)
-python eval_loop.py --watch
+    python eval_loop.py --watch
 ```
 
 ### Use in Codex Chat
@@ -154,8 +149,7 @@ These are now documented in `AGENTS.md`:
 - Index repos (BM25-only fast path): `REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`
 - Verify collections (optional): `curl -s http://127.0.0.1:6333/collections | jq`
 
-**"Codex can't find tools"**
-- Re-register: `codex mcp remove project-rag && codex mcp add project-rag -- .venv/bin/python mcp_server.py`
+- Re-register: `codex mcp remove project-rag && codex mcp add project-rag -- .venv/bin/python -m server.mcp.server`
 - Ensure MCP is running: `bash scripts/status.sh`
 
 ## References
