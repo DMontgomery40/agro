@@ -13,6 +13,7 @@ LANG_MAP = {
     ".ts": "typescript", ".tsx": "typescript",
     ".go": "go", ".java": "java", ".rs": "rust",
     ".c": "c", ".h": "c", ".cpp": "cpp", ".cc": "cpp", ".hpp": "cpp",
+    ".sh": "bash", ".bash": "bash",
 }
 
 OVERLAP_LINES = 20
@@ -26,6 +27,7 @@ FUNC_NODES = {
     "rust": {"function_item", "impl_item"},
     "c": {"function_definition"},
     "cpp": {"function_definition", "class_specifier"},
+    "bash": {"function_definition"},
 }
 
 IMPORT_NODES = {
@@ -36,6 +38,7 @@ IMPORT_NODES = {
     "java": {"import_declaration"},
     "rust": {"use_declaration"},
     "c": set(), "cpp": set(),
+    "bash": {"command"},  # bash uses 'source' or '.' for imports
 }
 
 def lang_from_path(path:str)->Optional[str]:

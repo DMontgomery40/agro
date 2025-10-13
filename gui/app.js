@@ -1,30 +1,16 @@
-// AGRO GUI app.js (complete with all handlers)
+// AGRO GUI app.js (main coordinator - modularized)
 (function () {
-    // Backend API base: respects ?api= override; defaults to local FastAPI
-    const API_BASE = (() => {
-        try {
-            const u = new URL(window.location.href);
-            const q = new URLSearchParams(u.search);
-            const override = q.get('api');
-            if (override) return override.replace(/\/$/, '');
-            // Prefer same-origin whenever we were served over HTTP(S)
-            if (u.protocol.startsWith('http')) return u.origin;
-            // Fallback to local default
-            return 'http://127.0.0.1:8012';
-        } catch { return 'http://127.0.0.1:8012'; }
-    })();
-    // Expose the resolved API base for diagnostics
-    try { window.API_BASE = API_BASE; } catch {}
-    const api = (p) => `${API_BASE}${p}`;
-    const $ = (sel) => document.querySelector(sel);
-    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+    'use strict';
 
-    const state = {
-        prices: null,
-        config: null,
-        profiles: [],
-        defaultProfile: null,
-    };
+    // Import core utilities from CoreUtils module
+    const { api, $, $$, state } = window.CoreUtils || {};
+
+    if (!api || !$ || !$$) {
+        console.error('[app.js] CoreUtils not loaded! Make sure core-utils.js loads first.');
+        return;
+    }
+
+    console.log('[app.js] Initializing with API:', window.CoreUtils.API_BASE);
 
     // ---------------- Theme Engine ----------------
     function resolveTheme(mode) {
@@ -154,6 +140,14 @@
                 const subtab = btn.getAttribute('data-subtab');
                 const parent = btn.getAttribute('data-parent');
 
+                // Stop editor health check when leaving editor subtab
+                const wasEditorActive = document.querySelector('.subtab-btn[data-subtab="devtools-editor"].active');
+                if (wasEditorActive && subtab !== 'devtools-editor') {
+                    if (typeof window.stopEditorHealthCheck === 'function') {
+                        window.stopEditorHealthCheck();
+                    }
+                }
+
                 // Hide all tabs
                 $$('.tab-content').forEach(el => el.classList.remove('active'));
 
@@ -164,6 +158,16 @@
                 // Update button states for this parent group
                 $$(`.subtab-btn[data-parent="${parent}"]`).forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
+
+                // Trigger editor health check if editor subtab is activated
+                if (subtab === 'devtools-editor') {
+                    console.log('[Editor] devtools-editor subtab clicked');
+                    if (typeof window.initEditorHealthCheck === 'function') {
+                        window.initEditorHealthCheck();
+                    } else {
+                        console.error('[Editor] initEditorHealthCheck not found!');
+                    }
+                }
             });
         });
     }
@@ -2036,123 +2040,10 @@
         map.forEach(([a,b]) => { const elA = document.getElementById(a), elB = document.getElementById(b); if (elA && elB) elA.addEventListener('input', () => { elB.value = elA.value; }); });
     }
 
-    // ---------------- Collapsible Sections ----------------
-    function bindCollapsibleSections() {
-        const headers = document.querySelectorAll('.collapsible-header');
-
-        headers.forEach(header => {
-            header.addEventListener('click', (e) => {
-                // Don't collapse if clicking on help icon
-                if (e.target.closest('.tooltip-wrap')) return;
-
-                const targetId = header.getAttribute('data-target');
-                const content = document.getElementById(targetId);
-
-                if (!content) return;
-
-                // Toggle collapsed state
-                const isCollapsed = content.classList.contains('collapsed');
-
-                if (isCollapsed) {
-                    content.classList.remove('collapsed');
-                    header.classList.remove('collapsed');
-                } else {
-                    content.classList.add('collapsed');
-                    header.classList.add('collapsed');
-                }
-
-                // Save state to localStorage
-                const storageKey = `collapsed-${targetId}`;
-                localStorage.setItem(storageKey, isCollapsed ? '0' : '1');
-            });
-
-            // Restore collapsed state from localStorage
-            const targetId = header.getAttribute('data-target');
-            const storageKey = `collapsed-${targetId}`;
-            const savedState = localStorage.getItem(storageKey);
-
-            if (savedState === '1') {
-                const content = document.getElementById(targetId);
-                if (content) {
-                    content.classList.add('collapsed');
-                    header.classList.add('collapsed');
-                }
-            }
-        });
-
-        // Theme selectors (topbar + misc) -> live apply + sync
-        const selTop = document.getElementById('theme-mode');
-        const selMisc = document.getElementById('misc-theme-mode');
-        function onThemeChange(src) {
-            const v = src.value;
-            if (selTop && selTop !== src) selTop.value = v;
-            if (selMisc && selMisc !== src) selMisc.value = v;
-            try { localStorage.setItem('THEME_MODE', v); } catch {}
-            applyTheme(v);
-        }
-        if (selTop) selTop.addEventListener('change', () => onThemeChange(selTop));
-        if (selMisc) selMisc.addEventListener('change', () => onThemeChange(selMisc));
-    }
-
-    // ---------------- Resizable Sidepanel ----------------
-    function bindResizableSidepanel() {
-        const handle = document.querySelector('.resize-handle');
-        if (!handle) return;
-
-        const MIN_WIDTH = 300;
-        const MAX_WIDTH = 800;
-        const STORAGE_KEY = 'agro-sidepanel-width';
-
-        // Restore saved width
-        const savedWidth = localStorage.getItem(STORAGE_KEY);
-        if (savedWidth) {
-            const width = parseInt(savedWidth, 10);
-            if (width >= MIN_WIDTH && width <= MAX_WIDTH) {
-                document.documentElement.style.setProperty('--sidepanel-width', width + 'px');
-            }
-        }
-
-        let isDragging = false;
-        let startX = 0;
-        let startWidth = 0;
-
-        function getCurrentWidth() {
-            const rootStyle = getComputedStyle(document.documentElement);
-            const widthStr = rootStyle.getPropertyValue('--sidepanel-width').trim();
-            return parseInt(widthStr, 10) || 400;
-        }
-
-        function setWidth(width) {
-            const clampedWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width));
-            document.documentElement.style.setProperty('--sidepanel-width', clampedWidth + 'px');
-            localStorage.setItem(STORAGE_KEY, clampedWidth.toString());
-        }
-
-        handle.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX;
-            startWidth = getCurrentWidth();
-            handle.classList.add('dragging');
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const deltaX = startX - e.clientX; // Reverse direction (dragging left increases width)
-            const newWidth = startWidth + deltaX;
-            setWidth(newWidth);
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            handle.classList.remove('dragging');
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
-        });
-    }
+    // ---------------- Collapsible Sections & Resizable Sidepanel ----------------
+    // Delegated to UiHelpers module (gui/js/ui-helpers.js)
+    const bindCollapsibleSections = window.UiHelpers?.bindCollapsibleSections || (() => console.warn('[app.js] UiHelpers.bindCollapsibleSections not available'));
+    const bindResizableSidepanel = window.UiHelpers?.bindResizableSidepanel || (() => console.warn('[app.js] UiHelpers.bindResizableSidepanel not available'));
 
     // ---------------- Init ----------------
     async function init() {
@@ -2184,6 +2075,136 @@
         wireDayConverters();
     }
 
+    // -------- Embedded Editor --------
+    let editorHealthInterval = null;
+
+    async function checkEditorHealth() {
+        console.log('[Editor] checkEditorHealth called');
+        try {
+            const resp = await fetch(api('/health/editor'));
+            const data = await resp.json();
+            console.log('[Editor] Health check response:', data);
+            const badge = document.getElementById('editor-health-badge');
+            const badgeText = document.getElementById('editor-health-text');
+            const banner = document.getElementById('editor-status-banner');
+            const bannerMsg = document.getElementById('editor-status-message');
+            const iframe = document.getElementById('editor-iframe');
+
+            if (data.ok) {
+                console.log('[Editor] Editor is healthy, setting iframe src');
+                badge.style.background = '#00ff88';
+                badge.style.color = '#000';
+                badgeText.textContent = '● Healthy';
+                banner.style.display = 'none';
+                if (!iframe.src) {
+                    // Prefer same-origin proxy to avoid frame-blocking headers
+                    console.log('[Editor] Setting iframe.src to /editor/');
+                    iframe.src = '/editor/';
+                }
+            } else {
+                const isDisabled = !data.enabled;
+                badge.style.background = isDisabled ? '#666' : '#ff5555';
+                badge.style.color = '#fff';
+                badgeText.textContent = isDisabled ? '○ Disabled' : '● Error';
+                banner.style.display = 'block';
+                const reason = data.reason || data.error || 'Unknown error';
+                bannerMsg.textContent = isDisabled
+                    ? `Editor is disabled. Enable it in the Misc tab and restart.`
+                    : `Error: ${reason}. Check logs or try restarting.`;
+                iframe.src = '';
+            }
+        } catch (error) {
+            console.error('Failed to check editor health:', error);
+        }
+    }
+
+    async function openEditorWindow() {
+        try {
+            const resp = await fetch(api('/health/editor'));
+            const data = await resp.json();
+            if (data.url) {
+                window.open(data.url, '_blank');
+            } else {
+                alert('Editor URL not available');
+            }
+        } catch (error) {
+            console.error('Failed to open editor window:', error);
+        }
+    }
+
+    async function copyEditorUrl() {
+        try {
+            const resp = await fetch(api('/health/editor'));
+            const data = await resp.json();
+            if (data.url) {
+                await navigator.clipboard.writeText(data.url);
+                const btn = document.getElementById('btn-editor-copy-url');
+                const orig = btn.innerHTML;
+                btn.innerHTML = '✓ Copied!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            } else {
+                alert('Editor URL not available');
+            }
+        } catch (error) {
+            console.error('Failed to copy URL:', error);
+        }
+    }
+
+    async function restartEditor() {
+        try {
+            const btn = document.getElementById('btn-editor-restart');
+            btn.disabled = true;
+            btn.textContent = 'Restarting...';
+            const resp = await fetch(api('/api/editor/restart'), { method: 'POST' });
+            const data = await resp.json();
+            if (data.ok) {
+                console.log('✅ Editor restarted');
+                setTimeout(() => {
+                    const iframe = document.getElementById('editor-iframe');
+                    iframe.src = '';
+                    checkEditorHealth();
+                }, 3000);
+            } else {
+                console.error('❌ Restart failed:', data.error || data.stderr);
+                alert('Restart failed: ' + (data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Failed to restart editor:', error);
+            alert('Restart failed: ' + error.message);
+        } finally {
+            const btn = document.getElementById('btn-editor-restart');
+            btn.disabled = false;
+            btn.innerHTML = '↻ Restart';
+        }
+    }
+
+    // Initialize editor health check when editor tab is activated
+    window.initEditorHealthCheck = function() {
+        console.log('[Editor] initEditorHealthCheck called');
+        if (!editorHealthInterval) {
+            console.log('[Editor] Starting health check interval');
+            checkEditorHealth();
+            editorHealthInterval = setInterval(checkEditorHealth, 10000);
+        } else {
+            console.log('[Editor] Health check already running');
+        }
+    };
+
+    // Stop editor health check when leaving editor
+    window.stopEditorHealthCheck = function() {
+        if (editorHealthInterval) {
+            clearInterval(editorHealthInterval);
+            editorHealthInterval = null;
+        }
+    };
+
+    const btnOpenWindow = document.getElementById('btn-editor-open-window');
+    const btnCopyUrl = document.getElementById('btn-editor-copy-url');
+    const btnRestart = document.getElementById('btn-editor-restart');
+
+    if (btnOpenWindow) btnOpenWindow.addEventListener('click', openEditorWindow);
+    if (btnCopyUrl) btnCopyUrl.addEventListener('click', copyEditorUrl);
+    if (btnRestart) btnRestart.addEventListener('click', restartEditor);
     // Ensure init runs even if DOMContentLoaded already fired (scripts at body end)
     if (document.readyState === 'loading') {
         window.addEventListener('DOMContentLoaded', init);
@@ -2676,10 +2697,11 @@
     }
 
     // ---------- Numbers formatting + per‑day converters ----------
-    function getNum(id){ const v=document.getElementById(id); if (!v) return 0; return parseInt((v.value||'').toString().replace(/,/g,'').replace(/\s/g,''),10)||0; }
-    function setNum(id, n){ const el=document.getElementById(id); if (!el) return; el.value = (Number(n)||0).toLocaleString('en-US'); }
-    function attachCommaFormatting(ids){ ids.forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.addEventListener('focus',()=>{ el.value = el.value.replace(/,/g,''); }); el.addEventListener('blur',()=>{ const num=getNum(id); if(num >= 0) el.value = num.toLocaleString('en-US'); }); }); }
-    function wireDayConverters(){ const recalc=()=>{ const rpd=getNum('cost-rpd'); const inDay=getNum('cost-in-day'); const outDay=getNum('cost-out-day'); if(rpd>0){ if(inDay>0) setNum('cost-in', Math.floor(inDay/rpd)); if(outDay>0) setNum('cost-out', Math.floor(outDay/rpd)); } }; ['cost-in-day','cost-out-day','cost-rpd'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input', recalc); }); recalc(); }
+    // Number formatting functions - delegated to UiHelpers module
+    const getNum = window.UiHelpers?.getNum || ((id) => 0);
+    const setNum = window.UiHelpers?.setNum || (() => {});
+    const attachCommaFormatting = window.UiHelpers?.attachCommaFormatting || (() => {});
+    const wireDayConverters = window.UiHelpers?.wireDayConverters || (() => {});
 
     async function setAutotuneEnabled() {
         try {
@@ -3149,130 +3171,6 @@
         alert('Model added to pricing catalog.');
     }
 
-    // -------- Embedded Editor --------
-    let editorHealthInterval = null;
-
-    async function checkEditorHealth() {
-        try {
-            const resp = await fetch(api('/health/editor'));
-            const data = await resp.json();
-            const badge = document.getElementById('editor-health-badge');
-            const badgeText = document.getElementById('editor-health-text');
-            const banner = document.getElementById('editor-status-banner');
-            const bannerMsg = document.getElementById('editor-status-message');
-            const iframe = document.getElementById('editor-iframe');
-
-            if (data.ok) {
-                badge.style.background = '#00ff88';
-                badge.style.color = '#000';
-                badgeText.textContent = '● Healthy';
-                banner.style.display = 'none';
-                if (!iframe.src) {
-                    // Prefer same-origin proxy to avoid frame-blocking headers
-                    iframe.src = '/editor/';
-                }
-            } else {
-                const isDisabled = !data.enabled;
-                badge.style.background = isDisabled ? '#666' : '#ff5555';
-                badge.style.color = '#fff';
-                badgeText.textContent = isDisabled ? '○ Disabled' : '● Error';
-                banner.style.display = 'block';
-                const reason = data.reason || data.error || 'Unknown error';
-                bannerMsg.textContent = isDisabled
-                    ? `Editor is disabled. Enable it in the Misc tab and restart.`
-                    : `Error: ${reason}. Check logs or try restarting.`;
-                iframe.src = '';
-            }
-        } catch (error) {
-            console.error('Failed to check editor health:', error);
-        }
-    }
-
-    async function openEditorWindow() {
-        try {
-            const resp = await fetch(api('/health/editor'));
-            const data = await resp.json();
-            if (data.url) {
-                window.open(data.url, '_blank');
-            } else {
-                alert('Editor URL not available');
-            }
-        } catch (error) {
-            console.error('Failed to open editor window:', error);
-        }
-    }
-
-    async function copyEditorUrl() {
-        try {
-            const resp = await fetch(api('/health/editor'));
-            const data = await resp.json();
-            if (data.url) {
-                await navigator.clipboard.writeText(data.url);
-                const btn = document.getElementById('btn-editor-copy-url');
-                const orig = btn.innerHTML;
-                btn.innerHTML = '✓ Copied!';
-                setTimeout(() => { btn.innerHTML = orig; }, 2000);
-            } else {
-                alert('Editor URL not available');
-            }
-        } catch (error) {
-            console.error('Failed to copy URL:', error);
-        }
-    }
-
-    async function restartEditor() {
-        try {
-            const btn = document.getElementById('btn-editor-restart');
-            btn.disabled = true;
-            btn.textContent = 'Restarting...';
-            const resp = await fetch(api('/api/editor/restart'), { method: 'POST' });
-            const data = await resp.json();
-            if (data.ok) {
-                console.log('✅ Editor restarted');
-                setTimeout(() => {
-                    const iframe = document.getElementById('editor-iframe');
-                    iframe.src = '';
-                    checkEditorHealth();
-                }, 3000);
-            } else {
-                console.error('❌ Restart failed:', data.error || data.stderr);
-                alert('Restart failed: ' + (data.error || 'Unknown error'));
-            }
-        } catch (error) {
-            console.error('Failed to restart editor:', error);
-            alert('Restart failed: ' + error.message);
-        } finally {
-            const btn = document.getElementById('btn-editor-restart');
-            btn.disabled = false;
-            btn.innerHTML = '↻ Restart';
-        }
-    }
-
-    const originalSwitchTab = window.switchTab;
-    window.switchTab = function(tabName) {
-        if (typeof originalSwitchTab === 'function') {
-            originalSwitchTab(tabName);
-        }
-        if (tabName === 'editor') {
-            if (!editorHealthInterval) {
-                checkEditorHealth();
-                editorHealthInterval = setInterval(checkEditorHealth, 10000);
-            }
-        } else {
-            if (editorHealthInterval) {
-                clearInterval(editorHealthInterval);
-                editorHealthInterval = null;
-            }
-        }
-    };
-
-    const btnOpenWindow = document.getElementById('btn-editor-open-window');
-    const btnCopyUrl = document.getElementById('btn-editor-copy-url');
-    const btnRestart = document.getElementById('btn-editor-restart');
-
-    if (btnOpenWindow) btnOpenWindow.addEventListener('click', openEditorWindow);
-    if (btnCopyUrl) btnCopyUrl.addEventListener('click', copyEditorUrl);
-    if (btnRestart) btnRestart.addEventListener('click', restartEditor);
 
     // ============================================
     // Onboarding Wizard Controller

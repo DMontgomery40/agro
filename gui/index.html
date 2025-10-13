@@ -4081,6 +4081,13 @@
 
 
     <datalist id="keywords-list"></datalist>
+    <!-- Core utilities (must load first) -->
+    <script src="/gui/js/core-utils.js"></script>
+
+    <!-- UI helpers -->
+    <script src="/gui/js/ui-helpers.js"></script>
+
+    <!-- Existing modules -->
     <script src="/gui/js/index-display.js"></script>
     <script src="/gui/js/storage-calculator-template.js"></script>
     <script src="/gui/js/storage-calculator.js"></script>
@@ -4092,6 +4099,8 @@
     <script src="/gui/js/golden_questions.js"></script>
     <script src="/gui/js/eval_runner.js"></script>
     <script src="/gui/js/chat.js"></script>
+
+    <!-- Main app coordination (must load LAST) -->
     <script src="/gui/app.js"></script>
   </body>
 </html>

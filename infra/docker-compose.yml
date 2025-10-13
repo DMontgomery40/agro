@@ -20,7 +20,8 @@ services:
     ports:
       - "6379:6379"
     environment:
-      - REDIS_ARGS=--appendonly yes
-    volumes:
-      # Use repo-relative storage directory (infra/.. -> data)
-      - ../data/redis:/data
+      # Dev mode: no persistence (prevents AOF corruption on crash)
+      - REDIS_ARGS=--save ""
+    # No volumes needed without persistence
+    # volumes:
+    #   - ../data/redis:/data
