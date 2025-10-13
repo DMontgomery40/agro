@@ -2819,6 +2819,39 @@
                     </div>
                 </div>
 
+                <!-- LangSmith (Preview) -->
+                <div class="settings-section" style="border-left: 3px solid #9ad4ff;">
+                    <h3>
+                        <span class="accent-blue">●</span> LangSmith (Preview)
+                    </h3>
+                    <p class="small">View the real LangSmith run inside AGRO. Uses a shared link for embedding.</p>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Project</label>
+                            <input type="text" id="ls-project" placeholder="agro">
+                        </div>
+                        <div class="input-group">
+                            <label>Share</label>
+                            <select id="ls-share">
+                                <option value="true" selected>Yes (public share link)</option>
+                                <option value="false">No (requires login)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <button class="small-button" id="btn-ls-latest">Load Latest</button>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group full-width">
+                            <a id="ls-open" href="#" target="_blank" style="display:none;">Open in new tab ↗</a>
+                        </div>
+                    </div>
+                    <div id="ls-embed-wrap" style="position: relative; width: 100%; height: 480px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;">
+                        <iframe id="ls-iframe" style="width: 100%; height: 100%; border: none; background: #fff;"></iframe>
+                    </div>
+                    <p class="small" id="ls-note" style="color:#666; margin-top:8px; display:none;">If the viewer is blocked by the site, use the “Open in new tab” link above.</p>
+                </div>
+
                 <!-- Cards Viewer -->
                 <div class="settings-section" style="border-left: 3px solid #00ff88;">
                     <h3>

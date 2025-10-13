@@ -63,7 +63,7 @@ def health():
         g = get_graph()
         return {"status": "healthy", "graph_loaded": g is not None, "ts": __import__('datetime').datetime.utcnow().isoformat() + 'Z'}
     except Exception as e:
-        return {"status": "error", "detail": str(e)}
+    return {"status": "error", "detail": str(e)}
 
 @app.get("/health/langsmith")
 def health_langsmith() -> Dict[str, Any]:
@@ -102,6 +102,90 @@ def health_langsmith() -> Dict[str, Any]:
         'identity': identity,
         'error': error,
     }
+
+@app.get("/api/langsmith/latest")
+def api_langsmith_latest(
+    project: Optional[str] = Query(None),
+    share: bool = Query(True, description="Ensure the run is shareable (returns public URL)")
+) -> Dict[str, Any]:
+    """Return the latest LangSmith run URL for embedding.
+
+    Strategy:
+    - If a local JSON trace exists with langsmith_url, use it.
+    - Else, query LangSmith client for latest run in the project; share if requested.
+    """
+    # 1) Try local trace snapshot
+    try:
+        p = latest_trace_path(project or os.getenv('REPO','agro'))
+        if p:
+            try:
+                data = json.loads(Path(p).read_text())
+                if isinstance(data, dict) and data.get('langsmith_url'):
+                    return {'project': data.get('langsmith_project'), 'url': data.get('langsmith_url'), 'source': 'local'}
+            except Exception:
+                pass
+    except Exception:
+        pass
+    # 2) Query LangSmith API
+    try:
+        from langsmith import Client  # type: ignore
+        cl = Client()
+        proj = (project or os.getenv('LANGCHAIN_PROJECT') or os.getenv('REPO','agro'))
+        # list_runs returns generator; take first
+        runs = list(cl.list_runs(project_name=proj, limit=1))
+        if not runs:
+            return {'project': proj, 'url': None, 'source': 'remote', 'error': 'no_runs'}
+        r = runs[0]
+        url = getattr(r, 'url', None) or getattr(r, 'dashboard_url', None)
+        if share:
+            try:
+                info = cl.share_run(getattr(r, 'id', None) or getattr(r, 'run_id', None))
+                if isinstance(info, str):
+                    url = info
+                elif isinstance(info, dict):
+                    url = info.get('url') or info.get('share_url') or url
+            except Exception:
+                pass
+        return {'project': proj, 'url': url, 'source': 'remote'}
+    except Exception as e:
+        return {'project': project, 'url': None, 'source': 'error', 'error': str(e)}
+
+@app.get("/api/langsmith/runs")
+def api_langsmith_runs(
+    project: Optional[str] = Query(None),
+    limit: int = Query(10, ge=1, le=50),
+    share: bool = Query(False)
+) -> Dict[str, Any]:
+    """List recent LangSmith runs (with optional share URLs)."""
+    try:
+        from langsmith import Client  # type: ignore
+        cl = Client()
+        proj = (project or os.getenv('LANGCHAIN_PROJECT') or os.getenv('REPO','agro'))
+        out = []
+        for r in cl.list_runs(project_name=proj, limit=limit):
+            rid = getattr(r, 'id', None) or getattr(r, 'run_id', None)
+            url = getattr(r, 'url', None) or getattr(r, 'dashboard_url', None)
+            s_url = None
+            if share:
+                try:
+                    info = cl.share_run(rid)
+                    if isinstance(info, str):
+                        s_url = info
+                    elif isinstance(info, dict):
+                        s_url = info.get('url') or info.get('share_url')
+                except Exception:
+                    s_url = None
+            out.append({
+                'id': rid,
+                'name': getattr(r, 'name', None),
+                'start_time': getattr(r, 'start_time', None),
+                'end_time': getattr(r, 'end_time', None),
+                'url': url,
+                'share_url': s_url,
+            })
+        return {'project': proj, 'runs': out}
+    except Exception as e:
+        return {'project': project, 'runs': [], 'error': str(e)}
 
 @app.get("/answer", response_model=Answer)
 def answer(

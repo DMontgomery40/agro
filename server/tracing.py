@@ -33,17 +33,26 @@ class Trace:
         self.path: Optional[str] = None
         self.mode = (os.getenv('TRACING_MODE', '').lower() or (
             'langsmith' if ((os.getenv('LANGCHAIN_TRACING_V2','0') or '0').strip().lower() in {'1','true','on'}) else 'local'))
-        # Optional LangSmith bridge (best effort)
-        self._ls = None
+        # Optional LangSmith client (best effort)
+        self._ls_client = None
         self._ls_project = os.getenv('LANGCHAIN_PROJECT', 'agro')
+        self._ls_run_id: Optional[str] = None
+        self._ls_url: Optional[str] = None
         try:
             if self.mode == 'langsmith':
-                from langchain.callbacks.tracers import LangChainTracerV2  # type: ignore
-                self._ls = LangChainTracerV2(project=self._ls_project)
-                # start root run
-                self._ls.on_chain_start({"name": "RAG.run"}, inputs={"question": question})
+                from langsmith import Client  # type: ignore
+                from datetime import datetime, timezone
+                self._ls_client = Client()
+                run = self._ls_client.create_run(
+                    name="RAG.run",
+                    run_type="chain",
+                    inputs={"question": question},
+                    project_name=self._ls_project,
+                    start_time=datetime.now(timezone.utc)
+                )
+                self._ls_run_id = getattr(run, 'id', None) or getattr(run, 'run_id', None)
         except Exception:
-            self._ls = None
+            self._ls_client = None
 
     # ---- control ----
     @staticmethod
@@ -55,20 +64,33 @@ class Trace:
         return True
 
     def add(self, kind: str, payload: Dict[str, Any]) -> None:
+        # Always record locally; never let tracing break flow
         try:
             self.events.append({
                 "ts": _now_iso(),
                 "kind": str(kind),
                 "data": payload or {},
             })
-            if self._ls is not None:
+        except Exception:
+            pass
+        # Best-effort: also emit child run to LangSmith
+        try:
+            if self._ls_client is not None and self._ls_run_id is not None:
+                from datetime import datetime, timezone
+                child = self._ls_client.create_run(
+                    name=str(kind),
+                    run_type="chain",
+                    inputs=payload or {},
+                    project_name=self._ls_project,
+                    parent_run_id=self._ls_run_id,
+                    start_time=datetime.now(timezone.utc)
+                )
+                rid = getattr(child, 'id', None) or getattr(child, 'run_id', None)
                 try:
-                    self._ls.on_chain_start({"name": kind}, inputs={})
-                    self._ls.on_chain_end(outputs=payload)
+                    self._ls_client.update_run(rid, end_time=datetime.now(timezone.utc), outputs=payload or {})
                 except Exception:
                     pass
         except Exception:
-            # tracing should never break request flow
             pass
 
     def _dir(self) -> Path:
@@ -90,6 +112,7 @@ class Trace:
                 "events": self.events,
                 "tracing_mode": self.mode,
                 "langsmith_project": self._ls_project if self.mode == 'langsmith' else None,
+                "langsmith_url": self._ls_url if self.mode == 'langsmith' else None,
             }
             out_path.write_text(json.dumps(data, indent=2))
             self.path = str(out_path)
@@ -126,8 +149,25 @@ def end_trace() -> Optional[str]:
     if tr is None:
         return None
     try:
-        if tr._ls is not None:
-            tr._ls.on_chain_end(outputs={"status": "ok"})
+        if getattr(tr, '_ls_client', None) is not None and getattr(tr, '_ls_run_id', None) is not None:
+            from datetime import datetime, timezone
+            try:
+                tr._ls_client.update_run(tr._ls_run_id, end_time=datetime.now(timezone.utc), outputs={"status": "ok"})
+            except Exception:
+                pass
+            try:
+                share = getattr(tr._ls_client, 'share_run', None)
+                if callable(share):
+                    info = share(tr._ls_run_id)
+                    if isinstance(info, str):
+                        tr._ls_url = info
+                    elif isinstance(info, dict):
+                        tr._ls_url = info.get('url') or info.get('share_url')
+                if not tr._ls_url:
+                    rr = tr._ls_client.read_run(tr._ls_run_id)
+                    tr._ls_url = getattr(rr, 'url', None) or getattr(rr, 'dashboard_url', None)
+            except Exception:
+                tr._ls_url = None
     except Exception:
         pass
     path = tr.save()
