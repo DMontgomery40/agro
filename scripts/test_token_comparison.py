@@ -48,12 +48,11 @@ def approach1_claude_alone(question: str, repo: str):
     - Grep files
     - Read 5-10 FULL files
     """
-    repo_paths = {
-        'project': os.getenv('PROJECT_PATH', '/abs/path/to/project'),
-        'project': os.getenv('project_PATH', '/abs/path/to/project')
-    }
-
-    repo_path = repo_paths.get(repo)
+    # Resolve a local repo path for the naive grep-style scan
+    # Prefer REPO_PATH, then <REPO>_PATH (legacy), then .
+    env_key_generic = os.getenv('REPO_PATH')
+    env_key_specific = os.getenv(f"{repo}_PATH")
+    repo_path = env_key_specific or env_key_generic or os.getcwd()
     if not repo_path or not os.path.exists(repo_path):
         return {'error': f'Repo not found: {repo_path}'}
 

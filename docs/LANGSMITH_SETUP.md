@@ -1,5 +1,7 @@
 LangSmith Observability — Quick Setup (AGRO)
 
+![Trace & Tune](../assets/tune_and_trace.png)
+
 This repo already includes a minimal LangSmith integration via `server/tracing.py`. Turning it on is a matter of setting a few environment variables (via the GUI) and running a query.
 
 What you get
@@ -40,4 +42,3 @@ Troubleshooting
   - Check server logs for `LangChainTracerV2` import errors; install deps: `. .venv/bin/activate && pip install -r requirements-rag.txt`.
 - Wrong project:
   - Set `LANGCHAIN_PROJECT` in the GUI and click Apply (persists to `.env`).
-
