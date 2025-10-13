@@ -1,8 +1,8 @@
 {
   "repo": "agro",
   "stage": "finalize",
-  "total": 486,
-  "done": 486,
+  "total": 520,
+  "done": 520,
   "pct": 100.0,
   "model": {
     "embed": "text-embedding-3-large",
@@ -10,11 +10,11 @@
     "rerank": "rerank-english-v3.0"
   },
   "tip": "Flip Enrich code chunks on for semantic cards; then Build, not Refresh.",
-  "started_at": "2025-10-13T04:32:04Z",
+  "started_at": "2025-10-13T05:49:42Z",
   "eta_s": 0,
-  "throughput": "2144.0 chunks/min",
+  "throughput": "2565.3 chunks/min",
   "result": {
     "cards_written": 10,
-    "duration_s": 13
+    "duration_s": 12
   }
 }
