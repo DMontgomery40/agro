@@ -12,6 +12,7 @@ LANG_MAP = {
     ".ts": "typescript", ".tsx": "typescript",
     ".go": "go", ".java": "java", ".rs": "rust",
     ".c": "c", ".h": "c", ".cpp": "cpp", ".cc": "cpp", ".hpp": "cpp",
+    ".md": "markdown",
 }
 
 # Optional overlap to provide additional local context when chunk boundaries split logical units
