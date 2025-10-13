@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 # Canonical location: server/app.py
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from starlette.responses import StreamingResponse
 from server.langgraph_app import build_graph
 from server.tracing import start_trace, end_trace, Trace, latest_trace_path
@@ -814,7 +814,7 @@ def scan_hw() -> Dict[str, Any]:
         elif Path("/proc/meminfo").exists():
             txt = Path("/proc/meminfo").read_text()
             for line in txt.splitlines():
-                if line.startswith("MemTotal:"):
+                if line.startswith("MemTotal"):
                     kb = int(line.split()[1]); info["mem_gb"] = round(kb/1024/1024, 2)
                     break
     except Exception:
@@ -1223,8 +1223,9 @@ def editor_health() -> Dict[str, Any]:
         # Probe the editor URL
         url = status.get("url", "")
         try:
-            resp = requests.get(url, timeout=2)
-            if resp.status_code == 200:
+            resp = requests.get(url, timeout=3, allow_redirects=True)
+            # Treat 2xx/3xx as healthy — code servers often redirect
+            if 200 <= resp.status_code < 400:
                 return {
                     "ok": True,
                     "enabled": True,
@@ -1280,6 +1281,61 @@ def editor_restart() -> Dict[str, Any]:
             return {"ok": False, "error": "editor_up.sh not found"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+# -------- Embedded Editor Reverse Proxy (HTTP only) --------
+async def _editor_status() -> Dict[str, Any]:
+    try:
+        p = _Path(__file__).parent.parent / 'out' / 'editor' / 'status.json'
+        if not p.exists():
+            return {"enabled": False, "ok": False, "error": "No status file"}
+        return json.loads(p.read_text())
+    except Exception as e:
+        return {"enabled": False, "ok": False, "error": str(e)}
+
+def _strip_embed_block_headers(headers: Dict[str, str]) -> Dict[str, str]:
+    h: Dict[str, str] = {}
+    for k, v in headers.items():
+        kl = k.lower()
+        if kl in ("x-frame-options", "content-security-policy", "content-security-policy-report-only", "cross-origin-opener-policy", "cross-origin-embedder-policy"):
+            continue
+        if kl in ("content-encoding", "transfer-encoding"):
+            continue
+        h[k] = v
+    # allow embedding on same origin
+    h.setdefault('X-Frame-Options', 'ALLOWALL')
+    return h
+
+@app.get("/editor")
+def editor_root() -> Response:
+    # normalize to trailing slash for relative asset links
+    return RedirectResponse(url="/editor/")
+
+@app.api_route("/editor/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"])
+async def editor_proxy(path: str, request: Request):
+    """Same-origin reverse proxy for the embedded editor.
+
+    This improves iframe reliability by stripping frame-blocking headers.
+    (WebSocket proxying is not included here; the editor still works for
+     most interactions. "Open in Window" uses the direct URL.)
+    """
+    status = await _editor_status()
+    if not status.get("enabled"):
+        return JSONResponse({"ok": False, "error": "Editor disabled"}, status_code=503)
+    base = str(status.get("url") or "").rstrip("/")
+    if not base:
+        return JSONResponse({"ok": False, "error": "No editor URL"}, status_code=503)
+    # construct target
+    qs = ("?" + request.url.query) if request.url.query else ""
+    target = f"{base}/{path}{qs}"
+    # forward the request
+    import httpx
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "connection", "accept-encoding")}
+    body = await request.body()
+    timeout = httpx.Timeout(30.0)
+    async with httpx.AsyncClient(follow_redirects=True, timeout=timeout) as client:
+        upstream = await client.request(request.method, target, headers=headers, content=body)
+        filtered = _strip_embed_block_headers(dict(upstream.headers))
+        return Response(content=upstream.content, status_code=upstream.status_code, headers=filtered)
 
 @app.get("/api/cards")
 def cards_list() -> Dict[str, Any]:

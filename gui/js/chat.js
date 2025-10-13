@@ -350,13 +350,20 @@ function saveMessageToHistory(role, content, messageId) {
     }
 }
 
-// Load chat history from localStorage
+// Load chat history from localStorage and render it into the transcript
 function loadChatHistory() {
     if (!chatSettings.historyEnabled || !chatSettings.showHistoryOnLoad) return;
 
     try {
-        const history = JSON.parse(localStorage.getItem('agro_chat_history') || '[]');
+        const raw = localStorage.getItem('agro_chat_history') || '[]';
+        let history = [];
+        try { history = JSON.parse(raw); } catch { history = []; }
+
+        // Validate structure: ensure array of {role:string, content:string}
+        history = Array.isArray(history) ? history.filter(m => m && typeof m.content === 'string' && (m.role === 'user' || m.role === 'assistant')) : [];
+
         const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return;
 
         if (history.length > 0) {
             // Clear the empty state message
@@ -391,8 +398,70 @@ function loadChatHistory() {
             `;
             messagesContainer.appendChild(newSessionSeparator);
         }
+
+        // Also render a compact history list inside the dropdown for discoverability
+        renderHistoryDropdown(history);
     } catch (e) {
         console.warn('Failed to load chat history:', e);
+    }
+}
+
+// Render compact history list inside the History dropdown (last 20)
+function renderHistoryDropdown(history) {
+    try {
+        const dropdown = document.getElementById('history-dropdown');
+        if (!dropdown) return;
+        // Preserve the action buttons; rebuild the list above them
+        const exportBtn = document.getElementById('chat-export-history');
+        const clearBtn = document.getElementById('chat-clear-history');
+        dropdown.innerHTML = '';
+
+        const listWrap = document.createElement('div');
+        listWrap.style.cssText = 'max-height: 240px; overflow-y: auto; padding: 6px 0;';
+
+        const items = (history || []).slice(-20).reverse();
+        if (items.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'color:#666; font-size:12px; padding:8px 12px;';
+            empty.textContent = 'No saved messages yet';
+            listWrap.appendChild(empty);
+        } else {
+            items.forEach((m, idx) => {
+                const btn = document.createElement('button');
+                btn.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color:#ddd;padding:6px 12px;font-size:12px;cursor:pointer;';
+                const label = `${m.role === 'user' ? 'You' : 'Assistant'}: ${m.content.replace(/\s+/g,' ').slice(0, 60)}${m.content.length>60?'…':''}`;
+                btn.textContent = label;
+                btn.title = m.timestamp ? new Date(m.timestamp).toLocaleString() : '';
+                btn.addEventListener('click', () => {
+                    // Append to transcript for quick reference (do not re-save)
+                    addMessage(m.role, m.content, false, false, false);
+                    dropdown.style.display = 'none';
+                });
+                btn.addEventListener('mouseover', () => btn.style.background = '#131313');
+                btn.addEventListener('mouseout', () => btn.style.background = 'transparent');
+                listWrap.appendChild(btn);
+            });
+        }
+
+        dropdown.appendChild(listWrap);
+        // Divider
+        const div = document.createElement('div'); div.style.cssText = 'height:1px;background:#333;'; dropdown.appendChild(div);
+        // Action buttons
+        const exp = document.createElement('button');
+        exp.id = 'chat-export-history';
+        exp.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color:#ddd;padding:8px 12px;font-size:12px;cursor:pointer;';
+        exp.textContent = '📥 Export History';
+        exp.addEventListener('click', exportChatHistory);
+        const clr = document.createElement('button');
+        clr.id = 'chat-clear-history';
+        clr.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color:#ff6b6b;padding:8px 12px;font-size:12px;cursor:pointer;';
+        clr.textContent = '🗑️ Clear History';
+        clr.addEventListener('click', clearChatHistory);
+        dropdown.appendChild(exp);
+        dropdown.appendChild(document.createElement('div')).style.cssText = 'height:1px;background:#333;';
+        dropdown.appendChild(clr);
+    } catch (e) {
+        console.warn('Failed to render history dropdown:', e);
     }
 }
 

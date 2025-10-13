@@ -214,7 +214,28 @@ class CardsBuildJob:
                         try:
                             text, _meta = generate_text(user_input=user, system_instructions=None, reasoning_effort=None, response_format={"type": "json_object"})
                             content = (text or "").strip()
-                            card: Dict[str, Any] = json.loads(content) if content else {"symbols": [], "purpose": "", "routes": []}
+                            card: Dict[str, Any]
+                            try:
+                                card = json.loads(content)
+                            except Exception:
+                                # Fuzzy parse: try to extract a JSON object substring; else treat as free-text purpose
+                                try:
+                                    start = content.find('{'); end = content.rfind('}')
+                                    if start != -1 and end != -1 and end > start:
+                                        card = json.loads(content[start:end+1])
+                                    else:
+                                        raise ValueError('no json braces')
+                                except Exception:
+                                    # Free-text fallback becomes purpose; derive symbols/routes heuristically
+                                    syms: List[str] = []
+                                    routes: List[str] = []
+                                    try:
+                                        import re
+                                        syms = [m[1] for m in re.findall(r"\b(class|def|function|interface|type)\s+([A-Za-z_][A-Za-z0-9_]*)", code)][:5]
+                                        routes = re.findall(r"['\"](/[^'\"\s]*)['\"]", code)[:5]
+                                    except Exception:
+                                        pass
+                                    card = {"symbols": syms, "purpose": content[:240], "routes": routes}
                         except Exception:
                             card = {"symbols": [], "purpose": "", "routes": []}
                     else:
@@ -236,6 +257,11 @@ class CardsBuildJob:
                         card = {"symbols": syms, "purpose": purpose, "routes": routes}
                     card["file_path"] = fp
                     card["id"] = ch.get("id")
+                    # Ensure minimal purpose is present
+                    if not (card.get("purpose") or "").strip():
+                        base = os.path.basename(fp)
+                        syml = card.get("symbols") or []
+                        card["purpose"] = (f"Defines {'/'.join(syml[:2])} in {base}" if syml else f"High-level summary for {base}")
                     out_json.write(json.dumps(card, ensure_ascii=False) + "\n")
                     text_out = " ".join(card.get("symbols", [])) + "\n" + card.get("purpose", "") + "\n" + " ".join(card.get("routes", [])) + "\n" + fp
                     out_txt.write(text_out.replace("\n", " ") + "\n")
@@ -280,7 +306,7 @@ class CardsBuildJob:
             self.stage = "finalize"
             self.done = self.total
             snap = self._progress_payload(QUICK_TIPS[4])
-            snap["result"] = {"cards_written": written}
+            snap["result"] = {"cards_written": written, "duration_s": int(time.time() - self.started_at)}
             try:
                 prog_path = _progress_dir(self.repo) / "progress.json"
                 prog_path.write_text(json.dumps(snap, indent=2))
@@ -360,4 +386,3 @@ def read_logs(tail_bytes: int = 16384) -> Dict[str, Any]:
         return {"ok": True, "content": data.decode("utf-8", errors="ignore"), "path": str(p)}
     except Exception as e:
         return {"ok": False, "error": str(e), "path": str(p)}
-

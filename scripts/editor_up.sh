@@ -24,6 +24,8 @@ TOKEN_FILE="$REPO_ROOT/.editor_data/token"
 DATA_DIR="$REPO_ROOT/.editor_data"
 
 mkdir -p "$OUT_DIR" "$DATA_DIR"
+# Ensure persistent directories for both code-server and openvscode-server
+mkdir -p "$DATA_DIR/code-server-config" "$DATA_DIR/code-server-data" "$DATA_DIR/openvscode"
 
 # Initialize log
 echo "=== Editor startup $(date -u +%Y-%m-%dT%H:%M:%SZ) ===" > "$LOG_FILE"
@@ -51,7 +53,9 @@ echo "[editor] Using runtime: $RUNTIME" | tee -a "$LOG_FILE"
 
 # Check if container already running
 if $RUNTIME ps --filter "name=$CONTAINER_NAME" --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    EXISTING_PORT=$($RUNTIME port "$CONTAINER_NAME" | grep '3000/tcp' | head -n1 | cut -d: -f2 || echo "")
+    # The container exposes 8080 internally; map to whatever host port we chose.
+    # Be robust across Docker/Podman and IPv4/IPv6 formats.
+    EXISTING_PORT=$($RUNTIME port "$CONTAINER_NAME" 8080/tcp 2>/dev/null | sed -E 's/.*:(\d+).*/\1/' | head -n1 || echo "")
     if [[ -n "$EXISTING_PORT" ]] && curl -sf "http://127.0.0.1:${EXISTING_PORT}/" &>/dev/null; then
         echo "[editor] Container already running healthy on port $EXISTING_PORT" | tee -a "$LOG_FILE"
         TOKEN=""
@@ -106,7 +110,14 @@ fi
 
 # Prepare volumes
 WORKSPACE_MOUNT="$REPO_ROOT:/home/workspace"
-DATA_MOUNT="$DATA_DIR:/home/.openvscode-server"
+# Mount both targets so either image persists settings:
+# - codercom/code-server → /home/coder/.config/code-server and /home/coder/.local/share/code-server
+# - openvscode-server   → /home/.openvscode-server
+CS_CONFIG_MOUNT="$DATA_DIR/code-server-config:/home/coder/.config/code-server"
+CS_DATA_MOUNT="$DATA_DIR/code-server-data:/home/coder/.local/share/code-server"
+OVS_DATA_MOUNT1="$DATA_DIR/openvscode:/home/.openvscode-server"
+OVS_DATA_MOUNT2="$DATA_DIR/openvscode:/home/openvscode-server/.openvscode-server"
+CS_CODE_CONFIG_MOUNT="$DATA_DIR/code-server-config:/home/coder/.config/Code"
 
 # Build docker run command
 RUN_CMD=(
@@ -115,9 +126,12 @@ RUN_CMD=(
     --restart unless-stopped
     -p "${BIND_ADDR}:${FINAL_PORT}:8080"
     -v "$WORKSPACE_MOUNT"
+    -v "$CS_CONFIG_MOUNT"
+    -v "$CS_CODE_CONFIG_MOUNT"
+    -v "$CS_DATA_MOUNT"
+    -v "$OVS_DATA_MOUNT1"
+    -v "$OVS_DATA_MOUNT2"
     -e PASSWORD="$TOKEN"
-    -u "$(id -u):$(id -g)"
-    -e DOCKER_USER="$USER"
     "$EDITOR_IMAGE"
     --auth none
     --bind-addr 0.0.0.0:8080

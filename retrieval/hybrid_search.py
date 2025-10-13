@@ -330,6 +330,7 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
                     'path': meta.get('file_path'),
                     'start': meta.get('start_line'),
                     'end': meta.get('end_line'),
+                    'card_hit': str(meta.get('id','')) in card_chunk_ids,
                     'bm25_rank': rank_map_sparse.get(pid),
                     'dense_rank': rank_map_dense.get(pid),
                 })
@@ -348,6 +349,14 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
         fp = d.get('file_path', '')
         layer = (d.get('layer') or '').lower()
         score = float(d.get('rerank_score', 0.0) or 0.0)
+        # Card hit bonus (semantic cards retrieval via BM25 over summaries)
+        try:
+            cid = str(d.get('id', '') or '')
+            if cid and cid in card_chunk_ids:
+                d['card_hit'] = True
+                score += _card_bonus(cid, card_chunk_ids)
+        except Exception:
+            pass
         score += _path_bonus(fp)
         score += _project_layer_bonus(layer, intent)
         score += _provider_plugin_hint(fp, d.get('code', '') or '')
