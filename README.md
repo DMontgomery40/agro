@@ -5,8 +5,6 @@
 #### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Multiple Transports, Chat Interface, and Modular-everything. 
 And it even has a VSCode instance embedded in the GUI (you don't have to turn it on just wanted to see if I could do it ; )
 
-
-
 ### (Really) Quick Start
 ```bash
 git clone https://github.com/DMontgomery40/agro.git
@@ -16,7 +14,6 @@ Make dev
 # Starts: Infra, MCP, API, UV, and GUI
 # GUI at http://127.0.0.1:8012/ 
 ```
-
 
 
 ## **Fully-local model support, or any SOTA API Model, mix, match, and set profiles based on task**
