@@ -7,7 +7,7 @@ Compares targeted RAG retrieval against reading full files.
 import sys
 import os
 from pathlib import Path
-from hybrid_search import search_routed_multi
+from retrieval.hybrid_search import search_routed_multi
 
 try:
     import tiktoken

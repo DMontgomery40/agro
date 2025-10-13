@@ -12,7 +12,9 @@ This is your complete multi-repo RAG service with MCP integration for AI agents.
 
 ### Option 1: "I want to run it RIGHT NOW"
 1. Read: **[README.md](README.md)** → Jump to "Quick Start" section
-2. Run `bash scripts/up.sh` (infra + MCP), then index your repos → You're up
+2. Run `make dev` (or `bash scripts/dev_up.sh`) to start infra + MCP + API and open the GUI
+3. Use the GUI → Misc tab to set Serve Host/Port and Auto‑start Colima → “Apply All Changes”
+4. Index your repos from the GUI (Indexing tab) or via CLI
 
 ### Option 2: "I need to connect AI agents (Codex/Claude Code)"
 1. Read: **[docs/QUICKSTART_MCP.md](docs/QUICKSTART_MCP.md)**
@@ -35,8 +37,11 @@ rag-service/
 │
 ├── 📄 START_HERE.md ................... This file (navigation hub)
 │
-├── 📘 README.md ....................... MAIN GUIDE (1105 lines)
+├── 📘 README.md ....................... MAIN GUIDE (1105+ lines)
 │   └─ Everything: setup, .ragignore, MCP, CLI, eval, troubleshooting
+│
+├── 🧭 MIGRATION.md .................... Package layout + shims mapping
+│   └─ Old→New paths; GUI‑first config; server/mcp move
 │
 ├── 📋 AGENTS.md ....................... Agent behavior rules
 ├── 🧪 golden.json ..................... Test cases (replace with yours!)

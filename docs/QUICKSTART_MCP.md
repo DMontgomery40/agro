@@ -2,33 +2,47 @@
 
 ## What Got Implemented ✓
 
-1. **MCP Server** (`mcp_server.py`) - stdio-based tool server
+1. **MCP Server** (module: `server.mcp.server`) - stdio-based tool server
 2. **MCP Tools**:
    - `rag_answer(repo, question)` → full answer + citations
    - `rag_search(repo, question, top_k)` → retrieval only
-   - `netlify_deploy(domain)` → trigger Netlify build (`project.net`, `project.dev`, or `both`) – requires `NETLIFY_API_KEY`
+   - `netlify_deploy(domain)` → trigger Netlify build (your domains; requires `NETLIFY_API_KEY`)
    - `web_get(url, max_bytes)` → HTTP GET for allowlisted hosts (openai.com, platform.openai.com, github.com, openai.github.io)
-3. **Codex Registration** - Already registered as `project-rag`
+3. **Codex Registration** - Register as `rag-service` (recommended)
 4. **Agent Rules** - Updated in `AGENTS.md`
 5. **Eval Loop** - `eval_loop.py` with baselines and regression tracking
 6. **Golden Tests** - `golden.json` with 10 test cases
 
 ## Before You Start
 
-- Bring infra + MCP up (always-on helper):
-  - `bash scripts/up.sh`
-- Index both repos (once per code change):
-  - `REPO=project python index_repo.py && REPO=project python index_repo.py`
+- Bring everything up (infra + MCP + API + open GUI):
+  - `make dev`  (or `bash scripts/dev_up.sh`)
+- Alternative (manual):
+  - `bash scripts/up.sh`  (infra + MCP)
+  - `make api`            (runs uvicorn)
+- Configure host/port and Docker preference in the GUI → Misc tab → “Apply All Changes”. These persist to `.env` and are read on next run.
+- Index your repo (once per code change):
+  - `REPO=agro python -m indexer.index_repo`
 - Defaults:
   - Generation → Qwen 3 via Ollama (`GEN_MODEL` + `OLLAMA_URL`)
   - Rerank → Cohere (`RERANK_BACKEND=cohere`, `COHERE_RERANK_MODEL=rerank-3.5`)
+
+Shared index across branches (recommended)
+- Use a single index so MCP and local tools always agree:
+  ```bash
+  . .venv/bin/activate
+  REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python -m indexer.index_repo
+  # Export consistent env for MCP/tools
+  source scripts/select_index.sh shared
+  ```
+The GUI can persist these via “Apply All Changes” (Infrastructure tab: set `Out Dir Base=./out.noindex-shared`).
 
 ## Quick Commands
 
 ### Check MCP Registration
 ```bash
 codex mcp list
-# Should show: project-rag
+# Should show: rag-service
 ```
 
 ### Test MCP Tools Manually
@@ -36,19 +50,14 @@ codex mcp list
 . .venv/bin/activate
 
 # List available tools
-python -c "
-from mcp_server import MCPServer
-import json
-req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
-print(json.dumps(MCPServer().handle_request(req)['result']['tools'], indent=2))
-"
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m server.mcp.server
 ```
 
 ### New Tools: Quick Examples
 
 ```bash
 # Netlify deploy (from Codex chat)
-# User: Use netlify_deploy to rebuild project.dev
+# User: Use netlify_deploy to rebuild example.dev
 
 # Web GET (allowlisted)
 # User: Use web_get to fetch https://github.com/openai/codex
@@ -68,7 +77,7 @@ python eval_loop.py --baseline
 python eval_loop.py --compare
 
 # Watch mode (auto re-run on changes)
-python eval_loop.py --watch
+    python eval_loop.py --watch
 ```
 
 ### Use in Codex Chat
@@ -76,9 +85,9 @@ python eval_loop.py --watch
 Open a new Codex session and try:
 
 ```
-User: Use rag_search to find code related to "OAuth token validation" in project
+User: Use rag_search to find code related to "OAuth token validation" in agro
 
-User: Use rag_answer to explain how inbound faxes are processed in project
+User: Use rag_answer to explain how inbound faxes are processed in agro
 ```
 
 Codex will automatically call the registered MCP tools and display results.
@@ -94,8 +103,8 @@ mcp_server.py
                           ↓
                   Qdrant + Redis + BM25
                           ↓
-                  out/project/chunks.jsonl
-                  out/project/chunks.jsonl
+                  out/agro/chunks.jsonl
+                  out/agro/chunks.jsonl
 ```
 
 ## Agent Behavior Rules
@@ -105,7 +114,7 @@ These are now documented in `AGENTS.md`:
 1. ✗ Never assume user is wrong about paths/functions
 2. ✓ Always call RAG tools first before claiming something doesn't exist
 3. ✗ Never hallucinate file paths
-4. ✓ Respect repo boundaries (project ≠ project)
+4. ✓ Respect repo boundaries (no cross-repo mixing)
 5. ✓ Trust RAG citations as authoritative
 
 ## Files Created
@@ -134,11 +143,12 @@ These are now documented in `AGENTS.md`:
 - Note: Graph compiles without Redis if temporarily unavailable.
 
 **"No results"**
-- Index repos: `REPO=project python index_repo.py`
-- Verify collections: `curl -s http://127.0.0.1:6333/collections | jq`
+- Verify shared index exists: `ls -lh out.noindex-shared/agro/chunks.jsonl`
+- Ensure MCP sees shared env: `source scripts/select_index.sh shared` (or set in GUI → Apply All Changes)
+- Index repos (BM25-only fast path): `REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`
+- Verify collections (optional): `curl -s http://127.0.0.1:6333/collections | jq`
 
-**"Codex can't find tools"**
-- Re-register: `codex mcp remove project-rag && codex mcp add project-rag -- .venv/bin/python mcp_server.py`
+- Re-register: `codex mcp remove rag-service && codex mcp add rag-service -- .venv/bin/python -m server.mcp.server`
 - Ensure MCP is running: `bash scripts/status.sh`
 
 ## References

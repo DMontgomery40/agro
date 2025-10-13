@@ -37,7 +37,7 @@ print(f"Repo: {repo}\n")
 print("1. MCP Tool Schema Overhead")
 print("-" * 80)
 
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 server = MCPServer()
 tools_req = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}}
 tools_resp = server.handle_request(tools_req)
@@ -84,7 +84,7 @@ print("-" * 80)
 os.environ["OLLAMA_URL"] = "http://127.0.0.1:11434/api"
 os.environ["GEN_MODEL"] = "qwen3-coder:30b"
 
-from env_model import generate_text
+from server.env_model import generate_text
 
 # Parse MCP response to get context
 result_data = json.loads(mcp_response)

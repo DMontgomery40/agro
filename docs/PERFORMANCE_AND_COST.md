@@ -1,5 +1,7 @@
 # Claude Code Alone vs Claude Code + RAG
 
+![Evals](../assets/evals.png)
+
 **Bottom line: RAG saves 91% tokens. That means 11x more queries before hitting your Claude rate limits.**
 
 **📊 [Contributing benchmarks](CONTRIBUTING.md)** - Help us test with different Claude models & tiers!

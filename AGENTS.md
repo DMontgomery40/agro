@@ -4,19 +4,22 @@
 - Route every query to the correct repo via the `repo` argument: `project` or `project`. Never mix results.
 - After retrieval, you may call `rag_answer` for a synthesized answer with citations. Answers must include file paths and line ranges from retrieval.
 
+ALL features, settings, variables, and parameters, must be put in the GUI.  **This is an accessiblity issue** the developer of this project is exremely dyslexic, and will break things with typos in code files, therefore, all settings must be in gui. If you don't know where to put it, put it in a 'Misc' tab in the gui. 
+
+
 How to use RAG locally vs externally:
 - Local Python (preferred in-repo):
-  - `cd path/to/your/rag-service && . .venv/bin/activate`
+  - ` . .venv/bin/activate`
   - Run a quick search:
     ```bash
     python - <<'PY'
-    from hybrid_search import search_routed_multi
-    for d in search_routed_multi("Where is OAuth validated", repo_override="project", m=4, final_k=10):
+    from retrieval.hybrid_search import search_routed_multi
+    for d in search_routed_multi("Where is OAuth validated", repo_override="project", m=2, final_k=5):
         print(f"{d['file_path']}:{d['start_line']}-{d['end_line']}  score={d['rerank_score']:.3f}")
     PY
     ```
 - MCP tools (for agents/IDE/outside this repo):
-  - One-time: `codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && codex mcp list`
+  - One-time: `codex mcp add rag-service -- python -m server.mcp.server && codex mcp list`
   - Then call `rag_search` / `rag_answer` with `repo` and `question`.
 - Bring up infra + MCP (always-on helper):
   - `cd path/to/your/rag-service && bash scripts/up.sh`
@@ -24,7 +27,7 @@ How to use RAG locally vs externally:
 - Index after code changes (required for fresh results):
   - `cd path/to/your/rag-service && . .venv/bin/activate && REPO=project python index_repo.py && REPO=project python index_repo.py`
 - Optional HTTP answers (no search endpoint):
-  - `cd path/to/your/rag-service && . .venv/bin/activate && uvicorn serve_rag:app --host 127.0.0.1 --port 8012`
+  - `cd path/to/your/rag-service && . .venv/bin/activate && uvicorn server.app:app --host 127.0.0.1 --port 8012`
   - `curl -s "http://127.0.0.1:8012/answer?q=Where%20is%20OAuth%20validated&repo=project"`
 
 
@@ -57,10 +60,14 @@ echo "activate venv" && \
 . .venv/bin/activate && \
 echo "verify deps" && \
 python -c "import fastapi, qdrant_client, bm25s; print('✓ fastapi, qdrant_client, bm25s loaded')"
-1) Bring up Infra + MCP (always-on)
+1) Bring up Dev (infra + MCP + API + GUI)
 bash
 Copy code
-cd path/to/your/rag-service && bash scripts/up.sh && bash scripts/status.sh
+cd path/to/your/rag-service && make dev && bash scripts/status.sh
+Manual alternative:
+bash
+Copy code
+cd path/to/your/rag-service && bash scripts/up.sh && bash scripts/status.sh && make api
 2) Index (run after code changes)
 bash
 Copy code
@@ -68,11 +75,11 @@ cd path/to/your/rag-service && . .venv/bin/activate && \
 echo "index project" && REPO=project python index_repo.py && \
 echo "index project" && REPO=project python index_repo.py && \
 echo "verify collections" && curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
-3) Run the HTTP service (in its own terminal)
+3) Run the HTTP service (manual; dev target already starts it)
 bash
 Copy code
 cd path/to/your/rag-service && . .venv/bin/activate && \
-uvicorn serve_rag:app --host 127.0.0.1 --port 8012
+uvicorn server.app:app --host 127.0.0.1 --port 8012`
 Smoke check (second terminal):
 
 bash
@@ -84,12 +91,12 @@ bash
 Copy code
 cd path/to/your/rag-service && . .venv/bin/activate && \
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
-python mcp_server.py
+python -m server.mcp.server
 Register with Codex CLI (one-time):
 
 bash
 Copy code
-codex mcp add rag-service -- python /absolute/path/to/rag-service/mcp_server.py && \
+codex mcp add rag-service -- python -m server.mcp.server && \
 codex mcp list
 5) Eval loop (local)
 bash
@@ -104,6 +111,45 @@ Copy code
 cd path/to/your/rag-service && . .venv/bin/activate && \
 export REPO=project && export THREAD_ID=my-session && \
 python chat_cli.py
+
+Cross-Branch Indexing (Shared Profile)
+- Goal: One shared index usable from any branch without touching code.
+- Create a fast BM25-only index (no external APIs):
+  - `REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`
+- Retrieval picks the index from `OUT_DIR_BASE`. Dense/Qdrant is optional; `hybrid_search.py` falls back cleanly when missing.
+- Helper: `source scripts/select_index.sh shared` to set `OUT_DIR_BASE` and `COLLECTION_NAME` consistently.
+
+Shared index guardrails (agents)
+- Always ensure `OUT_DIR_BASE=./out.noindex-shared` is active before running MCP or evals.
+- `bash scripts/up.sh` now sources `scripts/select_index.sh shared` automatically, exporting:
+  - `OUT_DIR_BASE=./out.noindex-shared`
+  - `COLLECTION_NAME=code_chunks_agro_shared`
+  - `REPO=agro`
+- You can also persist these via the GUI:
+  - Open `/` → Tab “Infrastructure” → set `Out Dir Base` to `./out.noindex-shared`, select `Active Repository`, optionally set `Collection Name`.
+  - Click “Apply All Changes” — this writes `.env` and `repos.json` (POST `/api/config`).
+
+MCP “no results” quick fix
+- Symptom: `rag_search` returns `{count: 0}` even though `out.noindex-shared/agro/chunks.jsonl` exists.
+- Fix checklist:
+  1) Confirm index path: `ls -lh out.noindex-shared/agro/chunks.jsonl`
+  2) Ensure env seen by MCP: set `OUT_DIR_BASE=./out.noindex-shared` (via GUI Apply or `source scripts/select_index.sh shared`).
+  3) Restart MCP: `bash scripts/up.sh` then `bash scripts/status.sh`.
+  4) Reindex if missing: `. .venv/bin/activate && REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`.
+  5) Sanity test (Python):
+     ```bash
+     . .venv/bin/activate && OUT_DIR_BASE=./out.noindex-shared \
+       python - <<'PY'
+     from retrieval.hybrid_search import search_routed_multi
+     for d in search_routed_multi('Where is OAuth validated', repo_override='agro', m=2, final_k=5):
+         print(d['file_path'], d['start_line'], d['end_line'])
+     PY
+     ```
+
+Index profiles in `scripts/select_index.sh`:
+- `shared` → `OUT_DIR_BASE=./out.noindex-shared`, `COLLECTION_NAME=code_chunks_agro_shared`
+- `gui` → `OUT_DIR_BASE=./out.noindex-gui`, `COLLECTION_NAME=code_chunks_agro_gui`
+- `devclean` → `OUT_DIR_BASE=./out.noindex-devclean`, `COLLECTION_NAME=code_chunks_agro_devclean`
 Architecture (ground truth)
 pgsql
 Copy code
@@ -284,7 +330,7 @@ bash
 Copy code
 python eval_loop.py && \
 python - <<'PY'
-from hybrid_search import search_routed_multi
+from retrieval.hybrid_search import search_routed_multi
 docs = search_routed_multi("your query", repo_override="project", final_k=10)
 for d in docs[:5]:
     print(f"{d['rerank_score']:.3f}  {d['file_path']}:{d['start_line']}-{d['end_line']}")

@@ -1,3 +1,7 @@
+# Editor data
+.editor_data/
+out/editor/
+
 # Python
 __pycache__/
 *.py[codz]
@@ -7,7 +11,8 @@ __pycache__/
 *.so
 *$py.class
 .mcp.json
-
+*/data/
+/out.noindex/
 # Distribution / packaging
 .Python
 build/
@@ -47,7 +52,11 @@ venv.bak/
 */.pdm-build/
 
 # Build / cache / data
-out/
+*out.noindex/
+out.noindex-*/
+*/agro/out.noindex/
+*/agro/out/
+*/agro/data/
 .dist/
 .cache
 *.egg-info/

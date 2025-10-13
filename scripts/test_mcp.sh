@@ -13,7 +13,7 @@ echo ""
 echo "1. Test initialize method..."
 python -c "
 import json
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 
 req = {'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {}}
 server = MCPServer()
@@ -27,7 +27,7 @@ echo ""
 echo "2. Test tools/list method..."
 python -c "
 import json
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 
 req = {'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list', 'params': {}}
 server = MCPServer()
@@ -44,7 +44,7 @@ echo ""
 echo "3. Test rag.search (project)..."
 python -c "
 import json, sys
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 
 req = {
     'jsonrpc': '2.0',
@@ -77,7 +77,7 @@ echo ""
 echo "4. Test rag.search (project)..."
 python -c "
 import json, sys
-from mcp_server import MCPServer
+from server.mcp.server import MCPServer
 
 req = {
     'jsonrpc': '2.0',

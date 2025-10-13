@@ -4,13 +4,15 @@
 - Route every query to the correct repo via the `repo` argument: `project` or `project`. Never mix results.
 - After retrieval, you may call `rag_answer` for a synthesized answer with citations. Answers must include file paths and line ranges from retrieval.
 
+ALL features, settings, variables, and parameters, must be put in the GUI.  **This is an accessiblity issue** the developer of this project is exremely dyslexic, and will break things with typos in code files, therefore, all settings must be in gui. If you don't know where to put it, put it in a 'Misc' tab in the gui. 
+
 How to use RAG locally vs externally:
 - Local Python (preferred in-repo):
   - `cd path/to/your/rag-service && . .venv/bin/activate`
   - Run a quick search:
     ```bash
     python - <<'PY'
-    from hybrid_search import search_routed_multi
+    from retrieval.hybrid_search import search_routed_multi
     for d in search_routed_multi("Where is OAuth validated", repo_override="project", m=4, final_k=10):
         print(f"{d['file_path']}:{d['start_line']}-{d['end_line']}  score={d['rerank_score']:.3f}")
     PY
@@ -119,6 +121,19 @@ cd path/to/your/rag-service && . .venv/bin/activate && \
 export REPO=project && export THREAD_ID=my-session && \
 python chat_cli.py
 ```
+
+### Cross-Branch Indexing (Shared Profile)
+
+- Goal: One shared index usable from any branch without touching code.
+- Create a fast BM25-only index (no external APIs):
+  - `REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 python index_repo.py`
+- Retrieval picks the index from `OUT_DIR_BASE`. Dense/Qdrant is optional; `hybrid_search.py` falls back cleanly when missing.
+- Helper: `source scripts/select_index.sh shared` to set `OUT_DIR_BASE` and `COLLECTION_NAME` consistently.
+
+Index profiles in `scripts/select_index.sh`:
+- `shared` → `OUT_DIR_BASE=./out.noindex-shared`, `COLLECTION_NAME=code_chunks_agro_shared`
+- `gui` → `OUT_DIR_BASE=./out.noindex-gui`, `COLLECTION_NAME=code_chunks_agro_gui`
+- `devclean` → `OUT_DIR_BASE=./out.noindex-devclean`, `COLLECTION_NAME=code_chunks_agro_devclean`
 
 ---
 
@@ -342,7 +357,7 @@ codex mcp add rag-service -- python /opt/app//rag-service/mcp_server.py
 ```bash
 python eval_loop.py && \
 python - <<'PY'
-from hybrid_search import search_routed_multi
+from retrieval.hybrid_search import search_routed_multi
 docs = search_routed_multi("your query", repo_override="project", final_k=10)
 for d in docs[:5]:
     print(f"{d['rerank_score']:.3f}  {d['file_path']}:{d['start_line']}-{d['end_line']}")
