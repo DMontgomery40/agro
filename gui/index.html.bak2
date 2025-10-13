@@ -2716,6 +2716,329 @@
                 </div>
             </div>
 
+            <div id="tab-tools" class="tab-content">
+                <div class="settings-section">
+                    <h3>MCP & Channels</h3>
+                    <p class="small">Set per‑channel inference models. Provider is inferred from the model name; use base URL and keys from Infrastructure or Models for proxies/local engines.</p>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>HTTP Responses Model</label>
+                            <input type="text" name="GEN_MODEL_HTTP" placeholder="override HTTP model">
+                        </div>
+                        <div class="input-group">
+                            <label>MCP stdio Model</label>
+                            <input type="text" name="GEN_MODEL_MCP" placeholder="override MCP model">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>CLI Chat Model</label>
+                            <input type="text" name="GEN_MODEL_CLI" placeholder="override CLI model">
+                        </div>
+                        <div class="input-group">
+                            <label>MCP HTTP (host/port/path)</label>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" name="MCP_HTTP_HOST" placeholder="0.0.0.0" style="width:40%">
+                                <input type="number" name="MCP_HTTP_PORT" placeholder="8013" style="width:30%">
+                                <input type="text" name="MCP_HTTP_PATH" placeholder="/mcp" style="width:30%">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- MCP RAG Search (debug) -->
+                <div class="settings-section" style="border-left: 3px solid #b794f6;">
+                    <h3>
+                        <span style="color:#b794f6;">●</span> MCP RAG Search (debug)
+                    </h3>
+                    <p class="small">Runs the MCP server’s <code>rag_search</code> tool to return file paths and line ranges. Falls back to local retrieval if MCP is unavailable.</p>
+                    <div class="input-row">
+                        <div class="input-group full-width">
+                            <label>Question</label>
+                            <input type="text" id="mcp-rag-q" placeholder="e.g. Where is OAuth token validated?">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Repository</label>
+                            <input type="text" id="mcp-rag-repo" placeholder="agro">
+                        </div>
+                        <div class="input-group">
+                            <label>Top K</label>
+                            <input type="number" id="mcp-rag-topk" value="10" min="1" max="50">
+                        </div>
+                        <div class="input-group">
+                            <label>Force Local</label>
+                            <select id="mcp-rag-local">
+                                <option value="false" selected>No (use MCP if available)</option>
+                                <option value="true">Yes (bypass MCP)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <button class="small-button" id="btn-mcp-rag-run">Run</button>
+                        </div>
+                    </div>
+                    <pre id="mcp-rag-results" class="result-display" style="min-height: 120px; white-space: pre-wrap; background: var(--code-bg);"></pre>
+                </div>
+                <div class="settings-section">
+                    <h3>Git Hooks (Auto-Index)</h3>
+                    <p class="small">Install local git hooks to auto-run BM25 indexing on branch changes and commits. Enable it with <code>AUTO_INDEX=1</code>.</p>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Install Hooks</label>
+                            <button class="small-button" id="btn-install-hooks">Install</button>
+                        </div>
+                        <div class="input-group">
+                            <label>Status</label>
+                            <div id="hooks-status" class="mono">—</div>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group full-width">
+                            <label>Enable</label>
+                            <input type="text" readonly value="export AUTO_INDEX=1" onclick="this.select();document.execCommand('copy');" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Golden Questions Manager -->
+                <div class="settings-section" style="border-left: 3px solid #5b9dff;">
+                    <h3>
+                        <span class="accent-blue">●</span> Golden Questions Manager
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Golden Questions</span>
+                                Questions with known-good answers used to measure RAG quality. Each question should have expected file paths that contain the answer.
+                                <div class="tt-badges">
+                                    <span class="tt-badge info">Quality Assurance</span>
+                                    <span class="tt-badge">No Re-index</span>
+                                </div>
+                            </div>
+                        </span>
+                    </h3>
+                    <p class="small">Manage test questions for evaluating retrieval quality. Add, edit, test individual questions, or run full evaluation suite.</p>
+
+                    <!-- Add New Question Form -->
+                    <div id="golden-add-form" style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; margin-bottom: 16px;">
+                        <h4 style="font-size: 13px; color: #00ff88; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Add New Question</h4>
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label>Question Text</label>
+                            <textarea id="golden-new-q" placeholder="e.g., Where is OAuth token validated?" style="min-height: 60px;"></textarea>
+                        </div>
+                        <div class="input-row" style="margin-bottom: 12px;">
+                            <div class="input-group">
+                                <label>Repository</label>
+                                <select id="golden-new-repo">
+                                    <option value="agro">agro</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Expected Paths (comma-separated)</label>
+                                <input type="text" id="golden-new-paths" placeholder="auth, oauth, token">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="small-button" id="btn-golden-add" style="background: #00ff88; color: #000; border: none; width: auto; flex: 1;">Add Question</button>
+                            <button class="small-button" id="btn-golden-test-new" style="width: auto;">Test First</button>
+                        </div>
+                    </div>
+
+                    <!-- Questions List -->
+                    <div id="golden-questions-list" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+                        <div id="golden-questions-content" style="font-size: 13px; color: #aaa;">
+                            Loading questions...
+                        </div>
+                    </div>
+
+                    <div class="action-buttons" style="margin-top: 16px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button id="btn-golden-refresh" style="flex: 1;">Refresh List</button>
+                        <button id="btn-golden-load-recommended" style="flex: 1; background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">Load Recommended</button>
+                        <button id="btn-golden-run-tests" style="flex: 1; background: #1a1a1a; color: #b794f6; border: 1px solid #b794f6;">Run All Tests</button>
+                        <button id="btn-golden-export" style="flex: 1; background: #1a1a1a; color: #00ff88;">Export JSON</button>
+                    </div>
+                </div>
+
+                <!-- LangSmith (Preview) -->
+                <div class="settings-section" style="border-left: 3px solid #9ad4ff;">
+                    <h3>
+                        <span class="accent-blue">●</span> LangSmith (Preview)
+                    </h3>
+                    <p class="small">View the real LangSmith run inside AGRO. Uses a shared link for embedding.</p>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Project</label>
+                            <input type="text" id="ls-project" placeholder="agro">
+                        </div>
+                        <div class="input-group">
+                            <label>Share</label>
+                            <select id="ls-share">
+                                <option value="true" selected>Yes (public share link)</option>
+                                <option value="false">No (requires login)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <button class="small-button" id="btn-ls-latest">Load Latest</button>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group full-width">
+                            <a id="ls-open" href="#" target="_blank" style="display:none;">Open in new tab ↗</a>
+                        </div>
+                    </div>
+                    <div id="ls-embed-wrap" style="position: relative; width: 100%; height: 480px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;">
+                        <iframe id="ls-iframe" style="width: 100%; height: 100%; border: none; background: #fff;"></iframe>
+                    </div>
+                    <p class="small" id="ls-note" style="color:#666; margin-top:8px; display:none;">If the viewer is blocked by the site, use the “Open in new tab” link above.</p>
+                </div>
+
+                <!-- Cards Viewer -->
+                <div class="settings-section" style="border-left: 3px solid #00ff88;">
+                    <h3>
+                        <span class="accent-green">●</span> Cards Viewer
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Code Cards</span>
+                                High-level code cards for quick navigation and understanding of key components. Click any card to view its source.
+                            </div>
+                        </span>
+                    </h3>
+                    <div class="action-buttons" style="margin-bottom: 16px; display:flex; gap:8px;">
+                        <button id="btn-cards-refresh" style="flex: 1; background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88;">
+                            <span style="margin-right: 4px;">↻</span> Refresh Cards
+                        </button>
+                        <button id="btn-cards-build" style="flex: 1; background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">
+                            <span style="margin-right: 4px;">⚡</span> Build Cards
+                        </button>
+                    </div>
+                    <div class="input-row" style="margin-top: -4px; margin-bottom: 8px; align-items: flex-end;">
+                        <div class="input-group">
+                            <label>Cards Max</label>
+                            <input type="number" id="cards-max" name="CARDS_MAX" value="0" min="0" step="10" style="max-width: 160px;">
+                            <p class="small" style="color:#888;">Limit chunks to summarize (0 = all)</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Default: Enrich Summaries</label>
+                            <select id="cards-enrich-default" name="CARDS_ENRICH_DEFAULT" style="max-width: 160px;">
+                                <option value="1">On</option>
+                                <option value="0">Off</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <button class="small-button" id="cards-settings-apply">Apply</button>
+                        </div>
+                    </div>
+                    <div id="cards-viewer-container" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+                        <div id="cards-last-build" class="mono" style="font-size: 11px; color:#888; margin-bottom: 8px; display:none;"></div>
+                        <div id="cards-viewer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px;"></div>
+                    </div>
+                    <p class="small" style="color:#888; margin-top:8px;">Click a card to navigate to its source location.</p>
+                </div>
+
+                <!-- Evaluation Runner -->
+                <div class="settings-section" style="border-left: 3px solid #b794f6;">
+                    <h3>
+                        <span class="accent-purple">●</span> Evaluation Runner
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Evaluation System</span>
+                                Runs all golden questions and measures retrieval accuracy. Tracks regressions vs. saved baseline.
+                                <div class="tt-badges">
+                                    <span class="tt-badge info">Accuracy Metrics</span>
+                                    <span class="tt-badge warn">Can Be Slow</span>
+                                </div>
+                            </div>
+                        </span>
+                    </h3>
+                    <p class="small">Run full evaluation suite to measure RAG quality. Compare against baseline to detect regressions.</p>
+
+                    <!-- Settings -->
+                    <div class="input-row" style="margin-bottom: 16px;">
+                        <div class="input-group">
+                            <label>
+                                Use Multi-Query
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Multi-Query Expansion</span>
+                                        Generate multiple query variations for better recall. Increases API costs but improves accuracy. Recommended: enabled.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Better Recall</span>
+                                            <span class="tt-badge warn">Higher Cost</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <select id="eval-use-multi">
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>
+                                Final K Results
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Results Count</span>
+                                        Number of results to return per question. Higher = more context but more noise. Recommended: 5-10.
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="number" id="eval-final-k" value="5" min="1" max="20">
+                        </div>
+                    </div>
+
+                    <!-- Run Button -->
+                    <button class="action-buttons" id="btn-eval-run" style="width: 100%; background: #b794f6; color: #000; font-size: 15px; padding: 14px;">
+                        Run Full Evaluation
+                    </button>
+
+                    <!-- Progress -->
+                    <div id="eval-progress" style="margin-top: 16px; display: none;">
+                        <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px;">
+                            <div id="eval-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #b794f6 0%, #ff6b9d 100%); transition: width 0.3s ease;"></div>
+                        </div>
+                        <div id="eval-status" class="mono" style="font-size: 12px; color: #aaa; text-align: center;">—</div>
+                    </div>
+
+                    <!-- Results Display -->
+                    <div id="eval-results" style="margin-top: 16px; display: none;">
+                        <!-- Overall Metrics -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-1 Accuracy</div>
+                                <div id="eval-top1-acc" class="mono" style="font-size: 24px; color: #00ff88; font-weight: 700;">—</div>
+                            </div>
+                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-K Accuracy</div>
+                                <div id="eval-topk-acc" class="mono" style="font-size: 24px; color: #00ff88; font-weight: 700;">—</div>
+                            </div>
+                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Duration</div>
+                                <div id="eval-duration" class="mono" style="font-size: 24px; color: #b794f6; font-weight: 700;">—</div>
+                            </div>
+                        </div>
+
+                        <!-- Per-Question Results -->
+                        <div id="eval-details" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 300px; overflow-y: auto;"></div>
+
+                        <!-- Baseline Actions -->
+                        <div class="action-buttons" style="margin-top: 16px;">
+                            <button id="btn-eval-save-baseline" style="flex: 1;">Save as Baseline</button>
+                            <button id="btn-eval-compare" style="flex: 1; background: #1a1a1a; color: #00ff88;">Compare to Baseline</button>
+                            <button id="btn-eval-export" style="flex: 1; background: #1a1a1a; color: #00ff88;">Export Results</button>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Results -->
+                    <div id="eval-comparison" style="margin-top: 16px; display: none;"></div>
+                </div>
+            </div>
 
             <!-- Tab: Configuration - Models -->
             <div id="tab-config-models" class="tab-content">
@@ -2812,7 +3135,99 @@
                 </div>
             </div>
 
+            <!-- Tab: Embeddings -->
+            <div id="tab-embeddings" class="tab-content">
+                <div class="settings-section">
+                    <h3>Embedding Configuration</h3>
+                    <p class="small">Embeddings map text to vectors for dense retrieval. Choose a provider/model and dimensions where relevant.</p>
+                    <button class="small-button" id="btn-add-embed-model" style="margin-bottom:12px;">Add Embedding Model</button>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Embedding Provider</label>
+                            <select name="EMBEDDING_TYPE">
+                                <option value="openai">OpenAI</option>
+                                <option value="local">Local</option>
+                                <option value="voyage">Voyage</option>
+                                <option value="mxbai">MXBAI</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Voyage API Key</label>
+                            <input type="password" name="VOYAGE_API_KEY">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Voyage Embed Dimension</label>
+                            <input type="number" name="VOYAGE_EMBED_DIM" value="512">
+                        </div>
+                        <div class="input-group">
+                            <label>MXBAI Dimension</label>
+                            <input type="number" name="EMBEDDING_DIM" value="512">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Skip Dense Indexing</label>
+                            <select name="SKIP_DENSE">
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Enrich Code Chunks</label>
+                            <select name="ENRICH_CODE_CHUNKS">
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Tab: Reranking -->
+            <div id="tab-reranking" class="tab-content">
+                <div class="settings-section">
+                    <h3>Reranking Configuration</h3>
+                    <p class="small">Reranking reorders retrieved chunks by relevance using a cross‑encoder (Cohere/local/HF). Improves precision/confidence.</p>
+                    <button class="small-button" id="btn-add-rerank-model" style="margin-bottom:12px;">Add Rerank Model</button>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Rerank Backend</label>
+                            <select name="RERANK_BACKEND">
+                                <option value="local">Local</option>
+                                <option value="cohere">Cohere</option>
+                                <option value="hf">Hugging Face</option>
+                                <option value="none">None</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Local Reranker Model</label>
+                            <input type="text" name="RERANKER_MODEL" placeholder="BAAI/bge-reranker-v2-m3" list="rerank-model-list">
+                            <datalist id="rerank-model-list"></datalist>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Cohere API Key</label>
+                            <input type="password" name="COHERE_API_KEY">
+                        </div>
+                        <div class="input-group">
+                            <label>Cohere Rerank Model</label>
+                            <input type="text" name="COHERE_RERANK_MODEL" placeholder="rerank-3.5">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>HF Trust Remote Code</label>
+                            <select name="TRANSFORMERS_TRUST_REMOTE_CODE">
+                                <option value="1">On</option>
+                                <option value="0">Off</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Tab: Configuration - Retrieval -->
             <div id="tab-config-retrieval" class="tab-content">
@@ -3159,6 +3574,29 @@
                 </div>
             </div>
 
+            <!-- Tab: Confidence -->
+            <div id="tab-confidence" class="tab-content">
+                <div class="settings-section">
+                    <h3>Confidence Gating</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Confidence Top-1 Threshold</label>
+                            <input type="number" name="CONF_TOP1" value="0.62" step="0.01" min="0" max="1">
+                        </div>
+                        <div class="input-group">
+                            <label>Confidence Avg-5 Threshold</label>
+                            <input type="number" name="CONF_AVG5" value="0.55" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Confidence Any Threshold</label>
+                            <input type="number" name="CONF_ANY" value="0.55" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- Tab: Configuration - Infrastructure -->
             <div id="tab-config-infra" class="tab-content">
@@ -3298,6 +3736,36 @@
                     <div id="index-status" class="result-display" style="min-height: 80px;"></div>
                     <div class="progress" style="margin-top:12px; background:#111; border:1px solid #2a2a2a; border-radius:4px; height:12px;">
                         <div id="index-bar" style="height:100%; width:0%; background:#ff9b5e; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Evaluation -->
+            <div id="tab-eval" class="tab-content">
+                <div class="settings-section">
+                    <h3>Evaluation Configuration</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Golden Questions Path</label>
+                            <input type="text" name="GOLDEN_PATH" value="golden.json">
+                        </div>
+                        <div class="input-group">
+                            <label>Baseline Path</label>
+                            <input type="text" name="BASELINE_PATH" value="eval_baseline.json">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Eval Multi-Query</label>
+                            <select name="EVAL_MULTI">
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Eval Final K</label>
+                            <input type="number" name="EVAL_FINAL_K" value="5">
+                        </div>
                     </div>
                 </div>
             </div>

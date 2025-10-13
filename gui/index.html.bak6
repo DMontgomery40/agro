@@ -3302,6 +3302,36 @@
                 </div>
             </div>
 
+            <!-- Tab: Evaluation -->
+            <div id="tab-eval" class="tab-content">
+                <div class="settings-section">
+                    <h3>Evaluation Configuration</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Golden Questions Path</label>
+                            <input type="text" name="GOLDEN_PATH" value="golden.json">
+                        </div>
+                        <div class="input-group">
+                            <label>Baseline Path</label>
+                            <input type="text" name="BASELINE_PATH" value="eval_baseline.json">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Eval Multi-Query</label>
+                            <select name="EVAL_MULTI">
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Eval Final K</label>
+                            <input type="number" name="EVAL_FINAL_K" value="5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tab: Settings - General -->
             <div id="tab-settings-general" class="tab-content">
                 <div class="subtab-bar">
