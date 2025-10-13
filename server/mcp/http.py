@@ -1,5 +1,9 @@
 from __future__ import annotations
 import os
+import json
+import urllib.request
+import urllib.error
+import urllib.parse
 from typing import Dict, Any
 
 from fastmcp import FastMCP
@@ -64,6 +68,91 @@ def search(repo: str, question: str, top_k: int = 10) -> Dict[str, Any]:
         "repo": d.get("repo", repo),
     } for d in docs]
     return {"results": results, "repo": repo, "count": len(results)}
+
+
+@mcp.tool()
+def netlify_deploy(domain: str = "both") -> Dict[str, Any]:
+    """
+    Trigger Netlify builds for configured domains.
+    Args:
+        domain: Site to deploy - 'project.net', 'project.dev', or 'both'
+    """
+    def _netlify_api(path: str, method: str = "GET", data: dict = None):
+        api_key = os.getenv("NETLIFY_API_KEY")
+        if not api_key:
+            raise RuntimeError("NETLIFY_API_KEY not set")
+        url = f"https://api.netlify.com/api/v1{path}"
+        req = urllib.request.Request(url, method=method)
+        req.add_header("Authorization", f"Bearer {api_key}")
+        req.add_header("Content-Type", "application/json")
+        body = json.dumps(data).encode("utf-8") if data else None
+        with urllib.request.urlopen(req, data=body, timeout=30) as resp:
+            raw = resp.read().decode("utf-8")
+            return json.loads(raw) if raw else {}
+    
+    def _find_site(domain: str):
+        sites = _netlify_api("/sites")
+        if isinstance(sites, list):
+            for s in sites:
+                for key in ("custom_domain", "url", "ssl_url"):
+                    if domain.lower() in (s.get(key) or "").lower():
+                        return s
+        return None
+    
+    targets = ["project.net", "project.dev"] if domain == "both" else [domain]
+    results = []
+    for d in targets:
+        try:
+            site = _find_site(d)
+            if not site:
+                results.append({"domain": d, "status": "not_found"})
+                continue
+            site_id = site.get("id")
+            build = _netlify_api(f"/sites/{site_id}/builds", method="POST", data={})
+            results.append({"domain": d, "status": "triggered", "site_id": site_id, "build_id": build.get("id")})
+        except Exception as e:
+            results.append({"domain": d, "status": "error", "error": str(e)})
+    return {"results": results}
+
+
+@mcp.tool()
+def web_get(url: str, max_bytes: int = 20000) -> Dict[str, Any]:
+    """
+    HTTP GET for allowlisted documentation domains.
+    Allowed: openai.com, platform.openai.com, github.com, openai.github.io
+    """
+    allowed_hosts = {"openai.com", "platform.openai.com", "github.com", "openai.github.io"}
+    
+    def _is_allowed(url: str) -> bool:
+        try:
+            u = urllib.parse.urlparse(url)
+            host = (u.netloc or "").lower()
+            return any(host == h or host.endswith("." + h) for h in allowed_hosts)
+        except:
+            return False
+    
+    if not url.startswith("http"):
+        return {"error": "url must start with http(s)"}
+    if not _is_allowed(url):
+        return {"error": "host not allowlisted"}
+    
+    req = urllib.request.Request(url, method="GET", headers={"User-Agent": "agro-rag-mcp/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            raw = resp.read(max_bytes + 1)
+            clipped = raw[:max_bytes]
+            return {
+                "url": url,
+                "status": resp.status,
+                "length": len(raw),
+                "clipped": len(raw) > len(clipped),
+                "content_preview": clipped.decode("utf-8", errors="ignore")
+            }
+    except urllib.error.HTTPError as he:
+        body = he.read().decode("utf-8", errors="ignore")
+        return {"url": url, "status": he.code, "error": body[:1000]}
+    except Exception as e:
+        return {"url": url, "error": str(e)}
 
 
 if __name__ == "__main__":

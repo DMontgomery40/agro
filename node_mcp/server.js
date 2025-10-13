@@ -77,6 +77,44 @@ app.get('/mcp/answer_stream', async (req, res) => {
   }
 });
 
+// Netlify deploy proxy (calls Python HTTP MCP on 8013)
+app.get('/mcp/netlify_deploy', async (req, res) => {
+  try {
+    const { domain, token } = req.query;
+    const MCP_HTTP_URL = process.env.MCP_HTTP_URL || 'http://127.0.0.1:8013';
+    const u = new URL('/mcp/tools/call', MCP_HTTP_URL);
+    const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    const body = JSON.stringify({
+      name: 'netlify_deploy',
+      arguments: { domain: domain || 'both' }
+    });
+    const r = await fetch(u.toString(), { method: 'POST', headers, body });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// Web get proxy (calls Python HTTP MCP on 8013)
+app.get('/mcp/web_get', async (req, res) => {
+  try {
+    const { url, max_bytes, token } = req.query;
+    const MCP_HTTP_URL = process.env.MCP_HTTP_URL || 'http://127.0.0.1:8013';
+    const u = new URL('/mcp/tools/call', MCP_HTTP_URL);
+    const headers = token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    const body = JSON.stringify({
+      name: 'web_get',
+      arguments: { url, max_bytes: max_bytes ? parseInt(max_bytes) : 20000 }
+    });
+    const r = await fetch(u.toString(), { method: 'POST', headers, body });
+    const data = await r.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Node proxy listening on :${PORT}, targeting ${RAG_API_URL}`);
 });
