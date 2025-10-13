@@ -1,0 +1,19 @@
+{
+  "repo": "agro",
+  "id": "c8cdb03d",
+  "question": "LangSmith wiring self-test",
+  "started_at": "2025-10-13T06:15:53.063483Z",
+  "finished_at": "2025-10-13T06:15:53.455117Z",
+  "events": [
+    {
+      "ts": "2025-10-13T06:15:53.453995Z",
+      "kind": "diagnostic.selftest",
+      "data": {
+        "ok": true
+      }
+    }
+  ],
+  "tracing_mode": "langsmith",
+  "langsmith_project": "agro",
+  "langsmith_url": null
+}

@@ -315,13 +315,15 @@
             // load trace if the dropdown is open
             const det = document.getElementById('chat-trace');
             if (det && det.open){ await loadLatestTrace('chat-trace-output'); }
-            // optional auto-open in LangSmith (project runs page)
+            // optional auto-open in LangSmith (use latest shared run URL)
             try{
                 const env = (state.config?.env)||{};
                 if ((env.TRACING_MODE||'').toLowerCase()==='langsmith' && ['1','true','on'].includes(String(env.TRACE_AUTO_LS||'0').toLowerCase())){
                     const prj = (env.LANGCHAIN_PROJECT||'agro');
-                    const url = `https://smith.langchain.com/projects/${encodeURIComponent(prj)}/runs`;
-                    window.open(url, '_blank');
+                    const qs = new URLSearchParams({ project: prj, share: 'true' });
+                    const r = await fetch(api(`/api/langsmith/latest?${qs.toString()}`));
+                    const d = await r.json();
+                    if (d && d.url) window.open(d.url, '_blank');
                 }
             }catch{}
         }catch(e){ appendChatMessage('assistant', `Error: ${e.message}`); }
@@ -1948,11 +1950,14 @@
         const rt = document.getElementById('btn-trace-latest');
         if (rt) rt.addEventListener('click', ()=>loadLatestTrace('trace-output'));
         const rtLS = document.getElementById('btn-trace-open-ls');
-        if (rtLS) rtLS.addEventListener('click', ()=>{
+        if (rtLS) rtLS.addEventListener('click', async ()=>{
             try{
                 const prj = (state.config?.env?.LANGCHAIN_PROJECT||'agro');
-                const url = `https://smith.langchain.com/projects/${encodeURIComponent(prj)}/runs`;
-                window.open(url, '_blank');
+                const qs = new URLSearchParams({ project: prj, share: 'true' });
+                const r = await fetch(api(`/api/langsmith/latest?${qs.toString()}`));
+                const d = await r.json();
+                if (d && d.url) window.open(d.url, '_blank');
+                else alert('No recent LangSmith run found. Ask a question first.');
             }catch(e){ alert('Unable to open LangSmith: '+e.message); }
         });
 
@@ -2140,6 +2145,7 @@
         bindCollapsibleSections();
         bindDropzone();
         bindMcpRagSearch();
+        bindLangSmithViewer();
         const hookBtn = document.getElementById('btn-install-hooks'); if (hookBtn) hookBtn.addEventListener('click', installHooks);
         const genKwBtn = document.getElementById('btn-generate-keywords'); if (genKwBtn) genKwBtn.addEventListener('click', createKeywords);
 
@@ -2309,6 +2315,46 @@
                 repoEl.value = state.config.env.REPO;
             }
         } catch {}
+    }
+
+    // ---------------- LangSmith (Preview) ----------------
+    function bindLangSmithViewer() {
+        const btn = document.getElementById('btn-ls-latest');
+        if (!btn || btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+        const projEl = document.getElementById('ls-project');
+        if (projEl && state.config && state.config.env && state.config.env.LANGCHAIN_PROJECT) {
+            projEl.value = state.config.env.LANGCHAIN_PROJECT;
+        }
+        btn.addEventListener('click', async () => {
+            const proj = projEl && projEl.value ? projEl.value.trim() : '';
+            const shareSel = document.getElementById('ls-share');
+            const share = shareSel && String(shareSel.value) === 'false' ? 'false' : 'true';
+            const qs = new URLSearchParams({ share });
+            if (proj) qs.set('project', proj);
+            const wrap = document.getElementById('ls-embed-wrap');
+            const frame = document.getElementById('ls-iframe');
+            const link = document.getElementById('ls-open');
+            const note = document.getElementById('ls-note');
+            try {
+                if (frame) frame.src = 'about:blank';
+                const r = await fetch(api(`/api/langsmith/latest?${qs.toString()}`));
+                const d = await r.json();
+                if (d && d.url) {
+                    if (link) { link.href = d.url; link.style.display = 'inline-block'; }
+                    if (frame) {
+                        frame.src = d.url;
+                        // If embedding is blocked, we still have the link
+                        frame.addEventListener('error', () => { if (note) note.style.display = 'block'; }, { once: true });
+                        setTimeout(()=>{ if (note) note.style.display = 'block'; }, 1500);
+                    }
+                } else {
+                    if (note) { note.style.display = 'block'; note.textContent = 'No recent LangSmith run found or URL unavailable.'; }
+                }
+            } catch (e) {
+                if (note) { note.style.display = 'block'; note.textContent = 'Failed to load LangSmith run: ' + e.message; }
+            }
+        });
     }
 
     // ---------------- Autotune ----------------
