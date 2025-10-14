@@ -2562,11 +2562,11 @@
                                 <span class="help-icon">?</span>
                                 <div class="tooltip-bubble">
                                     <span class="tt-title">System Instructions</span>
-                                    Override default system prompt. Leave empty to use default ("You answer strictly from the provided code context..."). Use to change tone, add rules, etc.
+                                    Override default system prompt. Leave empty to use expert prompt ( plugin development + AGRO RAG specialist). Use to change tone, add rules, etc.
                                 </div>
                             </span>
                         </label>
-                        <textarea id="chat-system-prompt" placeholder="Leave empty for default system prompt" style="min-height: 80px;"></textarea>
+                        <textarea id="chat-system-prompt" placeholder="Leave empty for expert system prompt ( plugin dev + AGRO RAG expert)" style="min-height: 80px;"></textarea>
                     </div>
 
                     <!-- History Settings Section -->
@@ -2859,6 +2859,26 @@
                             </label>
                             <input type="number" name="FINAL_K" value="10" min="1">
                         </div>
+                        <div class="input-group">
+                            <label>
+                                Use Semantic Synonyms
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Semantic Synonym Expansion</span>
+                                        Expands queries with semantic synonyms to improve retrieval. Example: "auth" → "auth authentication oauth jwt bearer". Defined in semantic_synonyms.json. Default: ON.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge info">Better Recall</span>
+                                            <span class="tt-badge">No Re-index</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <select name="USE_SEMANTIC_SYNONYMS">
+                                <option value="1">ON</option>
+                                <option value="0">OFF</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
@@ -2957,22 +2977,6 @@
                                 <option value="prefer_first_party">Prefer First Party</option>
                                 <option value="prefer_vendor">Prefer Vendor</option>
                             </select>
-                        </div>
-                        <div class="input-group">
-                            <label>
-                                agro Path Boosts (CSV)
-                                <span class="tooltip-wrap">
-                                    <span class="help-icon">?</span>
-                                    <div class="tooltip-bubble">
-                                        <span class="tt-title">Path-Specific Score Boosts</span>
-                                        Comma-separated list of path prefixes to boost. Each matching prefix adds +0.06 to chunk score (max +0.18). For example, "app/,lib/,config/" boosts results from those directories. Repo-specific tuning.
-                                        <div class="tt-badges">
-                                            <span class="tt-badge">Repo-Specific</span>
-                                        </div>
-                                    </div>
-                                </span>
-                            </label>
-                            <input type="text" name="agro_PATH_BOOSTS" placeholder="app/,lib/,config/">
                         </div>
                     </div>
                     

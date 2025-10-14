@@ -334,7 +334,7 @@ function saveMessageToHistory(role, content, messageId) {
             id: messageId,
             role: role,
             content: content,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date().toLocaleString(),
             repo: document.getElementById('chat-repo-select').value || 'auto'
         });
 
@@ -487,7 +487,7 @@ function exportChatHistory() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `chat-history-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `chat-history-${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

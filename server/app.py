@@ -61,9 +61,9 @@ def serve_index():
 def health():
     try:
         g = get_graph()
-        return {"status": "healthy", "graph_loaded": g is not None, "ts": __import__('datetime').datetime.utcnow().isoformat() + 'Z'}
+        return {"status": "healthy", "graph_loaded": g is not None, "ts": __import__('datetime').datetime.now().isoformat()}
     except Exception as e:
-    return {"status": "error", "detail": str(e)}
+        return {"status": "error", "detail": str(e)}
 
 @app.get("/health/langsmith")
 def health_langsmith() -> Dict[str, Any]:
@@ -395,7 +395,7 @@ def list_traces(repo: Optional[str] = Query(None)) -> Dict[str, Any]:
             files.append({
                 'path': str(p),
                 'name': p.name,
-                'mtime': __import__('datetime').datetime.utcfromtimestamp(p.stat().st_mtime).isoformat() + 'Z'
+                'mtime': __import__('datetime').datetime.fromtimestamp(p.stat().st_mtime).isoformat()
             })
     return {'repo': r, 'files': files}
 
@@ -554,7 +554,7 @@ def upsert_price(item: Dict[str, Any]) -> Dict[str, Any]:
     else:
         models[idx].update(item)
     data["models"] = models
-    data["last_updated"] = __import__('datetime').datetime.utcnow().strftime('%Y-%m-%d')
+    data["last_updated"] = __import__('datetime').datetime.now().strftime('%Y-%m-%d')
     _write_json(prices_path, data)
     return {"ok": True, "count": len(models)}
 
@@ -1225,7 +1225,7 @@ def checkpoint_config() -> Dict[str, Any]:
     """Write a timestamped checkpoint of current env + repos to gui/profiles."""
     cfg = get_config()
     from datetime import datetime
-    ts = datetime.utcnow().strftime('%Y%m%d-%H%M%S')
+    ts = datetime.now().strftime('%Y%m%d-%H%M%S')
     out_dir = GUI_DIR / "profiles"
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / f"checkpoint-{ts}.json"

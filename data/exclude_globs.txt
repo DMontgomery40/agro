@@ -7,6 +7,12 @@
 **/vendor/**
 **/dist/**
 **/build/**
+**/.venv/**
+**/venv/**
+**/env/**
+**/.virtualenv/**
+**/virtualenv/**
+**/.pyenv/**
 **/.next/**
 **/.turbo/**
 **/.svelte-kit/**
@@ -28,6 +34,9 @@
 **/*.min.js
 **/*.min.css
 **/*.map
+**/*.bundle.js
+**/*.generated.*
+**/*.json.gz
 
 # Lockfiles (rarely helpful for RAG)
 **/pnpm-lock.yaml
@@ -48,3 +57,22 @@
 **/*.tar
 **/*.gz
 **/*.7z
+
+# Test files and data
+**/test/**
+**/tests/**
+**/*.spec.ts
+**/*.test.ts
+**/*.spec.js
+**/*.test.js
+**/fixtures/**
+**/mocks/**
+**/__mocks__/**
+**/test-data/**
+
+# Generated/vendor code
+**/*.d.ts
+**/external/**
+**/third_party/**
+**/install/**
+**/migrations/**

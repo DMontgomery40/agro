@@ -1,5 +1,5 @@
 {
-  "default_repo": "agro",
+  "default_repo": "",
   "repos": [
     {
       "name": "agro",
@@ -25,6 +25,89 @@
         "/gui/js"
       ],
       "layer_bonuses": {}
+    },
+    {
+      "name": "",
+      "path": "/Users/davidmontgomery/",
+      "keywords": [
+        "plugin",
+        "device",
+        "camera",
+        "homekit",
+        "automation",
+        "smart home",
+        "video",
+        "",
+        "provider",
+        "integration",
+        "webhook",
+        "adapter",
+        "traits",
+        "interfaces",
+        "device type",
+        "device manager",
+        "plugin api",
+        " sdk",
+        "home automation",
+        "iot device",
+        "device discovery",
+        "device pairing",
+        "device control",
+        "media stream",
+        "rtsp",
+        "onvif",
+        "mqtt",
+        "zigbee",
+        "zwave"
+      ],
+      "path_boosts": [
+        "/plugins",
+        "/server",
+        "/sdk",
+        "/common"
+      ],
+      "layer_bonuses": {
+        "server": {
+          "integration": 0.25,
+          "server": 0.20,
+          "sdk": 0.15,
+          "ui": 0.05,
+          "docs": 0.08,
+          "infra": 0.03
+        },
+        "integration": {
+          "integration": 0.30,
+          "server": 0.18,
+          "sdk": 0.12,
+          "ui": 0.05,
+          "docs": 0.10,
+          "infra": 0.03
+        },
+        "ui": {
+          "ui": 0.22,
+          "integration": 0.12,
+          "server": 0.08,
+          "sdk": 0.06,
+          "docs": 0.10,
+          "infra": 0.02
+        },
+        "sdk": {
+          "sdk": 0.28,
+          "integration": 0.20,
+          "server": 0.15,
+          "ui": 0.06,
+          "docs": 0.12,
+          "infra": 0.03
+        },
+        "infra": {
+          "infra": 0.20,
+          "server": 0.12,
+          "integration": 0.08,
+          "sdk": 0.05,
+          "ui": 0.03,
+          "docs": 0.06
+        }
+      }
     }
   ]
 }

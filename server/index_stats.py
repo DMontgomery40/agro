@@ -36,7 +36,7 @@ def _last_index_timestamp_for_repo(base: Path, repo_name: str) -> str | None:
     chunks = repo_dir / "chunks.jsonl"
     if chunks.exists():
         try:
-            return __import__('datetime').datetime.utcfromtimestamp(chunks.stat().st_mtime).isoformat() + 'Z'
+            return __import__('datetime').datetime.fromtimestamp(chunks.stat().st_mtime).isoformat()
         except Exception:
             pass
 
@@ -44,7 +44,7 @@ def _last_index_timestamp_for_repo(base: Path, repo_name: str) -> str | None:
     bm25 = repo_dir / "bm25_index"
     if bm25.exists():
         try:
-            return __import__('datetime').datetime.utcfromtimestamp(bm25.stat().st_mtime).isoformat() + 'Z'
+            return __import__('datetime').datetime.fromtimestamp(bm25.stat().st_mtime).isoformat()
         except Exception:
             pass
     return None
@@ -64,7 +64,7 @@ def get_index_stats() -> Dict[str, Any]:
     embedding_dim = int(os.getenv("EMBEDDING_DIM", "3072" if embedding_type == "openai" else "512"))
 
     stats: Dict[str, Any] = {
-        "timestamp": datetime.utcnow().isoformat() + 'Z',  # may be replaced below
+        "timestamp": datetime.now().isoformat(),  # may be replaced below
         "repos": [],
         "total_storage": 0,
         "embedding_config": {

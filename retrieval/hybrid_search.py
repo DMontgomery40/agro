@@ -18,6 +18,7 @@ from bm25s.tokenization import Tokenizer
 from Stemmer import Stemmer
 from .rerank import rerank_results as ce_rerank
 from server.env_model import generate_text
+from .synonym_expander import expand_query_with_synonyms, get_synonym_variants
 
 
 def _classify_query(q: str) -> str:
@@ -94,19 +95,34 @@ def _card_bonus(chunk_id: str, card_chunk_ids: set) -> float:
     return 0.08 if str(chunk_id) in card_chunk_ids else 0.0
 
 
-def _path_bonus(fp: str) -> float:
+def _path_bonus(fp: str, repo: str = None) -> float:
     fp = (fp or '').lower()
     bonus = 0.0
-    for sfx, b in [
-        ('/identity/', 0.12),
-        ('/auth/', 0.12),
-        ('/server', 0.10),
-        ('/backend', 0.10),
-        ('/api/', 0.08),
-    ]:
-        if sfx in fp:
-            bonus += b
-    return bonus
+    
+    # Use repos.json path_boosts if available
+    if repo:
+        try:
+            from common.config_loader import path_boosts
+            repo_boosts = path_boosts(repo)
+            for boost_path in repo_boosts:
+                if boost_path and boost_path.lower() in fp:
+                    bonus += 0.06  # Same boost as _project_path_boost
+        except Exception:
+            pass
+    
+    # Fallback to hardcoded boosts if no repo-specific boosts found
+    if bonus == 0.0:
+        for sfx, b in [
+            ('/identity/', 0.12),
+            ('/auth/', 0.12),
+            ('/server', 0.10),
+            ('/backend', 0.10),
+            ('/api/', 0.08),
+        ]:
+            if sfx in fp:
+                bonus += b
+    
+    return min(bonus, 0.18)  # Cap at 0.18 like _project_path_boost
 
 
 def _project_path_boost(fp: str, repo_tag: str) -> float:
@@ -243,11 +259,17 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     chunks = _load_chunks(repo)
     if not chunks:
         return []
+    
+    # Apply synonym expansion if enabled
+    use_synonyms = str(os.getenv('USE_SEMANTIC_SYNONYMS', '1')).strip().lower() in {'1', 'true', 'on'}
+    expanded_query = expand_query_with_synonyms(query, repo, max_expansions=3) if use_synonyms else query
+    
     dense_pairs = []
     qc = QdrantClient(url=QDRANT_URL)
     coll = os.getenv('COLLECTION_NAME', f'code_chunks_{repo}')
     try:
-        e = _get_embedding(query, kind="query")
+        # Use expanded query for embedding
+        e = _get_embedding(expanded_query, kind="query")
     except Exception:
         e = []
     try:
@@ -271,7 +293,8 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     idx_dir = os.path.join(out_dir(repo), 'bm25_index')
     retriever = bm25s.BM25.load(idx_dir)
     tokenizer = Tokenizer(stemmer=Stemmer('english'), stopwords='en')
-    tokens = tokenizer.tokenize([query])
+    # Use expanded query for BM25 sparse retrieval
+    tokens = tokenizer.tokenize([expanded_query])
     ids, _ = retriever.retrieve(tokens, k=topk_sparse)
     ids = ids.tolist()[0] if hasattr(ids, 'tolist') else list(ids[0])
     id_map = _load_bm25_map(idx_dir)
@@ -296,7 +319,8 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
     if cards_retr is not None:
         try:
             cards_map = _load_cards_map(repo)
-            tokens = tokenizer.tokenize([query])
+            # Use expanded query for card retrieval too
+            tokens = tokenizer.tokenize([expanded_query])
             c_ids, _ = cards_retr.retrieve(tokens, k=min(topk_sparse, 30))
             c_ids_flat = c_ids[0] if hasattr(c_ids, '__getitem__') else c_ids
             for card_idx in c_ids_flat:
@@ -357,7 +381,7 @@ def search(query: str, repo: str, topk_dense: int = 75, topk_sparse: int = 75, f
                 score += _card_bonus(cid, card_chunk_ids)
         except Exception:
             pass
-        score += _path_bonus(fp)
+        score += _path_bonus(fp, repo)
         score += _project_layer_bonus(layer, intent)
         score += _provider_plugin_hint(fp, d.get('code', '') or '')
         score += _origin_bonus(d.get('origin', ''), os.getenv('VENDOR_MODE', VENDOR_MODE))

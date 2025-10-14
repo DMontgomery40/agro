@@ -1040,7 +1040,7 @@
                 `;
             }
         }
-        const id = setInterval(tick, 900);
+        const id = setInterval(tick, 3500);
         tick();
         return {
             stop: () => {

@@ -15,7 +15,7 @@
       const healthEl = $('#health-status');
       if (healthEl) {
         healthEl.textContent = d.ok || d.status === 'healthy'
-          ? `OK @ ${d.ts || new Date().toISOString()}`
+          ? `OK @ ${d.ts ? new Date(d.ts).toLocaleString() : new Date().toLocaleString()}`
           : 'Not OK';
       }
     } catch (e) {

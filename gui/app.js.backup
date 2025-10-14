@@ -208,7 +208,7 @@
         try {
             const r = await fetch(api('/health'));
             const d = await r.json();
-            $('#health-status').textContent = d.ok || d.status === 'healthy' ? `OK @ ${d.ts || new Date().toISOString()}` : 'Not OK';
+            $('#health-status').textContent = d.ok || d.status === 'healthy' ? `OK @ ${d.ts ? new Date(d.ts).toLocaleString() : new Date().toLocaleString()}` : 'Not OK';
         } catch (e) {
             $('#health-status').textContent = 'Error';
         }

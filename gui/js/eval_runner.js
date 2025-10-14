@@ -340,7 +340,7 @@ function exportEvalResults() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const timestamp = new Date().toISOString().replace(/:/g, '-').substring(0, 19);
+    const timestamp = new Date().toLocaleString().replace(/[\/\s:,]/g, '-').replace(/--+/g, '-');
     a.download = `eval_results_${timestamp}.json`;
     a.click();
     URL.revokeObjectURL(url);

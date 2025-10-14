@@ -327,24 +327,64 @@ echo "**/migrations/**" >> data/exclude_globs.txt
 
 **Common patterns to exclude:**
 ```bash
+# Virtual environments (CRITICAL - prevents indexing Python dependencies)
+**/.venv/**
+**/venv/**
+**/env/**
+**/.virtualenv/**
+**/virtualenv/**
+**/.pyenv/**
+
 # Build artifacts
 **/dist/**
 **/build/**
 **/.next/**
+**/.turbo/**
+**/.svelte-kit/**
 
 # Generated code
 **/*.generated.*
 **/*.min.js
+**/*.min.css
 **/*.bundle.js
+**/*.map
+
+# Test files and data
+**/test/**
+**/tests/**
+**/*.spec.ts
+**/*.spec.js
+**/*.test.ts
+**/*.test.js
+**/fixtures/**
+**/mocks/**
+**/__mocks__/**
+**/test-data/**
 
 # Large data files
 **/*.json.gz
-**/fixtures/**
-**/test-data/**
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.svg
 
 # Vendor/dependencies (if not caught by built-in)
 **/third_party/**
 **/external/**
+**/node_modules/**
+**/vendor/**
+**/Pods/**
+
+# Lockfiles (rarely useful for RAG)
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+**/poetry.lock
+
+# Migrations and install scripts
+**/migrations/**
+**/install/**
 ```
 
 #### 3. Auto-Generate Keywords (Optional)
@@ -371,12 +411,12 @@ python analyze_keywords_v2.py /path/to/your/agro
 # - Recommended path boosts
 ```
 
-**After configuring .ragignore:**
+**After configuring exclude patterns:**
 
 ```bash
 # Re-index affected repos
-REPO=agro python index_repo.py
-REPO=agro python index_repo.py
+REPO=agro python indexer/index_repo.py
+REPO=agro python indexer/index_repo.py
 
 # Verify collections
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
@@ -880,7 +920,7 @@ for r in results[:5]:
 # 2. Check if expected file is in index
 grep "path/to/file.py" out/agro/chunks.jsonl
 
-# 3. If missing, check if .ragignore is excluding it
+# 3. If missing, check if data/exclude_globs.txt is excluding it
 cat data/exclude_globs.txt
 ```
 
@@ -923,7 +963,7 @@ REPO=agro python index_repo.py
 ### Indexing Issues
 
 **Files not being indexed:**
-1. Check `.ragignore` patterns:
+1. Check `data/exclude_globs.txt` patterns:
    ```bash
    cat data/exclude_globs.txt
    ```
@@ -1163,8 +1203,8 @@ Then re-index.
 |------|---------|
 | `.env` | Environment variables (API keys, URLs) |
 | `golden.json` | Golden test questions |
-| `data/exclude_globs.txt` | **.ragignore patterns** |
-| `filtering.py` | Built-in directory/extension filters |
+| `data/exclude_globs.txt` | **RAG ignore patterns (glob format)** |
+| `common/filtering.py` | Built-in directory/extension filters |
 
 ### Scripts
 

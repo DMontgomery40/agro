@@ -13,7 +13,7 @@ _TRACE_VAR: ContextVar[Optional["Trace"]] = ContextVar("agro_trace", default=Non
 
 
 def _now_iso() -> str:
-    return __import__("datetime").datetime.utcnow().isoformat() + "Z"
+    return __import__("datetime").datetime.now().isoformat()
 
 
 class Trace:
