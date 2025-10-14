@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi import FastAPI, Query, HTTPException, Request, UploadFile, File, Form
 # Canonical location: server/app.py
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
@@ -63,7 +63,12 @@ def health():
         g = get_graph()
         return {"status": "healthy", "graph_loaded": g is not None, "ts": __import__('datetime').datetime.utcnow().isoformat() + 'Z'}
     except Exception as e:
-    return {"status": "error", "detail": str(e)}
+        return {"status": "error", "detail": str(e)}
+
+# Compatibility alias for environments expecting /api/health
+@app.get("/api/health")
+def api_health():
+    return health()
 
 @app.get("/health/langsmith")
 def health_langsmith() -> Dict[str, Any]:
@@ -293,7 +298,22 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
             "repo": (req.repo.strip() if req.repo else None)
         }
 
-        res = g.invoke(state, CFG)
+        try:
+            res = g.invoke(state, CFG)
+        except Exception as e:
+            # Fallback: retrieval-only answer when generation backend is unavailable (e.g., no OPENAI_API_KEY)
+            try:
+                docs = list(search_routed_multi(req.question, repo_override=(req.repo or os.getenv('REPO','agro')), m=4, final_k=int(os.getenv('LANGGRAPH_FINAL_K', '10') or 10)))
+                lines = []
+                for d in docs[:5]:
+                    try:
+                        lines.append(f"- {d.get('file_path','')}:{d.get('start_line',0)}-{d.get('end_line',0)}  score={float(d.get('rerank_score',0) or 0.0):.3f}")
+                    except Exception:
+                        pass
+                fallback_text = "Retrieval-only (no model available)\n" + "\n".join(lines)
+                res = {"generation": fallback_text, "confidence": 0.0}
+            except Exception:
+                raise e
 
         # Finalize trace
         try:
@@ -459,6 +479,46 @@ def api_env_reload() -> Dict[str, Any]:
     except Exception:
         pass
     return {"ok": True}
+
+@app.post("/api/secrets/ingest")
+async def api_secrets_ingest(
+    file: UploadFile = File(...),
+    persist: Optional[str] = Form(None),
+) -> Dict[str, Any]:
+    """Ingest a secrets file (e.g., .env) and optionally persist to .env.
+
+    - Sets os.environ keys for the current process immediately.
+    - If persist is truthy ('1','true','on'), upserts keys into ROOT/.env.
+    """
+    text = (await file.read()).decode("utf-8", errors="ignore")
+    applied: Dict[str, str] = {}
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or s.startswith("#") or "=" not in s:
+            continue
+        k, v = s.split("=", 1)
+        k = k.strip(); v = v.strip()
+        if not k:
+            continue
+        os.environ[k] = v
+        applied[k] = v
+
+    do_persist = str(persist or "").strip().lower() in {"1","true","on","yes"}
+    saved = False
+    if do_persist:
+        env_path = ROOT / ".env"
+        existing: Dict[str, str] = {}
+        if env_path.exists():
+            for ln in env_path.read_text().splitlines():
+                if not ln.strip() or ln.strip().startswith("#") or "=" not in ln:
+                    continue
+                kk, vv = ln.split("=", 1)
+                existing[kk.strip()] = vv.strip()
+        existing.update(applied)
+        env_path.write_text("\n".join(f"{k}={existing[k]}" for k in sorted(existing.keys())) + "\n")
+        saved = True
+
+    return {"ok": True, "applied": sorted(applied.keys()), "persisted": saved}
 
 @app.get("/api/config")
 def get_config() -> Dict[str, Any]:

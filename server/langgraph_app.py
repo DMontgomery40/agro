@@ -79,7 +79,15 @@ def route_after_retrieval(state:RAGState)->str:
         CONF_ANY = float(os.getenv('CONF_ANY', '0.55'))
     except Exception:
         CONF_TOP1, CONF_AVG5, CONF_ANY = 0.62, 0.55, 0.55
-    # add trace of gating decision
+    # Decide next step
+    if top1 >= CONF_TOP1 or avg5 >= CONF_AVG5 or conf >= CONF_ANY:
+        decision = "generate"
+    elif it >= 3:
+        decision = "fallback"
+    else:
+        decision = "rewrite_query"
+
+    # add trace of gating decision (include outcome + thresholds)
     try:
         from server.tracing import get_trace
         tr = get_trace()
@@ -89,15 +97,12 @@ def route_after_retrieval(state:RAGState)->str:
                 'confidence_avg5': avg5,
                 'thresholds': {'top1': CONF_TOP1, 'avg5': CONF_AVG5, 'any': CONF_ANY},
                 'iterated': it > 0,
+                'outcome': decision,
                 'notes': ''
             })
     except Exception:
         pass
-    if top1 >= CONF_TOP1 or avg5 >= CONF_AVG5 or conf >= CONF_ANY:
-        return "generate"
-    if it >= 3:
-        return "fallback"
-    return "rewrite_query"
+    return decision
 
 def rewrite_query(state: RAGState) -> Dict:
     q = state['question']

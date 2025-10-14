@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  api:
+    image: agro-demo-api:01589e7f
+    container_name: agro-api-demo
+    ports:
+      - "8022:8012"
+    environment:
+      - REPO=agro
+      # Keep index outputs inside the container image tree; fine for demo
+      - OUT_DIR_BASE=./out.noindex-shared
+      # Enable semantic search (dense embeddings + Qdrant)
+      - EMBEDDING_TYPE=local
+      - SKIP_DENSE=0
+      - QDRANT_URL=http://qdrant:6333
+      # Local cross-encoder reranker
+      - RERANK_BACKEND=local
+      # Point to in-container repos file with path=/app
+      - REPOS_FILE=/app/repos.docker.json
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8012/health').read(); print('ok')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: agro-cloudflared-demo
+    depends_on:
+      api:
+        condition: service_healthy
+    # Quick Tunnel (no DNS): generates https://<random>.trycloudflare.com
+    command: ["tunnel", "--no-autoupdate", "--protocol", "quic", "--url", "http://api:8012"]
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: agro-qdrant-demo
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+networks:
+  default:
+    name: agro-demo-net
+
+volumes:
+  qdrant_data:

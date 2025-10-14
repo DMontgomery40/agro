@@ -1,23 +1,3 @@
 {
-  "agro": [
-    "trace panel module",
-    "Embedded Editor health",
-    "MCP RAG search debug",
-    "LangSmith run viewer",
-    "Cards viewer grid",
-    "Index status display",
-    "Onboarding wizard UI",
-    "Cost calculator inputs",
-    "Global search highlights",
-    "Git hooks installer",
-    "Onboarding project setup",
-    "Index profiles summary",
-    "Rerank candidates table",
-    "Retriever pre-rerank list",
-    "Trace gating thresholds",
-    "SSE progress events",
-    "Cards builder modal",
-    "Cards quick tips",
-    "Env + pricing updates"
-  ]
+  "agro": []
 }
