@@ -1,38 +1,41 @@
-# CLI Chat Interface
+## CLI Chat Interface
 
-Interactive terminal chat for the RAG service with conversation memory.
 
-## Run It
-
-After Quick Start (`cd agro/scripts && ./dev_up`), activate the venv and start chat:
+### Quick Start
 
 ```bash
-cd ../  # repo root if you are still in scripts/
-. .venv/bin/activate
-export REPO=agro
-export THREAD_ID=my-session
-python chat_cli.py
+
+cd agro/scripts
+./up.sh
+
+# installs requirement.txt, creates venv, and starts tui
+
+cd agro && python3 cli_chat.py 
+
+# if you've already got venv up and pulled requirements.txt, this works as well
 ```
 
-## Usage
+### Features
 
-### Basic Usage
-
-```bash
-export REPO=agro
-export THREAD_ID=my-session
-python chat_cli.py
-```
+- **Conversation Memory**: Redis-backed, persists across sessions
+- **Rich Terminal UI**: Markdown rendering, color-coded confidence scores
+- **Citation Display**: Shows file paths and rerank scores
+- **Repo Switching**: `/repo agro` to switch between repos mid-conversation
+- **Multiple Sessions**: Use different `THREAD_ID` values for parallel conversations, or to 
 
 ### Commands
 
 | Command | Description |
 |---------|-------------|
-| `/repo <name>` | Switch repository (e.g., agro) |
-| `/clear` | Clear conversation history (starts new thread) |
-| `/save` | Save checkpoint (automatic with Redis) |
+| `your question` | Ask directly |
+| `/repo <name>` | Switch repository (e.g., `/repo agro`) |
+| `/clear` | (new thread) |
 | `/help` | Show available commands |
+| `/theme` | tokyonights is my favorite |
+| `/trace` | Langsmith most recent trace |
+| `/save` | Pick up convo later |
 | `/exit`, `/quit` | Exit chat |
+
 
 ### Examples
 
@@ -74,7 +77,7 @@ Switch between repo-a and repo-b without losing conversation context.
 
 ```bash
 # Required
-export REPO=repo-a           # or repo-b
+export REPOagro           # or repo-b
 export THREAD_ID=my-session    # unique ID for this conversation
 
 # Optional (set in .env)
