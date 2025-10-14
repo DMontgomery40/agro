@@ -132,5 +132,195 @@
       "api/traces",
       "gui/app.js"
     ]
+  },
+  {
+    "q": "Where is the Golden Questions Manager in the GUI?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "devtools-testing",
+      "golden",
+      "tab-devtools-testing"
+    ]
+  },
+  {
+    "q": "Where is the Evaluation Runner located in the new GUI structure?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "devtools-testing",
+      "eval",
+      "btn-eval-run"
+    ]
+  },
+  {
+    "q": "Where can I find the MCP RAG Search debug tool?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "devtools-debug",
+      "mcp-rag",
+      "tab-devtools-debug"
+    ]
+  },
+  {
+    "q": "Where is the Cards Viewer in the reorganized GUI?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "devtools-debug",
+      "cards-viewer",
+      "btn-cards-build"
+    ]
+  },
+  {
+    "q": "Where do I install Git Hooks for auto-indexing?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "devtools-integrations",
+      "git-hooks",
+      "btn-install-hooks"
+    ]
+  },
+  {
+    "q": "Where is the LangSmith trace viewer embedded in the GUI?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "analytics-tracing",
+      "langsmith",
+      "ls-iframe"
+    ]
+  },
+  {
+    "q": "Where are MCP channel models configured?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "settings-integrations",
+      "MCP_HTTP",
+      "GEN_MODEL_MCP"
+    ]
+  },
+  {
+    "q": "Where is the tab switching logic for the new 8-tab structure?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/app.js",
+      "switchTab",
+      "bindSubtabs",
+      "subtab-bar"
+    ]
+  },
+  {
+    "q": "Where are subtab navigation buttons rendered?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "subtab-btn",
+      "data-parent",
+      "config-models"
+    ]
+  },
+  {
+    "q": "Where is the Developer Tools tab structure defined?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/index.html",
+      "tab-devtools",
+      "devtools-editor",
+      "devtools-testing"
+    ]
+  }
+  ,
+  {
+    "q": "Where is the GUI Trace Panel logic implemented now?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/trace.js",
+      "loadLatestTrace",
+      "trace-output"
+    ]
+  },
+  {
+    "q": "Which module formats rerank and retriever candidates for the trace view?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/trace.js",
+      "_fmtTable",
+      "rerank"
+    ]
+  },
+  {
+    "q": "Where is the Embedded Editor health check logic?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/editor.js",
+      "/health/editor",
+      "editor-iframe"
+    ]
+  },
+  {
+    "q": "Which module defines restart/open/copy for the embedded editor?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/editor.js",
+      "btn-editor-restart",
+      "btn-editor-open-window"
+    ]
+  },
+  {
+    "q": "Where is the MCP RAG search debug binder implemented?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/mcp_rag.js",
+      "mcp-rag",
+      "btn-mcp-rag-run"
+    ]
+  },
+  {
+    "q": "Which module binds the MCP rag_search button and formats results?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/mcp_rag.js",
+      "rag_search",
+      "mcp-rag-results"
+    ]
+  },
+  {
+    "q": "Where is the LangSmith viewer binding logic in the GUI?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/langsmith.js",
+      "ls-iframe",
+      "btn-ls-latest"
+    ]
+  },
+  {
+    "q": "Which module pre-fills LangChain project and opens latest run?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/langsmith.js",
+      "ls-project",
+      "/api/langsmith/latest"
+    ]
+  },
+  {
+    "q": "Where is the Cards Viewer rendering logic implemented now?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/cards.js",
+      "cards-viewer"
+    ]
+  },
+  {
+    "q": "Which module binds Build/Refresh buttons for code cards?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/cards.js",
+      "btn-cards-build",
+      "btn-cards-refresh"
+    ]
   }
 ]

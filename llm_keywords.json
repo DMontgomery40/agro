@@ -1,3 +1,14 @@
 {
-  "agro": []
+  "agro": [
+    "trace panel module",
+    "Embedded Editor health",
+    "MCP RAG search debug",
+    "LangSmith run viewer",
+    "Cards viewer grid",
+    "Index status display",
+    "Onboarding wizard UI",
+    "Cost calculator inputs",
+    "Global search highlights",
+    "Git hooks installer"
+  ]
 }
