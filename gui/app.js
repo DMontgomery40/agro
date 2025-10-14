@@ -1432,7 +1432,9 @@
         } catch {}
     }
 
-    // ---------------- Cards Viewer ----------------
+    // ---------------- Cards Viewer (delegated) ----------------
+    const loadCards = window.Cards?.load || (async ()=>{});
+    /*
     async function loadCards() {
         try {
             const resp = await fetch(api('/api/cards'));
@@ -1532,10 +1534,7 @@
     }
 
     // Add refresh and build handlers
-    async function refreshCards() {
-        console.log('Refreshing cards...');
-        await loadCards();
-    }
+    // moved to Cards module
 
     async function buildCards() {
         try {
@@ -1565,28 +1564,10 @@
         }
     }
 
-    try {
-        window.jumpToLine = jumpToLine;
-        window.refreshCards = refreshCards;
-        window.buildCards = buildCards;
-    } catch {}
+    try { window.jumpToLine = jumpToLine; } catch {}
 
     // Call loadCards on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        loadCards();
-
-        // Add button event listeners
-        const btnRefresh = document.getElementById('btn-cards-refresh');
-        const btnBuild = document.getElementById('btn-cards-build');
-
-        if (btnRefresh) {
-            btnRefresh.addEventListener('click', refreshCards);
-        }
-
-        if (btnBuild) {
-            btnBuild.addEventListener('click', buildCards);
-        }
-    });
+    // Cards module auto-binds on DOMContentLoaded
 
     // ---------------- Help Tooltips ----------------
     function addHelpTooltips() {
