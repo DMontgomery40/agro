@@ -1349,136 +1349,17 @@
         wireDayConverters();
     }
 
-    // -------- Embedded Editor --------
-    let editorHealthInterval = null;
-
-    async function checkEditorHealth() {
-        console.log('[Editor] checkEditorHealth called');
-        try {
-            const resp = await fetch(api('/health/editor'));
-            const data = await resp.json();
-            console.log('[Editor] Health check response:', data);
-            const badge = document.getElementById('editor-health-badge');
-            const badgeText = document.getElementById('editor-health-text');
-            const banner = document.getElementById('editor-status-banner');
-            const bannerMsg = document.getElementById('editor-status-message');
-            const iframe = document.getElementById('editor-iframe');
-
-            if (data.ok) {
-                console.log('[Editor] Editor is healthy, setting iframe src');
-                badge.style.background = '#00ff88';
-                badge.style.color = '#000';
-                badgeText.textContent = '● Healthy';
-                banner.style.display = 'none';
-                if (!iframe.src) {
-                    // Prefer same-origin proxy to avoid frame-blocking headers
-                    console.log('[Editor] Setting iframe.src to /editor/');
-                    iframe.src = '/editor/';
-                }
-            } else {
-                const isDisabled = !data.enabled;
-                badge.style.background = isDisabled ? '#666' : '#ff5555';
-                badge.style.color = '#fff';
-                badgeText.textContent = isDisabled ? '○ Disabled' : '● Error';
-                banner.style.display = 'block';
-                const reason = data.reason || data.error || 'Unknown error';
-                bannerMsg.textContent = isDisabled
-                    ? `Editor is disabled. Enable it in the Misc tab and restart.`
-                    : `Error: ${reason}. Check logs or try restarting.`;
-                iframe.src = '';
-            }
-        } catch (error) {
-            console.error('Failed to check editor health:', error);
-        }
-    }
-
-    async function openEditorWindow() {
-        try {
-            const resp = await fetch(api('/health/editor'));
-            const data = await resp.json();
-            if (data.url) {
-                window.open(data.url, '_blank');
-            } else {
-                alert('Editor URL not available');
-            }
-        } catch (error) {
-            console.error('Failed to open editor window:', error);
-        }
-    }
-
-    async function copyEditorUrl() {
-        try {
-            const resp = await fetch(api('/health/editor'));
-            const data = await resp.json();
-            if (data.url) {
-                await navigator.clipboard.writeText(data.url);
-                const btn = document.getElementById('btn-editor-copy-url');
-                const orig = btn.innerHTML;
-                btn.innerHTML = '✓ Copied!';
-                setTimeout(() => { btn.innerHTML = orig; }, 2000);
-            } else {
-                alert('Editor URL not available');
-            }
-        } catch (error) {
-            console.error('Failed to copy URL:', error);
-        }
-    }
-
-    async function restartEditor() {
-        try {
-            const btn = document.getElementById('btn-editor-restart');
-            btn.disabled = true;
-            btn.textContent = 'Restarting...';
-            const resp = await fetch(api('/api/editor/restart'), { method: 'POST' });
-            const data = await resp.json();
-            if (data.ok) {
-                console.log('✅ Editor restarted');
-                setTimeout(() => {
-                    const iframe = document.getElementById('editor-iframe');
-                    iframe.src = '';
-                    checkEditorHealth();
-                }, 3000);
-            } else {
-                console.error('❌ Restart failed:', data.error || data.stderr);
-                alert('Restart failed: ' + (data.error || 'Unknown error'));
-            }
-        } catch (error) {
-            console.error('Failed to restart editor:', error);
-            alert('Restart failed: ' + error.message);
-        } finally {
-            const btn = document.getElementById('btn-editor-restart');
-            btn.disabled = false;
-            btn.innerHTML = '↻ Restart';
-        }
-    }
-
-    // Initialize editor health check when editor tab is activated
-    window.initEditorHealthCheck = function() {
-        console.log('[Editor] initEditorHealthCheck called');
-        if (!editorHealthInterval) {
-            console.log('[Editor] Starting health check interval');
-            checkEditorHealth();
-            editorHealthInterval = setInterval(checkEditorHealth, 10000);
-        } else {
-            console.log('[Editor] Health check already running');
-        }
+    // -------- Embedded Editor (delegated) --------
+    const checkEditorHealth = window.Editor?.checkEditorHealth || (async ()=>{});
+    const openEditorWindow = window.Editor?.openEditorWindow || (async ()=>{});
+    const copyEditorUrl = window.Editor?.copyEditorUrl || (async ()=>{});
+    const restartEditor = window.Editor?.restartEditor || (async ()=>{});
+    window.initEditorHealthCheck = function(){
+        if (window.Editor?.initEditorHealthCheck) window.Editor.initEditorHealthCheck();
     };
-
-    // Stop editor health check when leaving editor
-    window.stopEditorHealthCheck = function() {
-        if (editorHealthInterval) {
-            clearInterval(editorHealthInterval);
-            editorHealthInterval = null;
-        }
+    window.stopEditorHealthCheck = function(){
+        if (window.Editor?.stopEditorHealthCheck) window.Editor.stopEditorHealthCheck();
     };
-
-    const btnOpenWindow = document.getElementById('btn-editor-open-window');
-    const btnCopyUrl = document.getElementById('btn-editor-copy-url');
-    const btnRestart = document.getElementById('btn-editor-restart');
-
-    if (btnOpenWindow) btnOpenWindow.addEventListener('click', openEditorWindow);
-    if (btnCopyUrl) btnCopyUrl.addEventListener('click', copyEditorUrl);
-    if (btnRestart) btnRestart.addEventListener('click', restartEditor);
     // Ensure init runs even if DOMContentLoaded already fired (scripts at body end)
     if (document.readyState === 'loading') {
         window.addEventListener('DOMContentLoaded', init);
