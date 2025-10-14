@@ -70,7 +70,17 @@
     "btn-editor-restart",
     "bm25",
     "qdrant",
-    "hybrid_search"
+    "hybrid_search",
+    "btn-trace-latest",
+    "ls-iframe",
+    "mcp-rag-results",
+    "cards-main-bar",
+    "cards-logs-view",
+    "cards-builder-modal",
+    "btn-cards-build",
+    "index-status",
+    "dash-index-status",
+    "btn-index-start"
   ],
   "manual": [
     "hybrid-search"

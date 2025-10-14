@@ -4,6 +4,42 @@
     "_comment2": "Replace these with questions specific to YOUR repositories"
   },
   {
+    "q": "Where are the Add Model flows implemented after modularization?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/model_flows.js",
+      "addGenModelFlow",
+      "addRerankModelFlow"
+    ]
+  },
+  {
+    "q": "Which module updates env and pricing for model add actions?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/model_flows.js",
+      "/api/prices/upsert",
+      "/api/config"
+    ]
+  },
+  {
+    "q": "Where is the Index Status polling logic now?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/index_status.js",
+      "pollIndexStatus",
+      "/api/index/status"
+    ]
+  },
+  {
+    "q": "Which module triggers indexing and formats the status display?",
+    "repo": "agro",
+    "expect_paths": [
+      "gui/js/index_status.js",
+      "startIndexing",
+      "formatIndexStatus"
+    ]
+  }
+  {
     "q": "Where is OAuth token validated?",
     "repo": "agro",
     "expect_paths": [
