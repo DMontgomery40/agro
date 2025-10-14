@@ -67,7 +67,7 @@
         wrap.appendChild(who); wrap.appendChild(msg);
         box.appendChild(wrap);
         // auto-scroll if near bottom
-        try { box.scrollTop = box.scrollHeight; } catch {}
+        try { box.scrollTop = box.scrollHeight; } catch { /* no-op */ }
     }
 
     async function sendChat(){
@@ -92,12 +92,12 @@
                 const env = (state.config?.env)||{};
                 if ((env.TRACING_MODE||'').toLowerCase()==='langsmith' && ['1','true','on'].includes(String(env.TRACE_AUTO_LS||'0').toLowerCase())){
                     const prj = (env.LANGCHAIN_PROJECT||'agro');
-                    const qs = new URLSearchParams({ project: prj, share: 'true' });
-                    const r = await fetch(api(`/api/langsmith/latest?${qs.toString()}`));
-                    const d = await r.json();
-                    if (d && d.url) window.open(d.url, '_blank');
+                    const lsQs = new URLSearchParams({ project: prj, share: 'true' });
+                    const lsRes = await fetch(api(`/api/langsmith/latest?${lsQs.toString()}`));
+                    const lsData = await lsRes.json();
+                    if (lsData && lsData.url) window.open(lsData.url, '_blank');
                 }
-            }catch{}
+            }catch{/* no-op */}
         }catch(e){ appendChatMessage('assistant', `Error: ${e.message}`); }
     }
 
@@ -187,7 +187,7 @@
                 const allGen = unique(models.filter(isGen).map(m => m.model));
                 if (modelList) setOpts(modelList, allGen);
                 modelInput.value = '';
-                try { showStatus(`No inference models for provider "${p}" — showing all models.`, 'warn'); } catch {}
+                try { showStatus(`No inference models for provider "${p}" — showing all models.`, 'warn'); } catch { /* no-op */ }
                 return;
             }
             if (modelList) setOpts(modelList, provModels);
@@ -266,7 +266,7 @@
 
     async function estimateCost() {
         try{
-            const d = await (window.CostLogic && window.CostLogic.estimateFromUI ? window.CostLogic.estimateFromUI(API_BASE) : Promise.reject(new Error('CostLogic missing')));
+            const d = await (window.CostLogic && window.CostLogic.estimateFromUI ? window.CostLogic.estimateFromUI(window.CoreUtils.API_BASE) : Promise.reject(new Error('CostLogic missing')));
             $('#cost-daily').textContent = `$${Number(d.daily||0).toFixed(4)}`;
             $('#cost-monthly').textContent = `$${Number(d.monthly||0).toFixed(2)}`;
         }catch(e){ alert('Cost estimation failed: ' + e.message); }
@@ -388,7 +388,7 @@
         const scanOut = $('#scan-out');
         // Try to extract scan from data attribute or re-scan
         if (scanOut.dataset.scanData) {
-            try { scan = JSON.parse(scanOut.dataset.scanData); } catch {}
+            try { scan = JSON.parse(scanOut.dataset.scanData); } catch { /* no-op */ }
         }
         if (!scan) scan = await scanHardware();
         const budget = parseFloat($('#budget').value || '0');
@@ -402,7 +402,7 @@
             const r = await fetch(api('/api/cost/estimate_pipeline'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
             const d = await r.json();
             prof.__estimate__ = d;
-        } catch {}
+        } catch { /* no-op */ }
         $('#profile-preview').innerHTML = formatProfile(prof);
         bindPreviewTooltips();
         $('#profile-preview').dataset.profileData = JSON.stringify(prof);
@@ -414,7 +414,7 @@
         let prof = null;
         const preview = $('#profile-preview');
         if (preview.dataset.profileData) {
-            try { prof = JSON.parse(preview.dataset.profileData); } catch {}
+            try { prof = JSON.parse(preview.dataset.profileData); } catch { /* no-op */ }
         }
         if (!prof || typeof prof !== 'object') prof = await generateProfileWizard();
         // Remove cost estimate from applied profile
@@ -479,7 +479,7 @@
         const scanOut = $('#scan-out');
         let scan = null;
         if (scanOut && scanOut.dataset.scanData) {
-            try { scan = JSON.parse(scanOut.dataset.scanData); } catch {}
+            try { scan = JSON.parse(scanOut.dataset.scanData); } catch { /* no-op */ }
         }
         if (!scan) scan = await scanHardware();
 
@@ -1102,7 +1102,7 @@
         const btn = document.getElementById('btn-generate-keywords');
         setButtonState(btn, 'loading');
         showStatus('Generating keywords (this may take 2–5 minutes)...', 'loading');
-
+        let sim; // progress simulator for keyword generation
         try {
             const response = await fetch(api('/api/config'));
             const data = await response.json();
@@ -1121,7 +1121,7 @@
                 'Toggle ENRICH_CODE_CHUNKS to store per‑chunk summaries',
                 'Use shared profile to reuse indices across branches (Infrastructure)'
             ];
-            var sim = startSimProgress(
+            sim = startSimProgress(
                 mode === 'llm' ? `Mode: LLM • Backend: ${backend} • Model: ${model}` : 'Mode: Heuristic • Scanning tokens and file coverage…',
                 max_files || 80,
                 tips
@@ -1180,26 +1180,26 @@
                     await loadKeywords();
                     setButtonState(btn, 'success');
                     setTimeout(()=> setButtonState(btn, null), 1500);
-                    try { if (sim && sim.stop) sim.stop(); } catch {}
+                    try { if (sim && sim.stop) sim.stop(); } catch {/* no-op */}
                 } else {
                     showStatus(`Failed to generate keywords: ${result.error || 'Unknown error'}`, 'error');
                     setButtonState(btn, 'error');
                     setTimeout(()=> setButtonState(btn, null), 2000);
-                    try { if (sim && sim.stop) sim.stop(); } catch {}
+                    try { if (sim && sim.stop) sim.stop(); } catch {/* no-op */}
                 }
             } else {
                 const error = await createResponse.text();
                 showStatus(`Failed to generate keywords: ${error}`, 'error');
                 setButtonState(btn, 'error');
                 setTimeout(()=> setButtonState(btn, null), 2000);
-                try { if (sim && sim.stop) sim.stop(); } catch {}
+                try { if (sim && sim.stop) sim.stop(); } catch {/* no-op */}
             }
         } catch (err) {
             showStatus(`Error generating keywords: ${err.message}`, 'error');
             const btn = document.getElementById('btn-generate-keywords');
             setButtonState(btn, 'error');
             setTimeout(()=> setButtonState(btn, null), 2000);
-            try { if (typeof sim !== 'undefined' && sim && sim.stop) sim.stop(); } catch {}
+            try { if (sim && sim.stop) sim.stop(); } catch {/* no-op */}
         }
     }
 
@@ -1293,14 +1293,22 @@
         if (cbAuto) cbAuto.addEventListener('change', setAutotuneEnabled);
 
         const btnIndex = document.getElementById('btn-index-start');
-        if (btnIndex) btnIndex.addEventListener('click', startIndexing);
+        if (btnIndex) btnIndex.addEventListener('click', () => {
+            if (window.IndexStatus && typeof window.IndexStatus.startIndexing === 'function') {
+                window.IndexStatus.startIndexing();
+            }
+        });
         document.querySelectorAll('#btn-cards-build').forEach(btn => {
             if (!btn.dataset.cardsBuildBound) { btn.dataset.cardsBuildBound='1'; btn.addEventListener('click', () => startCardsBuild()); }
         });
         const btnCardsRefresh = document.getElementById('btn-cards-refresh');
         if (btnCardsRefresh) btnCardsRefresh.addEventListener('click', refreshCards);
         // Dashboard button bindings with enhanced feedback
-        bindQuickAction('dash-index-start', startIndexing);
+        bindQuickAction('dash-index-start', () => {
+            if (window.IndexStatus && typeof window.IndexStatus.startIndexing === 'function') {
+                window.IndexStatus.startIndexing();
+            }
+        });
         bindQuickAction('dash-cards-refresh', refreshCards);
         bindQuickAction('dash-change-repo', changeRepo);
         bindQuickAction('dash-reload-config', reloadConfig);
@@ -1426,14 +1434,16 @@
             const dm = document.getElementById('dash-mcp'); if (dm) dm.textContent = `${host}:${port}${path}`;
         } catch {}
 
-        // Load initial index status to show metadata
+        // Load initial index status to show metadata (delegated)
         try {
-            await pollIndexStatus();
+            if (window.IndexStatus && typeof window.IndexStatus.pollIndexStatus === 'function') {
+                await window.IndexStatus.pollIndexStatus();
+            }
         } catch {}
     }
 
     // ---------------- Cards Viewer (delegated) ----------------
-    const loadCards = window.Cards?.load || (async ()=>{});
+    // Cards are handled by window.Cards/window.CardsBuilder
     /*
     async function loadCards() {
         try {
@@ -1685,6 +1695,7 @@
     // Delegated to Keywords module (gui/js/keywords.js)
     const loadKeywords = window.Keywords?.loadKeywords || (async () => {});
 
+    /* DUPLICATE REMOVED: Indexing + Cards (use window.IndexStatus)
     // ---------------- Indexing + Cards ----------------
     let indexPoll = null;
     function progressFromLog(lines) {
@@ -1833,43 +1844,8 @@
         return html.join('');
     }
 
-    async function pollIndexStatus() {
-        try {
-            const r = await fetch(api('/api/index/status'));
-            const d = await r.json();
-            const box1 = document.getElementById('index-status');
-            const bar1 = document.getElementById('index-bar');
-            const box2 = document.getElementById('dash-index-status');
-            const bar2 = document.getElementById('dash-index-bar');
-            const lastIndexedDisplay = document.getElementById('last-indexed-display');
-
-            // Use the new comprehensive display if available
-            const formatted = (typeof window.formatIndexStatusDisplay === 'function')
-                ? window.formatIndexStatusDisplay(d.lines, d.metadata)
-                : formatIndexStatus(d.lines, d.metadata);
-
-            const pct = d.running ? 50 : (d.metadata ? 100 : 0);
-            if (box1) box1.innerHTML = formatted;
-            if (bar1) bar1.style.width = pct + '%';
-            if (box2) box2.innerHTML = formatted;
-            if (bar2) bar2.style.width = pct + '%';
-
-            // Update last indexed timestamp in sidebar
-            if (lastIndexedDisplay && d.metadata && d.metadata.timestamp) {
-                const date = new Date(d.metadata.timestamp);
-                lastIndexedDisplay.textContent = date.toLocaleString();
-            }
-
-            if (!d.running && indexPoll) {
-                clearInterval(indexPoll);
-                indexPoll = null;
-                // Final complete animation
-                if (bar2) {
-                    setTimeout(() => { bar2.style.width = '0%'; }, 2000);
-                }
-            }
-        } catch (e) { /* ignore */ }
-    }
+    const pollIndexStatus = window.IndexStatus?.pollIndexStatus || (async ()=>{});
+    */
 
     // ---------------- Cards Builder (delegated) ----------------
     const openCardsModal = window.CardsBuilder?.openCardsModal || (()=>{});

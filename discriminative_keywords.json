@@ -80,9 +80,8 @@
     "btn-cards-build",
     "index-status",
     "dash-index-status",
-    "btn-index-start"
-  ],
-  "manual": [
+    "btn-index-start",
     "hybrid-search"
   ]
+ 
 }
