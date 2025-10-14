@@ -1388,44 +1388,7 @@
     const bindMcpRagSearch = window.McpRag?.bind || (()=>{});
 
     // ---------------- LangSmith (Preview) ----------------
-    function bindLangSmithViewer() {
-        const btn = document.getElementById('btn-ls-latest');
-        if (!btn || btn.dataset.bound) return;
-        btn.dataset.bound = '1';
-        const projEl = document.getElementById('ls-project');
-        if (projEl && state.config && state.config.env && state.config.env.LANGCHAIN_PROJECT) {
-            projEl.value = state.config.env.LANGCHAIN_PROJECT;
-        }
-        btn.addEventListener('click', async () => {
-            const proj = projEl && projEl.value ? projEl.value.trim() : '';
-            const shareSel = document.getElementById('ls-share');
-            const share = shareSel && String(shareSel.value) === 'false' ? 'false' : 'true';
-            const qs = new URLSearchParams({ share });
-            if (proj) qs.set('project', proj);
-            const wrap = document.getElementById('ls-embed-wrap');
-            const frame = document.getElementById('ls-iframe');
-            const link = document.getElementById('ls-open');
-            const note = document.getElementById('ls-note');
-            try {
-                if (frame) frame.src = 'about:blank';
-                const r = await fetch(api(`/api/langsmith/latest?${qs.toString()}`));
-                const d = await r.json();
-                if (d && d.url) {
-                    if (link) { link.href = d.url; link.style.display = 'inline-block'; }
-                    if (frame) {
-                        frame.src = d.url;
-                        // If embedding is blocked, we still have the link
-                        frame.addEventListener('error', () => { if (note) note.style.display = 'block'; }, { once: true });
-                        setTimeout(()=>{ if (note) note.style.display = 'block'; }, 1500);
-                    }
-                } else {
-                    if (note) { note.style.display = 'block'; note.textContent = 'No recent LangSmith run found or URL unavailable.'; }
-                }
-            } catch (e) {
-                if (note) { note.style.display = 'block'; note.textContent = 'Failed to load LangSmith run: ' + e.message; }
-            }
-        });
-    }
+    const bindLangSmithViewer = window.LangSmith?.bind || (()=>{});
 
     // ---------------- Autotune ----------------
     // Delegated to Autotune module (gui/js/autotune.js)
