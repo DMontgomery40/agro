@@ -1327,6 +1327,35 @@
     const bindCollapsibleSections = window.UiHelpers?.bindCollapsibleSections || (() => console.warn('[app.js] UiHelpers.bindCollapsibleSections not available'));
     const bindResizableSidepanel = window.UiHelpers?.bindResizableSidepanel || (() => console.warn('[app.js] UiHelpers.bindResizableSidepanel not available'));
 
+    // ---------------- Global Search (live) ----------------
+    // Delegated to Search module (gui/js/search.js)
+    const bindGlobalSearchLive = window.Search?.bindGlobalSearchLive || (() => {});
+
+    // ---------------- MCP RAG Search (debug) ----------------
+    const bindMcpRagSearch = window.McpRag?.bind || (()=>{});
+
+    // ---------------- LangSmith (Preview) ----------------
+    const bindLangSmithViewer = window.LangSmith?.bind || (()=>{});
+
+    // ---------------- Autotune ----------------
+    // Delegated to Autotune module (gui/js/autotune.js)
+    const refreshAutotune = window.Autotune?.refreshAutotune || (async () => {});
+    const setAutotuneEnabled = window.Autotune?.setAutotuneEnabled || (async () => {});
+
+    // ---------------- Keywords ----------------
+    // Delegated to Keywords module (gui/js/keywords.js)
+    const loadKeywords = window.Keywords?.loadKeywords || (async () => {});
+
+    // ---------------- Help Tooltips (delegated) ----------------
+    const addHelpTooltips = window.Tooltips?.attachTooltips || (() => {});
+
+    // ---------- Numbers formatting + per‑day converters ----------
+    // Number formatting functions - delegated to UiHelpers module
+    const getNum = window.UiHelpers?.getNum || ((id) => 0);
+    const setNum = window.UiHelpers?.setNum || (() => {});
+    const attachCommaFormatting = window.UiHelpers?.attachCommaFormatting || (() => {});
+    const wireDayConverters = window.UiHelpers?.wireDayConverters || (() => {});
+
     // ---------------- Init ----------------
     async function init() {
         bindTabs();
@@ -1387,20 +1416,6 @@
         }catch{}
         return triChooseAndApply();
     }
-
-    // ---------------- Global Search (live) ----------------
-    // Delegated to Search module (gui/js/search.js)
-    const bindGlobalSearchLive = window.Search?.bindGlobalSearchLive || (() => {});
-
-    // ---------------- MCP RAG Search (debug) ----------------
-    const bindMcpRagSearch = window.McpRag?.bind || (()=>{});
-
-    // ---------------- LangSmith (Preview) ----------------
-    const bindLangSmithViewer = window.LangSmith?.bind || (()=>{});
-
-    // ---------------- Autotune ----------------
-    // Delegated to Autotune module (gui/js/autotune.js)
-    const refreshAutotune = window.Autotune?.refreshAutotune || (async () => {});
 
     // ---------------- Dashboard Summary ----------------
     async function refreshDashboard() {
@@ -1578,122 +1593,6 @@
 
     // Call loadCards on page load
     // Cards module auto-binds on DOMContentLoaded
-
-    // ---------------- Help Tooltips ----------------
-    function addHelpTooltips() {
-        const HELP = {
-            // Generation
-            GEN_MODEL: 'Primary inference model for generation (e.g., gpt-4o-mini or qwen3-coder:14b).',
-            OPENAI_API_KEY: 'API key for OpenAI-compatible endpoints (generation/embeddings).',
-            OPENAI_BASE_URL: 'Optional OpenAI-compatible base URL (vLLM/proxy).',
-            OLLAMA_URL: 'Local model endpoint (Ollama or MLX serve).',
-            ENRICH_MODEL: 'Model used to enrich code chunks before embedding (text summaries).',
-            ENRICH_MODEL_OLLAMA: 'Local enrich model for Ollama/MLX.',
-            GEN_MODEL_HTTP: 'Override GEN_MODEL for HTTP server responses only.',
-            GEN_MODEL_MCP: 'Override GEN_MODEL for MCP tool responses only.',
-            GEN_MODEL_CLI: 'Override GEN_MODEL for CLI chat only.',
-            ENRICH_BACKEND: 'Force enrich backend (mlx or ollama).',
-
-            // Embeddings
-            EMBEDDING_TYPE: 'Embedding provider for dense vector search (openai, voyage, mxbai, local).',
-            VOYAGE_API_KEY: 'API key for Voyage embeddings.',
-            VOYAGE_EMBED_DIM: 'Output dimension for Voyage embeddings.',
-            EMBEDDING_DIM: 'Embedding dimension for MXBAI/local models.',
-            SKIP_DENSE: 'If 1, skip building dense vectors/Qdrant (sparse-only).',
-            ENRICH_CODE_CHUNKS: 'If true, store per-chunk summaries/keywords before embedding.',
-
-            // Reranking
-            RERANK_BACKEND: 'Cross-encoder reranking backend: local, hf, cohere, or none.',
-            RERANKER_MODEL: 'Local/HF cross-encoder model (e.g., BAAI/bge-reranker-v2-m3).',
-            COHERE_API_KEY: 'API key for Cohere reranking.',
-            COHERE_RERANK_MODEL: 'Cohere reranker model (e.g., rerank-3.5).',
-            TRANSFORMERS_TRUST_REMOTE_CODE: 'Allow HF models that require remote code.',
-
-            // Retrieval
-            MQ_REWRITES: 'Multi-query expansion count (more rewrites → better recall, more cost).',
-            FINAL_K: 'Final top-K after fusion + rerank (downstream consumers use these).',
-            TOPK_DENSE: 'Number of dense candidates (Qdrant) to fuse.',
-            TOPK_SPARSE: 'Number of sparse candidates (BM25) to fuse.',
-            HYDRATION_MODE: 'lazy: hydrate code snippets on demand; none: skip hydration.',
-            HYDRATION_MAX_CHARS: 'Max characters per hydrated code snippet.',
-            VENDOR_MODE: 'Prefer first-party or vendor paths when scoring files.',
-            project_PATH_BOOSTS: 'CSV of path substrings to boost (e.g., app/,lib/,config/).',
-            CARDS_MAX: 'Limit number of cards used for boosting (0 = all).',
-
-            // Confidence
-            CONF_TOP1: 'Accept answer if top-1 rerank score exceeds this threshold.',
-            CONF_AVG5: 'Accept if average of top-5 rerank scores exceeds this threshold.',
-            CONF_ANY: 'Accept if overall confidence exceeds this fallback threshold.',
-
-            // Infra
-            QDRANT_URL: 'Qdrant endpoint for vector search.',
-            REDIS_URL: 'Redis for LangGraph memory/checkpointer.',
-            REPO: 'Active repository tag for routing and output directories.',
-            COLLECTION_SUFFIX: 'Optional suffix to group collections in Qdrant.',
-            COLLECTION_NAME: 'Override Qdrant collection name.',
-            REPO_PATH: 'Fallback path when repos.json is absent.',
-            REPO_ROOT: 'Override project root. Affects GUI/docs/files mounts.',
-            FILES_ROOT: 'Root directory served at /files.',
-            GUI_DIR: 'Directory of GUI assets served at /gui.',
-            DOCS_DIR: 'Directory of docs served at /docs.',
-            DATA_DIR: 'Directory for local data files (excludes, keywords).',
-            REPOS_FILE: 'Path to repos.json configuration file.',
-            OUT_DIR_BASE: 'Base output directory for per-repo data.',
-            RAG_OUT_BASE: 'Alternate env for OUT_DIR_BASE.',
-            MCP_HTTP_HOST: 'Host for MCP HTTP server.',
-            MCP_HTTP_PORT: 'Port for MCP HTTP server.',
-            MCP_HTTP_PATH: 'Path prefix for MCP HTTP server.',
-
-            // Misc
-            AGRO_EDITION: 'Edition gate (oss, pro, enterprise). Pro/Enterprise unlock Autotune/Compat.',
-            THREAD_ID: 'LangGraph thread id (http or cli-chat).',
-            PORT: 'Uvicorn port for serve entrypoints.',
-            PROJECT_PATH: 'Optional reference path used by some helpers.',
-            LANGCHAIN_TRACING_V2: 'Enable tracing for LangChain-compatible tooling.',
-            LANGCHAIN_PROJECT: 'Tracing project name.',
-            NETLIFY_API_KEY: 'Key for Netlify actions (if used).',
-            NETLIFY_DOMAINS: 'Comma-separated domains for Netlify deploy (if used).',
-        };
-        $$('.settings-section .input-group').forEach(g=>{
-            const label = g.querySelector('label'); const input = g.querySelector('input,select,textarea');
-            if (!label || !input) return; const key = input.name || input.id; const help = HELP[key];
-            if (!help) return; if (label.querySelector('.help')) return;
-            const tip = document.createElement('span'); tip.className='help'; tip.title = help; tip.textContent='?';
-            label.appendChild(tip);
-        });
-    }
-
-    // ---------- Numbers formatting + per‑day converters ----------
-    // Number formatting functions - delegated to UiHelpers module
-    const getNum = window.UiHelpers?.getNum || ((id) => 0);
-    const setNum = window.UiHelpers?.setNum || (() => {});
-    const attachCommaFormatting = window.UiHelpers?.attachCommaFormatting || (() => {});
-    const wireDayConverters = window.UiHelpers?.wireDayConverters || (() => {});
-
-    async function setAutotuneEnabled() {
-        try {
-            const enabled = document.getElementById('autotune-enabled').checked;
-            const r = await fetch(api('/api/autotune/status'), {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled, current_mode: null })
-            });
-            if (!r.ok) {
-                if (r.status === 403 || r.status === 402) {
-                    alert('Autotune is a Pro feature. Enable it by setting Edition to "pro" (Misc section) or PRO_ENABLED=1.');
-                    $('#autotune-enabled').checked = false;
-                    return;
-                }
-                throw new Error('HTTP ' + r.status);
-            }
-            await refreshAutotune();
-        } catch (e) {
-            alert('Failed to set Auto‑Tune: ' + e.message);
-        }
-    }
-
-    // ---------------- Keywords ----------------
-    // Delegated to Keywords module (gui/js/keywords.js)
-    const loadKeywords = window.Keywords?.loadKeywords || (async () => {});
 
     /* DUPLICATE REMOVED: Indexing + Cards (use window.IndexStatus)
     // ---------------- Indexing + Cards ----------------

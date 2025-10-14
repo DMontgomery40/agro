@@ -37,9 +37,33 @@
     }
   }
 
+  // Set autotune enabled/disabled
+  async function setAutotuneEnabled() {
+    try {
+      const enabled = document.getElementById('autotune-enabled').checked;
+      const r = await fetch(api('/api/autotune/status'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, current_mode: null })
+      });
+      if (!r.ok) {
+        if (r.status === 403 || r.status === 402) {
+          alert('Autotune is a Pro feature. Enable it by setting Edition to "pro" (Misc section) or PRO_ENABLED=1.');
+          $('#autotune-enabled').checked = false;
+          return;
+        }
+        throw new Error('HTTP ' + r.status);
+      }
+      await refreshAutotune();
+    } catch (e) {
+      alert('Failed to set Auto‑Tune: ' + e.message);
+    }
+  }
+
   // Export public API
   window.Autotune = {
-    refreshAutotune
+    refreshAutotune,
+    setAutotuneEnabled
   };
 
   console.log('[Autotune] Loaded');
