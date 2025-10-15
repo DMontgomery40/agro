@@ -1,0 +1,203 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - heading "AGRO Another Good RAG Option" [level=1] [ref=e3]:
+      - generic [ref=e4]: AGRO
+      - generic [ref=e5]: Another Good RAG Option
+    - generic [ref=e6]:
+      - searchbox "Search settings (Ctrl+K)" [ref=e7]
+      - combobox "Theme Mode" [ref=e8]:
+        - option "Auto" [selected]
+        - option "Dark"
+        - option "Light"
+      - button "Health" [ref=e9] [cursor=pointer]
+      - generic [ref=e10]: —
+  - navigation [ref=e11]:
+    - button "🚀 Get Started" [ref=e12] [cursor=pointer]
+    - button "📊 Dashboard" [ref=e13] [cursor=pointer]
+    - button "💬 Chat" [ref=e14] [cursor=pointer]
+    - button "⚙️ Configuration" [ref=e15] [cursor=pointer]
+    - button "🗄️ Data & Indexing" [ref=e16] [cursor=pointer]
+    - button "🛠️ Developer Tools" [ref=e17] [cursor=pointer]
+    - button "📈 Analytics" [ref=e18] [cursor=pointer]
+    - button "⚙️ Settings" [ref=e19] [cursor=pointer]
+  - generic [ref=e20]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - button "🚀 Get Started" [ref=e24] [cursor=pointer]
+        - button "📊 Dashboard" [ref=e25] [cursor=pointer]
+        - button "💬 Chat" [ref=e26] [cursor=pointer]
+        - button "⚙️ Configuration" [ref=e27] [cursor=pointer]
+        - button "🗄️ Data & Indexing" [ref=e28] [cursor=pointer]
+        - button "🧠 Learning Reranker" [active] [ref=e29] [cursor=pointer]
+        - button "🛠️ Developer Tools" [ref=e30] [cursor=pointer]
+        - button "📈 Analytics" [ref=e31] [cursor=pointer]
+        - button "📊 Metrics" [ref=e32] [cursor=pointer]
+        - button "⚙️ Settings" [ref=e33] [cursor=pointer]
+      - generic [ref=e34]:
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - heading "System Status" [level=3] [ref=e38]: System Status
+            - generic [ref=e40]:
+              - generic [ref=e41]:
+                - generic [ref=e42]: Health
+                - generic [ref=e43]: —
+              - generic [ref=e44]:
+                - generic [ref=e45]: Repo
+                - generic [ref=e46]: —
+              - generic [ref=e47]:
+                - generic [ref=e48]: Cards
+                - generic [ref=e49]: —
+              - generic [ref=e50]:
+                - generic [ref=e51]: MCP
+                - generic [ref=e52]: —
+              - generic [ref=e53]:
+                - generic [ref=e54]: Auto-Tune
+                - generic [ref=e55]: —
+          - generic [ref=e56]:
+            - heading "Quick Actions" [level=3] [ref=e57]:
+              - img [ref=e58]
+              - text: Quick Actions
+            - generic [ref=e60]:
+              - button "Generate Keywords" [ref=e61] [cursor=pointer]:
+                - img [ref=e62]
+                - generic [ref=e64]: Generate Keywords
+              - button "Change Repo" [ref=e65] [cursor=pointer]:
+                - img [ref=e66]
+                - generic [ref=e68]: Change Repo
+              - button "Run Indexer" [ref=e69] [cursor=pointer]:
+                - img [ref=e70]
+                - generic [ref=e73]: Run Indexer
+              - button "Reload Config" [ref=e74] [cursor=pointer]:
+                - img [ref=e75]
+                - generic [ref=e79]: Reload Config
+              - button "Refresh Status" [ref=e80] [cursor=pointer]:
+                - img [ref=e81]
+                - generic [ref=e85]: Refresh Status
+        - generic [ref=e88]:
+          - heading "● Auto-Profile" [level=3] [ref=e89]:
+            - generic [ref=e90]: ●
+            - text: Auto-Profile
+          - paragraph [ref=e91]: The only platform where you can mix any provider, model, and database. We analyze your hardware and budget to configure the optimal RAG automatically.
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - generic [ref=e94]:
+                - generic [ref=e95]: Monthly Budget ($)
+                - spinbutton [ref=e96]: "0"
+              - generic [ref=e98]:
+                - generic [ref=e99]: Auto‑Profile Engine
+                - generic [ref=e100]:
+                  - checkbox [ref=e101]
+                  - generic [ref=e102]: Use v2 engine (deterministic selector)
+              - button "Configure Automatically" [ref=e103] [cursor=pointer]
+              - generic [ref=e104]:
+                - generic [ref=e106]: Quick Options
+                - generic [ref=e107]:
+                  - button "Free Tier (Local Only)" [ref=e108] [cursor=pointer]
+                  - button "Starter ($10/mo)" [ref=e109] [cursor=pointer]
+                  - button "Professional ($50/mo)" [ref=e110] [cursor=pointer]
+                  - button "Enterprise ($200/mo)" [ref=e111] [cursor=pointer]
+              - generic [ref=e113] [cursor=pointer]:
+                - generic [ref=e114]: Advanced (v2)
+                - generic [ref=e115]: toggle
+            - generic [ref=e117]:
+              - img [ref=e118]
+              - paragraph [ref=e121]: Click "Configure Automatically" or select a quick option to generate your optimized RAG profile based on your hardware and budget.
+      - button "Apply All Changes" [ref=e123] [cursor=pointer]
+    - generic [ref=e124]:
+      - generic [ref=e125]:
+        - heading "▸ Live Cost Calculator LIVE" [level=4] [ref=e126]:
+          - text: ▸ Live Cost Calculator
+          - generic [ref=e127]: LIVE
+        - generic [ref=e129]:
+          - generic [ref=e130]: Inference Provider
+          - combobox [ref=e131]:
+            - option "openai" [selected]
+            - option "anthropic"
+            - option "google"
+            - option "mistral"
+            - option "cohere"
+            - option "local"
+        - generic [ref=e132]:
+          - generic [ref=e133]: Inference Model
+          - combobox [ref=e134]: gpt-4o-mini
+        - generic [ref=e135]:
+          - generic [ref=e136]:
+            - generic [ref=e137]: Embeddings Provider
+            - combobox [ref=e138]:
+              - option "Use current" [selected]
+              - option "OpenAI"
+              - option "Voyage"
+              - option "MXBAI"
+              - option "Local"
+          - generic [ref=e139]:
+            - generic [ref=e140]: Embedding Model
+            - combobox "text-embedding-3-small" [ref=e141]
+        - generic [ref=e142]:
+          - generic [ref=e143]:
+            - generic [ref=e144]: Reranker
+            - combobox [ref=e145]:
+              - option "Use current" [selected]
+              - option "Cohere"
+              - option "Hugging Face"
+              - option "Local"
+              - option "None"
+          - generic [ref=e146]:
+            - generic [ref=e147]: Rerank Model
+            - textbox "rerank-english-v3.0" [ref=e148]
+        - generic [ref=e149]:
+          - generic [ref=e150]:
+            - generic [ref=e151]: Tokens In
+            - spinbutton [ref=e152]: "500"
+          - generic [ref=e153]:
+            - generic [ref=e154]: Tokens Out
+            - spinbutton [ref=e155]: "800"
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - generic [ref=e158]: Embeds
+            - spinbutton [ref=e159]: "0"
+          - generic [ref=e160]:
+            - generic [ref=e161]: Reranks
+            - spinbutton [ref=e162]: "0"
+        - generic [ref=e163]:
+          - generic [ref=e164]: Requests / Day
+          - spinbutton [ref=e165]: "100"
+        - button "Calculate Cost" [ref=e166] [cursor=pointer]
+        - button "Add Model" [ref=e167] [cursor=pointer]
+        - generic [ref=e168]:
+          - generic [ref=e169]:
+            - generic [ref=e170]: Daily
+            - generic [ref=e171]: —
+          - generic [ref=e172]:
+            - generic [ref=e173]: Monthly
+            - generic [ref=e174]: —
+      - generic [ref=e175]:
+        - heading "▸ Profiles" [level=4] [ref=e176]
+        - generic [ref=e177]:
+          - generic [ref=e178]: Save Current As
+          - textbox "my-config" [ref=e179]
+        - button "Save Profile" [ref=e180] [cursor=pointer]
+        - generic [ref=e181]:
+          - generic [ref=e182]: Saved Profiles
+          - list
+      - generic [ref=e183]:
+        - heading "▸ Auto‑Tune" [level=4] [ref=e184]
+        - generic [ref=e186]:
+          - checkbox "Enable Auto‑Tune" [ref=e187]
+          - text: Enable Auto‑Tune
+        - generic [ref=e189]: "Current Mode: —"
+        - generic [ref=e190]:
+          - generic [ref=e191]: Last Indexed
+          - generic [ref=e192]: —
+        - button "Refresh Status" [ref=e193] [cursor=pointer]
+      - generic [ref=e194]:
+        - heading "▸ Secrets Ingest" [level=4] [ref=e195]
+        - generic [ref=e196] [cursor=pointer]:
+          - text: Drop .env / .txt / .md
+          - text: or click to upload
+        - generic [ref=e198] [cursor=pointer]:
+          - checkbox "Persist to defaults.json" [ref=e199]
+          - generic [ref=e200]: Persist to defaults.json
+```
