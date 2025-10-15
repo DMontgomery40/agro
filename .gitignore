@@ -215,3 +215,8 @@ test-results/gui-GUI-smoke-tab-switching-works/video.webm
 test-results/gui-GUI-smoke-wizard-one-click-config-produces-preview/error-context.md
 test-results/gui-GUI-smoke-wizard-one-click-config-produces-preview/test-failed-1.png
 test-results/gui-GUI-smoke-wizard-one-click-config-produces-preview/video.webm
+
+out/**
+!out.noindex-shared/**
+ test-results/**
+*.png
