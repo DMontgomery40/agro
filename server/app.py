@@ -1314,7 +1314,7 @@ def index_start() -> Dict[str, Any]:
 
             # Run the actual indexer
             result = subprocess.run(
-                ["python", "index_repo.py"],
+                ["python", "-m", "indexer.index_repo"],
                 capture_output=True,
                 text=True,
                 cwd=repo_root(),
