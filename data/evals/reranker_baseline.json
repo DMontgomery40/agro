@@ -1,4 +1,4 @@
 {
-  "ok": false,
-  "error": "Traceback (most recent call last):\n  File \"/Users/davidmontgomery/agro/scripts/train_reranker.py\", line 112, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/davidmontgomery/agro/scripts/train_reranker.py\", line 68, in main\n    train_dl = DataLoader(train_pairs, shuffle=True, batch_size=args.batch)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/davidmontgomery/agro/.venv/lib/python3.11/site-packages/torch/utils/data/dataloader.py\", line 388, in __init__\n    sampler = RandomSampler(dataset, generator=generator)  # type: ignore[arg-type]\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/davidmontgomery/agro/.venv/lib/python3.11/site-packages/torch/utils/data/sampler.py\", line 156, in __init__\n    raise ValueError(\nValueError: num_samples should be a positive integer value, but got num_samples=0\n"
+  "ok": true,
+  "output": "Loading model from models/cross-encoder-agro...\nEvaluating on 1 triplets...\n\nEvaluated on 1 items\nMRR@all: 1.0000\nHit@1: 1.0000\nHit@3: 1.0000\nHit@5: 1.0000\nHit@10: 1.0000\n"
 }

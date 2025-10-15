@@ -13,8 +13,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from retrieval.hybrid_search import search
 
-GOLDEN = Path("/agro/golden.json")
-OUT = Path("data/training/triplets.jsonl")
+# Get repo root (scripts/ -> agro/)
+REPO_ROOT = Path(__file__).parent.parent
+GOLDEN = REPO_ROOT / "golden.json"
+OUT = REPO_ROOT / "data" / "training" / "triplets.jsonl"
 
 def main():
     if not GOLDEN.exists():

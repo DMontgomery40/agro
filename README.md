@@ -2,7 +2,7 @@
 
 # AGRO is a local‑first RAG engine for codebases.
 
-#### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Multiple Transports, Chat Interface, and Modular-everything. 
+#### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, a built-in Self-Learning Transformer model (it's literally always getting better and faster), Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Grafana Telemetry, Multiple Transports, Chat Interface, and Modular-everything. 
 And it even has a VSCode instance embedded in the GUI (you don't have to turn it on just wanted to see if I could do it ; )
 
 ### (Really) Quick Start
@@ -93,8 +93,10 @@ conf_avg5: 0.52
 
 ## Highlights
 
-- **Custom-Trained Search Transformer** — A full transformer-based language model that lives inside AGRO, continuously learning from your usage patterns (clicks, feedback) and training specifically on YOUR codebase. Complete ML pipeline: mine triplets → train → evaluate → promote to production with hot-reload.
-- Repo isolation and citations as guardrails — not "best effort".
+- **Custom-Trained Search Transformer** — A full transformer-based language model that lives inside AGRO, continuously learning from your usage patterns (clicks, feedback) 
+  and training specifically on YOUR codebase. Complete ML pipeline: 
+  `mine triplets → train → evaluate → promote - repeat` 
+- Repo isolation and citations as guardrails — not “best effort”.
 - ***Massive*** reduction in token use with Claude Code / Codex; Rate Limits extended greatly or potentially no longer an issue at all
 - Greatly increased accuracy in the code that CC/Codex deliver
 - More in docs on how to set rules of CC/Codex so that they take full advantage of it
