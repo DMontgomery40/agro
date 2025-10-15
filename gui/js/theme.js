@@ -22,22 +22,22 @@
     // Best-effort normalize legacy inline dark styles to tokenized vars
     try {
       const mappings = [
-        ['#0a0a0a', 'var(--card-bg)'],
-        ['#0f0f0f', 'var(--code-bg)'],
-        ['#111111', 'var(--panel-bg)'],
-        ['#1a1a1a', 'var(--bg-elev2)'],
-        ['#2a2a2a', 'var(--line)'],
-        ['#333', 'var(--line)'],
-        ['#666', 'var(--fg-muted)'],
-        ['#888', 'var(--fg-muted)'],
+        ['var(--card-bg)', 'var(--card-bg)'],
+        ['var(--code-bg)', 'var(--code-bg)'],
+        ['var(--panel)', 'var(--panel-bg)'],
+        ['var(--bg-elev2)', 'var(--bg-elev2)'],
+        ['var(--line)', 'var(--line)'],
+        ['var(--line)', 'var(--line)'],
+        ['var(--fg-muted)', 'var(--fg-muted)'],
+        ['var(--fg-muted)', 'var(--fg-muted)'],
         ['#ddd', 'var(--fg)'],
         ['#ffffff', 'var(--fg)'],
-        ['#5b9dff', 'var(--link)'],
-        ['#00ff88', 'var(--accent)'],
+        ['var(--link)', 'var(--link)'],
+        ['var(--accent)', 'var(--accent)'],
         ['#ff9b5e', 'var(--accent)'],
-        ['#ff6b6b', 'var(--err)']
+        ['var(--err)', 'var(--err)']
       ];
-      const nodes = document.querySelectorAll('[style*="#0a0a0a"], [style*="#0f0f0f"], [style*="#111111"], [style*="#1a1a1a"], [style*="#2a2a2a"], [style*="#333"], [style*="#666"], [style*="#888"], [style*="#ddd"], [style*="#ffffff"], [style*="#5b9dff"], [style*="#00ff88"], [style*="#ff9b5e"], [style*="#ff6b6b"]');
+      const nodes = document.querySelectorAll('[style*="var(--card-bg)"], [style*="var(--code-bg)"], [style*="var(--panel)"], [style*="var(--bg-elev2)"], [style*="var(--line)"], [style*="var(--line)"], [style*="var(--fg-muted)"], [style*="var(--fg-muted)"], [style*="#ddd"], [style*="#ffffff"], [style*="var(--link)"], [style*="var(--accent)"], [style*="#ff9b5e"], [style*="var(--err)"]');
       nodes.forEach(el => {
         let s = el.getAttribute('style') || '';
         mappings.forEach(([k, v]) => { s = s.replaceAll(k, v); });

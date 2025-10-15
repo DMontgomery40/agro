@@ -458,7 +458,7 @@
                     <span class="calculator-badge">Fit Analysis</span>
                 </div>
 
-                <p style="font-size: 12px; color: #888; margin-bottom: 20px; line-height: 1.5;">
+                <p style="font-size: 12px; color: var(--fg-muted); margin-bottom: 20px; line-height: 1.5;">
                     Compare two strategies: <strong>Minimal</strong> (smallest footprint, fetches data on-demand) vs <strong>Low Latency</strong> (everything in RAM for instant access).
                 </p>
 
@@ -609,13 +609,13 @@
                                     • Cards/metadata<br>
                                     • Reranker cache<br>
                                     • Redis<br>
-                                    • <span style="color: #ffaa00;">Data in RAM (per left hydration %)</span>
+                                    • <span style="color: var(--warn);">Data in RAM (per left hydration %)</span>
                                 </div>
                                 <div class="plan-total" id="calc2-conservative-total">-</div>
                             </div>
                         </div>
 
-                        <p style="font-size: 11px; color: #666; margin: 16px 0 8px; padding: 12px; background: #0a0a0a; border-radius: 4px; line-height: 1.5;">
+                        <p style="font-size: 11px; color: var(--fg-muted); margin: 16px 0 8px; padding: 12px; background: var(--card-bg); border-radius: 4px; line-height: 1.5;">
                             💡 <strong>Why the big difference?</strong> Low Latency keeps data in RAM based on hydration % from left panel (currently adding <span id="hydrationInfo">100%</span> of repo size). Minimal only stores compressed vectors and indexes, fetching actual data from disk when needed.
                         </p>
 

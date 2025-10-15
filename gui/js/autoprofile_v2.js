@@ -76,7 +76,7 @@
           sum.style.cursor = 'pointer';
           sum.style.color = 'var(--fg-muted)';
           const pre = document.createElement('pre');
-          pre.style.color = '#777'; pre.style.whiteSpace = 'pre-wrap'; pre.style.fontSize = '12px'; pre.style.padding = '10px'; pre.style.border = '1px solid #2a2a2a'; pre.style.borderRadius = '6px'; pre.style.background = '#0a0a0a';
+          pre.style.color = 'var(--fg-muted)'; pre.style.whiteSpace = 'pre-wrap'; pre.style.fontSize = '12px'; pre.style.padding = '10px'; pre.style.border = '1px solid var(--line)'; pre.style.borderRadius = '6px'; pre.style.background = 'var(--card-bg)';
           pre.textContent = JSON.stringify({ objective: reason?.objective, budget: reason?.budget, weights: reason?.weights, candidates_total: reason?.candidates_total, policy_relaxed: reason?.policy_relaxed, diag: reason?.diag }, null, 2);
           details.appendChild(sum); details.appendChild(pre);
           results.appendChild(details);
@@ -84,7 +84,7 @@
         if (placeholder) placeholder.style.display='none';
         results.style.display='block';
       }catch(err){
-        results.innerHTML = '<pre style="color:#ff6b6b;padding:20px;">'+(err?.message||String(err))+'</pre>';
+        results.innerHTML = '<pre style="color:var(--err);padding:20px;">'+(err?.message||String(err))+'</pre>';
         results.style.display='block';
         if (placeholder) placeholder.style.display='none';
       }
@@ -168,8 +168,8 @@
           const results = document.getElementById('profile-results-content');
           if (results){
             const div = document.createElement('div');
-            div.style.cssText = 'margin-top:10px;padding:10px;border:1px solid #2a2a2a;border-radius:6px;background:#0a0a0a;color:#aaa;font-size:12px;';
-            div.innerHTML = `<strong style="color:#00ff88;">Estimated Cost</strong> — Daily: $${Number(est.daily||0).toFixed(4)} • Monthly: $${Number(est.monthly||0).toFixed(2)}`;
+            div.style.cssText = 'margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--card-bg);color:var(--fg-muted);font-size:12px;';
+            div.innerHTML = `<strong style="color:var(--accent);">Estimated Cost</strong> — Daily: $${Number(est.daily||0).toFixed(4)} • Monthly: $${Number(est.monthly||0).toFixed(2)}`;
             results.prepend(div);
           }
         }
@@ -179,9 +179,9 @@
       const placeholder = document.getElementById('profile-placeholder');
       const payloadStr = JSON.stringify(payload, null, 2);
       if (results){ results.innerHTML = '<div style="padding:20px;">'+
-        '<div style="color:#ff6b6b; font-weight:600; margin-bottom:8px;">Auto‑Profile v2 error</div>'+
-        '<pre style="color:#aaa; white-space:pre-wrap;">'+(err?.message||String(err))+'</pre>'+
-        '<details style="margin-top:12px;"><summary style="cursor:pointer; color:#999;">Payload</summary><pre style="color:#777; white-space:pre-wrap;">'+payloadStr+'</pre></details>'+
+        '<div style="color:var(--err); font-weight:600; margin-bottom:8px;">Auto‑Profile v2 error</div>'+
+        '<pre style="color:var(--fg-muted); white-space:pre-wrap;">'+(err?.message||String(err))+'</pre>'+
+        '<details style="margin-top:12px;"><summary style="cursor:pointer; color:var(--fg-muted);">Payload</summary><pre style="color:var(--fg-muted); white-space:pre-wrap;">'+payloadStr+'</pre></details>'+
         '</div>'; results.style.display='block'; }
       if (placeholder) placeholder.style.display='none';
     }

@@ -12,7 +12,7 @@ export default defineConfig({
     video: 'retain-on-failure'
   },
   webServer: {
-    command: "bash -lc '. .venv/bin/activate && source scripts/select_index.sh shared || true; uvicorn serve_rag:app --host 127.0.0.1 --port 8012'",
+    command: "bash -lc '. .venv/bin/activate && source scripts/select_index.sh shared || true; uvicorn server.app:app --host 127.0.0.1 --port 8012'",
     url: 'http://127.0.0.1:8012/health',
     reuseExistingServer: true,
     timeout: 120_000,
@@ -20,4 +20,3 @@ export default defineConfig({
     stderr: 'pipe'
   }
 });
-

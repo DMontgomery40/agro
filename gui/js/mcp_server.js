@@ -25,19 +25,19 @@
 
             if (data.running) {
                 statusEl.innerHTML = `
-                    <span style="color: #00ff88;">✓ Running</span>
-                    <div style="font-size: 10px; color: #888; margin-top: 4px;">
+                    <span style="color: var(--accent);">✓ Running</span>
+                    <div style="font-size: 10px; color: var(--fg-muted); margin-top: 4px;">
                         Port: ${data.port} | Mode: ${data.mode} | URL: ${data.url || 'N/A'}
                     </div>
                 `;
-                statusEl.style.borderColor = '#00ff88';
+                statusEl.style.borderColor = 'var(--accent)';
             } else {
-                statusEl.innerHTML = `<span style="color: #ff6b6b;">✗ Not Running</span>`;
-                statusEl.style.borderColor = '#ff6b6b';
+                statusEl.innerHTML = `<span style="color: var(--err);">✗ Not Running</span>`;
+                statusEl.style.borderColor = 'var(--err)';
             }
         } catch (e) {
-            statusEl.innerHTML = `<span style="color: #ffa500;">⚠ Cannot check status</span>`;
-            statusEl.style.borderColor = '#ffa500';
+            statusEl.innerHTML = `<span style="color: var(--warn);">⚠ Cannot check status</span>`;
+            statusEl.style.borderColor = 'var(--warn)';
             console.error('Failed to check HTTP MCP status:', e);
         }
     }

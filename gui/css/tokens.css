@@ -15,10 +15,13 @@ html, :root, [data-theme="dark"] {
   --accent: #00ff88;           /* brand green used across GUI */
   --accent-contrast: #000000;
   --link: #5b9dff;             /* informational blue */
+  --on-link: #ffffff;          /* readable text on link backgrounds */
 
   --ok: #00ff88;
   --warn: #ffaa00;
   --err: #ff6b6b;
+  --on-warn: #ffffff;
+  --on-err: #ffffff;
 
   --chip-bg: #0f0f0f;
   --input-bg: #1a1a1a;
@@ -45,10 +48,13 @@ html, :root, [data-theme="dark"] {
   --accent: #16A34A;           /* comfortable green on light */
   --accent-contrast: #FFFFFF;
   --link: #2563EB;
+  --on-link: #FFFFFF;
 
   --ok: #16A34A;
   --warn: #B45309;
   --err: #DC2626;
+  --on-warn: #FFFFFF;
+  --on-err: #FFFFFF;
 
   --chip-bg: #EEF2F7;
   --input-bg: #FFFFFF;

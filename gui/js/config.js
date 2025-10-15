@@ -127,10 +127,10 @@
             reposSection.innerHTML = '';
             (data.repos || []).forEach((repo) => {
                 const div = document.createElement('div');
-                div.style.cssText = 'background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; margin-bottom: 16px;';
+                div.style.cssText = 'background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 16px;';
                 const rname = repo.name;
                 div.innerHTML = `
-                    <h4 style="color: #00ff88; font-size: 14px; margin-bottom: 12px;">Repo: ${repo.name}</h4>
+                    <h4 style="color: var(--accent); font-size: 14px; margin-bottom: 12px;">Repo: ${repo.name}</h4>
                     <div class="input-group" style="margin-bottom: 12px;">
                         <label>Path</label>
                         <input type="text" name="repo_path_${repo.name}" value="${repo.path || ''}" />
@@ -159,7 +159,7 @@
                                         <option value="semantic">Semantic</option>
                                         <option value="repos">Repo</option>
                                     </select>
-                                    <button class="small-button" id="kw-new-${rname}" style="background:#00ff88; color:#000; padding:4px 8px; font-size:11px;" title="Add New Keyword">+</button>
+                                    <button class="small-button" id="kw-new-${rname}" style="background:var(--accent); color: var(--accent-contrast); padding:4px 8px; font-size:11px;" title="Add New Keyword">+</button>
                                 </div>
                                 <select id="kw-all-${rname}" multiple size="8" style="width:100%;"></select>
                             </div>
@@ -242,8 +242,8 @@
                         top: 50%;
                         left: 50%;
                         transform: translate(-50%, -50%);
-                        background: #0a0a0a;
-                        border: 1px solid #00ff88;
+                        background: var(--card-bg);
+                        border: 1px solid var(--accent);
                         border-radius: 8px;
                         padding: 20px;
                         z-index: 10000;
@@ -252,22 +252,22 @@
                     `;
 
                     dialog.innerHTML = `
-                        <h4 style="color: #00ff88; margin-bottom: 16px;">Add New Keyword</h4>
+                        <h4 style="color: var(--accent); margin-bottom: 16px;">Add New Keyword</h4>
                         <div style="margin-bottom: 12px;">
-                            <label style="display: block; color: #999; font-size: 11px; margin-bottom: 4px;">Keyword</label>
-                            <input type="text" id="new-kw-input" style="width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 4px;" placeholder="Enter keyword...">
+                            <label style="display: block; color: var(--fg-muted); font-size: 11px; margin-bottom: 4px;">Keyword</label>
+                            <input type="text" id="new-kw-input" style="width: 100%; background: var(--bg-elev2); border: 1px solid var(--line); color: var(--fg); padding: 8px; border-radius: 4px;" placeholder="Enter keyword...">
                         </div>
                         <div style="margin-bottom: 16px;">
-                            <label style="display: block; color: #999; font-size: 11px; margin-bottom: 4px;">Category (optional)</label>
-                            <select id="new-kw-category" style="width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 4px;">
+                            <label style="display: block; color: var(--fg-muted); font-size: 11px; margin-bottom: 4px;">Category (optional)</label>
+                            <select id="new-kw-category" style="width: 100%; background: var(--bg-elev2); border: 1px solid var(--line); color: var(--fg); padding: 8px; border-radius: 4px;">
                                 <option value="">None (appears in All only)</option>
                                 <option value="discriminative">Discriminative</option>
                                 <option value="semantic">Semantic</option>
                             </select>
                         </div>
                         <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                            <button id="cancel-kw" style="background: #1a1a1a; color: #999; border: 1px solid #333; padding: 6px 16px; border-radius: 4px; cursor: pointer;">Cancel</button>
-                            <button id="add-kw" style="background: #00ff88; color: #000; border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Add</button>
+                            <button id="cancel-kw" style="background: var(--bg-elev2); color: var(--fg-muted); border: 1px solid var(--line); padding: 6px 16px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                            <button id="add-kw" style="background: var(--accent); color: var(--accent-contrast); border: none; padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Add</button>
                         </div>
                     `;
 

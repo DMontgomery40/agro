@@ -18,8 +18,8 @@
       if (!badge || !badgeText || !banner || !bannerMsg || !iframe) return;
 
       if (data.ok) {
-        badge.style.background = '#00ff88';
-        badge.style.color = '#000';
+        badge.style.background = 'var(--accent)';
+        badge.style.color = 'var(--accent-contrast)';
         badgeText.textContent = '● Healthy';
         banner.style.display = 'none';
         if (!iframe.src) {
@@ -28,8 +28,8 @@
         }
       } else {
         const isDisabled = !data.enabled;
-        badge.style.background = isDisabled ? '#666' : '#ff5555';
-        badge.style.color = '#fff';
+        badge.style.background = isDisabled ? 'var(--fg-muted)' : 'var(--err)';
+        badge.style.color = 'var(--fg)';
         badgeText.textContent = isDisabled ? '○ Disabled' : '● Error';
         banner.style.display = 'block';
         const reason = data.reason || data.error || 'Unknown error';

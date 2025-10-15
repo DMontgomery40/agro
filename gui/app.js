@@ -1074,20 +1074,20 @@
                             showStatus(`Switching to ${repo.slug}...`, 'loading');
 
                             try {
-                                const updateResponse = await fetch(api('/api/env/update'), {
+                                const updateResponse = await fetch(api('/api/config'), {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ REPO: repo.slug })
+                                    body: JSON.stringify({ env: { REPO: repo.slug } })
                                 });
 
                                 if (updateResponse.ok) {
-                                    showStatus(`Switched to ${repo.slug}`, 'success');
+                                    showStatus(`✓ Switched to ${repo.slug}`, 'success');
                                     setTimeout(() => refreshDashboard(), 500);
                                 } else {
-                                    showStatus(`Failed to switch to ${repo.slug}`, 'error');
+                                    showStatus(`✗ Failed to switch to ${repo.slug}`, 'error');
                                 }
                             } catch (err) {
-                                showStatus(`Error switching repo: ${err.message}`, 'error');
+                                showStatus(`✗ Error switching repo: ${err.message}`, 'error');
                             }
                         });
                     }

@@ -165,7 +165,7 @@
         }
 
         .search-hit {
-            outline: 2px solid #00ff88;
+            outline: 2px solid var(--accent);
             outline-offset: 2px;
             border-radius: 4px;
             transition: outline 120ms ease;
@@ -217,7 +217,7 @@
 
         .resize-handle:hover::after,
         .resize-handle.dragging::after {
-            background: #00ff88;
+            background: var(--accent);
         }
 
         .tab-bar {
@@ -761,7 +761,7 @@
 
         select[id^="kw-all-"]::-webkit-scrollbar-thumb:hover,
         select[id^="kw-repo-"]::-webkit-scrollbar-thumb:hover {
-            background: #444;
+            background: var(--bg-elev2);
         }
 
         select[id^="kw-all-"] option,
@@ -805,37 +805,37 @@
         }
 
         /* Color accents for different types of info */
-        .accent-blue { color: #5b9dff; }
-        .accent-purple { color: #b794f6; }
-        .accent-orange { color: #ff9b5e; }
-        .accent-cyan { color: #4ecdc4; }
-        .accent-pink { color: #ff7eb6; }
+        .accent-blue { color: var(--link); }
+        .accent-purple { color: var(--link); }
+        .accent-orange { color: var(--warn); }
+        .accent-cyan { color: var(--link); }
+        .accent-pink { color: var(--link); }
 
         .settings-section.wizard {
-            border-left: 3px solid #5b9dff;
+            border-left: 3px solid var(--link);
         }
 
         .settings-section.cost {
-            border-left: 3px solid #b794f6;
+            border-left: 3px solid var(--link);
         }
 
         .settings-section.indexing {
-            border-left: 3px solid #ff9b5e;
+            border-left: 3px solid var(--warn);
         }
 
         .settings-section.overview {
-            border-left: 3px solid #4ecdc4;
+            border-left: 3px solid var(--link);
         }
 
         /* Live indicator animation */
         @keyframes blink {
             0%, 100% {
                 opacity: 1;
-                box-shadow: 0 0 6px #00ff88;
+                box-shadow: 0 0 6px var(--accent);
             }
             50% {
                 opacity: 0.3;
-                box-shadow: 0 0 0 #00ff88;
+                box-shadow: 0 0 0 var(--accent);
             }
         }
 
@@ -1252,10 +1252,10 @@
             justify-content: center;
             gap: 8px;
             padding: 16px 12px;
-            background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
-            border: 1px solid #2a2a2a;
+            background: var(--panel);
+            border: 1px solid var(--line);
             border-radius: 8px;
-            color: #aaa;
+            color: var(--fg-muted);
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 12px;
@@ -1280,9 +1280,9 @@
         }
 
         .action-btn:hover {
-            background: linear-gradient(135deg, #1f1f1f 0%, #151515 100%);
-            border-color: #00ff88;
-            color: #00ff88;
+            background: var(--panel);
+            border-color: var(--accent);
+            color: var(--accent);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
         }
@@ -1302,7 +1302,7 @@
         }
 
         .action-btn:hover svg {
-            stroke: #00ff88;
+            stroke: var(--accent);
             filter: drop-shadow(0 0 4px rgba(0, 255, 136, 0.5));
         }
 
@@ -1316,23 +1316,23 @@
         }
 
         .action-btn.success {
-            background: linear-gradient(135deg, #003311 0%, #002208 100%);
-            border-color: #00ff88;
-            color: #00ff88;
+            background: color-mix(in oklch, var(--ok) 8%, var(--bg));
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .action-btn.success svg {
-            stroke: #00ff88;
+            stroke: var(--accent);
         }
 
         .action-btn.error {
-            background: linear-gradient(135deg, #331a00 0%, #221100 100%);
-            border-color: #ff6b6b;
-            color: #ff6b6b;
+            background: color-mix(in oklch, var(--warn) 8%, var(--bg));
+            border-color: var(--err);
+            color: var(--err);
         }
 
         .action-btn.error svg {
-            stroke: #ff6b6b;
+            stroke: var(--err);
         }
 
         @keyframes spin {
@@ -2335,12 +2335,12 @@
                                         <div class="input-group full-width">
                                             <label>Providers Allowed</label>
                                             <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="openai" class="apv2-prov" style="width:auto;"> openai</label>
-                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="anthropic" class="apv2-prov" style="width:auto;"> anthropic</label>
-                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="google" class="apv2-prov" style="width:auto;"> google</label>
-                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="voyage" class="apv2-prov" style="width:auto;"> voyage</label>
-                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="cohere" class="apv2-prov" style="width:auto;"> cohere</label>
-                                                <label style="font-size:12px;color:#ccc;"><input type="checkbox" value="local" class="apv2-prov" style="width:auto;"> local</label>
+                                                <label style="font-size:12px;color: var(--fg-muted);"><input type="checkbox" value="openai" class="apv2-prov" style="width:auto;"> openai</label>
+                                                <label style="font-size:12px;color: var(--fg-muted);"><input type="checkbox" value="anthropic" class="apv2-prov" style="width:auto;"> anthropic</label>
+                                                <label style="font-size:12px;color: var(--fg-muted);"><input type="checkbox" value="google" class="apv2-prov" style="width:auto;"> google</label>
+                                                <label style="font-size:12px;color: var(--fg-muted);"><input type="checkbox" value="voyage" class="apv2-prov" style="width:auto;"> voyage</label>
+                                                <label style="font-size:12px;color: var(--fg-muted);"><input type="checkbox" value="cohere" class="apv2-prov" style="width:auto;"> cohere</label>
+                                                <label style="font-size:12px;color: var(--fg-muted);"><input type="checkbox" value="local" class="apv2-prov" style="width:auto;"> local</label>
                                             </div>
                                         </div>
                                     </div>
@@ -2399,7 +2399,7 @@
                                             <label>Heuristic Quality Fallback</label>
                                             <div style="display:flex;align-items:center;gap:10px;">
                                                 <input type="checkbox" id="apv2-heuristics" style="width:auto;">
-                                                <span style="font-size:12px;color:#888;">Use heuristics when prices.json lacks quality_score (advanced)</span>
+                                                <span style="font-size:12px;color:var(--fg-muted);">Use heuristics when prices.json lacks quality_score (advanced)</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2706,16 +2706,16 @@
 
             <!-- Tab: Chat -->
             <div id="tab-chat" class="tab-content">
-                <div class="settings-section" style="border-left: 3px solid #5b9dff; padding: 0;">
+                <div class="settings-section" style="border-left: 3px solid var(--link); padding: 0;">
                     <div style="display: flex; flex-direction: column; height: 70vh;">
                         <!-- Chat Header -->
-                        <div style="padding: 16px; border-bottom: 1px solid #2a2a2a; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="padding: 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <h3 style="margin: 0 0 4px 0;"><span class="accent-blue">●</span> RAG Chat</h3>
-                                <p class="small" style="margin: 0; color: #888;">Ask questions about your codebase</p>
+                                <p class="small" style="margin: 0; color: var(--fg-muted);">Ask questions about your codebase</p>
                             </div>
                             <div style="display: flex; gap: 8px; align-items: center;">
-                                <select id="chat-repo-select" style="background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 12px;">
+                                <select id="chat-repo-select" style="background: var(--card-bg); border: 1px solid var(--line); color: var(--fg); padding: 6px 12px; border-radius: 4px; font-size: 12px;">
                                     <option value="">Auto-detect repo</option>
                                     <option value="agro">agro</option>
                                     <option value=""></option>
@@ -2723,31 +2723,31 @@
 
                                 <!-- History Button with Dropdown -->
                                 <div style="position: relative;">
-                                    <button id="chat-history" style="background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                    <button id="chat-history" style="background: var(--bg-elev2); color: var(--accent); border: 1px solid var(--accent); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <circle cx="12" cy="12" r="10"></circle>
                                             <polyline points="12 6 12 12 16 14"></polyline>
                                         </svg>
                                         History
                                     </button>
-                                    <div id="history-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 1000; min-width: 180px;">
-                                        <button id="chat-export-history" style="display: block; width: 100%; text-align: left; background: none; border: none; color: #ddd; padding: 8px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s;">
+                                    <div id="history-dropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 180px;">
+                                        <button id="chat-export-history" style="display: block; width: 100%; text-align: left; background: none; border: none; color: var(--fg); padding: 8px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s;">
                                             📥 Export History
                                         </button>
-                                        <div style="height: 1px; background: #333;"></div>
-                                        <button id="chat-clear-history" style="display: block; width: 100%; text-align: left; background: none; border: none; color: #ff6b6b; padding: 8px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s;">
+                                        <div style="height: 1px; background: var(--line);"></div>
+                                        <button id="chat-clear-history" style="display: block; width: 100%; text-align: left; background: none; border: none; color: var(--err); padding: 8px 12px; font-size: 12px; cursor: pointer; transition: background 0.2s;">
                                             🗑️ Clear History
                                         </button>
                                     </div>
                                 </div>
 
-                                <button id="chat-clear" style="background: #1a1a1a; color: #ff6b6b; border: 1px solid #ff6b6b; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;">Clear</button>
+                                <button id="chat-clear" style="background: var(--bg-elev2); color: var(--err); border: 1px solid var(--err); padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;">Clear</button>
                             </div>
                         </div>
 
                         <!-- Chat Messages -->
-                        <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px; background: #0a0a0a;">
-                            <div style="text-align: center; color: #666; padding: 40px 20px;">
+                        <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px; background: var(--card-bg);">
+                            <div style="text-align: center; color: var(--fg-muted); padding: 40px 20px;">
                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 12px;">
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                                 </svg>
@@ -2757,20 +2757,20 @@
                         </div>
 
                         <!-- Chat Input -->
-                        <div style="padding: 16px; border-top: 1px solid #2a2a2a; background: #0f0f0f;">
+                        <div style="padding: 16px; border-top: 1px solid var(--line); background: var(--code-bg);">
                             <div style="display: flex; gap: 8px;">
                                 <textarea
                                     id="chat-input"
                                     placeholder="Ask a question about your codebase..."
-                                    style="flex: 1; background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 12px; border-radius: 6px; font-size: 14px; font-family: inherit; resize: none; min-height: 60px; max-height: 120px;"
+                                    style="flex: 1; background: var(--card-bg); border: 1px solid var(--line); color: var(--fg); padding: 12px; border-radius: 6px; font-size: 14px; font-family: inherit; resize: none; min-height: 60px; max-height: 120px;"
                                     rows="2"
                                 ></textarea>
                                 <button
                                     id="chat-send"
-                                    style="background: #00ff88; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; height: fit-content; align-self: flex-end;"
+                                    style="background: var(--accent); color: var(--accent-contrast); border: none; padding: 12px 24px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; height: fit-content; align-self: flex-end;"
                                 >Send</button>
                             </div>
-                            <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                            <div style="font-size: 11px; color: var(--fg-muted); margin-top: 8px;">
                                 Press Ctrl+Enter to send • Citations will appear as clickable file links
                             </div>
                             <details id="chat-trace" style="margin-top:8px;">
@@ -2782,7 +2782,7 @@
                 </div>
 
                 <!-- Chat Settings -->
-                <div class="settings-section collapsible-section" style="border-left: 3px solid #ff9b5e; margin-top: 16px;">
+                <div class="settings-section collapsible-section" style="border-left: 3px solid var(--warn); margin-top: 16px;">
                     <h3 class="collapsible-header" data-target="chat-settings-content">
                         <span class="collapse-icon">▼</span>
                         <span class="accent-orange">●</span> Chat Settings
@@ -2904,7 +2904,7 @@
                     </div>
 
                     <!-- Display Options -->
-                    <h4 style="margin: 24px 0 12px 0; font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">Display Options</h4>
+                    <h4 style="margin: 24px 0 12px 0; font-size: 14px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px;">Display Options</h4>
                     <div class="input-row">
                         <div class="input-group">
                             <label>
@@ -2991,8 +2991,8 @@
                     </div>
 
                     <!-- History Settings Section -->
-                    <div class="settings-subsection" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #2a2a2a;">
-                        <h4 style="color: #00ff88; font-size: 13px; margin-bottom: 12px;">
+                    <div class="settings-subsection" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line);">
+                        <h4 style="color: var(--accent); font-size: 13px; margin-bottom: 12px;">
                             💾 History Settings
                             <span class="tooltip-wrap">
                                 <span class="help-icon">?</span>
@@ -3058,7 +3058,7 @@
                             </div>
                             <div class="input-group">
                                 <label>Storage Usage</label>
-                                <div style="background: #0a0a0a; border: 1px solid #333; color: #888; padding: 9px 12px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', monospace;">
+                                <div style="background: var(--card-bg); border: 1px solid var(--line); color: var(--fg-muted); padding: 9px 12px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', monospace;">
                                     <span id="chat-storage-display">Calculating...</span>
                                 </div>
                             </div>
@@ -3066,8 +3066,8 @@
                     </div>
 
                     <div style="margin-top: 16px; display: flex; gap: 8px;">
-                        <button id="chat-save-settings" class="small-button" style="background: #00ff88; color: #000;">Save Settings</button>
-                        <button id="chat-reset-settings" class="small-button" style="background: #1a1a1a; color: #ff6b6b; border: 1px solid #ff6b6b;">Reset to Defaults</button>
+                        <button id="chat-save-settings" class="small-button" style="background: var(--accent); color: var(--accent-contrast);">Save Settings</button>
+                        <button id="chat-reset-settings" class="small-button" style="background: var(--bg-elev2); color: var(--err); border: 1px solid var(--err);">Reset to Defaults</button>
                     </div>
                     </div>
                 </div>
@@ -3199,13 +3199,13 @@
                     
                     <div class="input-row" style="margin-top: 16px;">
                         <div class="input-group">
-                            <button id="reranker-save-baseline" style="background: var(--link); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Save as Baseline</button>
+                            <button id="reranker-save-baseline" style="background: var(--link); color: var(--on-link); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Save as Baseline</button>
                         </div>
                         <div class="input-group">
-                            <button id="reranker-compare-baseline" style="background: var(--warn); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">Compare vs Baseline</button>
+                            <button id="reranker-compare-baseline" style="background: var(--warn); color: var(--on-warn); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">Compare vs Baseline</button>
                         </div>
                         <div class="input-group">
-                            <button id="reranker-rollback" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Rollback Model</button>
+                            <button id="reranker-rollback" style="background: var(--err); color: var(--on-err); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Rollback Model</button>
                         </div>
                     </div>
                 </div>
@@ -3215,13 +3215,13 @@
                     <h3>📝 Query Logs</h3>
                     <div class="input-row">
                         <div class="input-group">
-                            <button id="reranker-view-logs" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">View Logs</button>
+                            <button id="reranker-view-logs" style="background: var(--bg-elev1); color: var(--fg); border: 1px solid var(--line); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">View Logs</button>
                         </div>
                         <div class="input-group">
-                            <button id="reranker-download-logs" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Download Logs</button>
+                            <button id="reranker-download-logs" style="background: var(--bg-elev1); color: var(--fg); border: 1px solid var(--line); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Download Logs</button>
                         </div>
                         <div class="input-group">
-                            <button id="reranker-clear-logs" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Clear Logs</button>
+                            <button id="reranker-clear-logs" style="background: var(--err); color: var(--on-err); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Clear Logs</button>
                         </div>
                     </div>
                     <div id="reranker-logs-viewer" style="margin-top: 16px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; max-height: 400px; overflow-y: auto; display: none; font-family: 'SF Mono', monospace; font-size: 11px;"></div>
@@ -3239,12 +3239,12 @@
                         </div>
                         <div class="input-group">
                             <label>&nbsp;</label>
-                            <button id="reranker-setup-cron" style="background: var(--link); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Setup Nightly Job</button>
+                            <button id="reranker-setup-cron" style="background: var(--link); color: var(--on-link); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Setup Nightly Job</button>
                         </div>
                     </div>
                     
                     <div style="margin-top: 8px;">
-                        <button id="reranker-remove-cron" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Remove Nightly Job</button>
+                        <button id="reranker-remove-cron" style="background: var(--err); color: var(--on-err); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Remove Nightly Job</button>
                     </div>
                     
                     <div id="reranker-cron-status" style="margin-top: 12px; padding: 8px; background: var(--card-bg); border-radius: 4px; font-size: 12px; color: var(--fg-muted);"></div>
@@ -3280,7 +3280,7 @@
                             <div id="reranker-cost-avg" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px; color: var(--accent);">$0.00</div>
                         </div>
                     </div>
-                    <button id="reranker-cost-details" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 8px; font-weight: 600;">View Cost Breakdown</button>
+                    <button id="reranker-cost-details" style="background: var(--bg-elev1); color: var(--fg); border: 1px solid var(--line); padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 8px; font-weight: 600;">View Cost Breakdown</button>
                 </div>
 
                 <!-- No-Hit Tracking -->
@@ -3306,34 +3306,34 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <h3 style="margin: 0;">Embedded Code Editor</h3>
-                            <div id="editor-health-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #666; color: #fff;">
+                            <div id="editor-health-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: var(--fg-muted); color: var(--fg);">
                                 <span id="editor-health-text">Checking...</span>
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button id="btn-editor-open-window" class="small-button" style="background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">
+                            <button id="btn-editor-open-window" class="small-button" style="background: var(--bg-elev2); color: var(--link); border: 1px solid var(--link);">
                                 🗗 Open in Window
                             </button>
-                            <button id="btn-editor-copy-url" class="small-button" style="background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88;">
+                            <button id="btn-editor-copy-url" class="small-button" style="background: var(--bg-elev2); color: var(--accent); border: 1px solid var(--accent);">
                                 📋 Copy URL
                             </button>
-                            <button id="btn-editor-restart" class="small-button" style="background: #1a1a1a; color: #ffaa00; border: 1px solid #ffaa00;">
+                            <button id="btn-editor-restart" class="small-button" style="background: var(--bg-elev2); color: var(--warn); border: 1px solid var(--warn);">
                                 ↻ Restart
                             </button>
                         </div>
                     </div>
 
-                    <div id="editor-status-banner" style="display: none; background: #1a1a1a; border: 1px solid #ffaa00; border-radius: 6px; padding: 16px; margin-bottom: 16px;">
+                    <div id="editor-status-banner" style="display: none; background: var(--bg-elev2); border: 1px solid var(--warn); border-radius: 6px; padding: 16px; margin-bottom: 16px;">
                         <div style="display: flex; align-items: start; gap: 12px;">
                             <span style="font-size: 24px;">⚠️</span>
                             <div style="flex: 1;">
                                 <div style="font-weight: 600; margin-bottom: 4px;">Editor Unavailable</div>
-                                <div id="editor-status-message" style="font-size: 12px; color: #aaa;"></div>
+                                <div id="editor-status-message" style="font-size: 12px; color: var(--fg-muted);"></div>
                             </div>
                         </div>
                     </div>
 
-                    <div id="editor-iframe-container" style="position: relative; width: 100%; height: calc(100vh - 200px); min-height: 600px; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; overflow: hidden;">
+                    <div id="editor-iframe-container" style="position: relative; width: 100%; height: calc(100vh - 200px); min-height: 600px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;">
                         <iframe
                             id="editor-iframe"
                             style="width: 100%; height: 100%; border: none;"
@@ -3341,7 +3341,7 @@
                         ></iframe>
                     </div>
 
-                    <p class="small" style="color:#666; margin-top: 12px;">
+                    <p class="small" style="color:var(--fg-muted); margin-top: 12px;">
                         Full VS Code experience running in your browser. Changes are saved to the workspace automatically.
                     </p>
                 </div>
@@ -3613,7 +3613,7 @@
                     
                 </div>
 
-                <div class="settings-section" style="margin-top:16px; border-left: 3px solid #ff6b9d;">
+                <div class="settings-section" style="margin-top:16px; border-left: 3px solid var(--link);">
                     <h3>
                         <span class="accent-pink">●</span> Reranking
                         <span class="tooltip-wrap">
@@ -3675,7 +3675,7 @@
                 </div>
 
                 <!-- Advanced RAG Tuning -->
-                <div class="settings-section" style="border-left: 3px solid #ff9b5e;">
+                <div class="settings-section" style="border-left: 3px solid var(--warn);">
                     <h3>
                         <span class="accent-orange">●</span> Advanced RAG Tuning
                         <span class="tooltip-wrap">
@@ -3820,7 +3820,7 @@
                     </div>
                 </div>
 
-                <div class="settings-section" style="margin-top:16px; border-left:3px solid #5b9dff;">
+                <div class="settings-section" style="margin-top:16px; border-left:3px solid var(--link);">
                     <h3>Routing Trace</h3>
                     <div class="input-row">
                         <div class="input-group">
@@ -3974,24 +3974,67 @@
             <!-- Tab: Data & Indexing -->
             <div id="tab-data-indexing" class="tab-content">
                 
-                <!-- Index Overview Dashboard -->
-                <div class="settings-section" style="border-left: 3px solid #00ff88;">
-                    <h3>
-                        <span style="color: #00ff88;">●</span> Index Overview
-                        <button class="small-button" id="btn-refresh-index-stats" style="float: right; padding: 4px 12px; font-size: 11px;">
-                            ↻ Refresh
-                        </button>
-                    </h3>
+                <!-- ONE SIMPLE INDEX BUTTON -->
+                <div class="settings-section" style="border-left: 3px solid var(--ok); padding: 32px;">
+                    <h2 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 700;">
+                        🚀 Index Repository
+                    </h2>
                     
-                    <div id="index-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
-                        <!-- Stats cards will be populated by JS -->
+                    <div style="max-width: 800px;">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px;">Repository:</label>
+                            <select id="simple-repo-select" style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid var(--line); border-radius: 8px; background: var(--input-bg); color: var(--fg);">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 24px;">
+                            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 16px;">
+                                <input type="checkbox" id="simple-dense-check" checked style="width: 24px; height: 24px; cursor: pointer;">
+                                <span style="font-weight: 600;">Include Dense Embeddings (Recommended)</span>
+                            </label>
+                            <p style="font-size: 13px; color: var(--fg-muted); margin: 8px 0 0 36px;">Enables semantic vector search via Qdrant</p>
+                        </div>
+                        
+                        <button id="simple-index-btn" style="
+                            width: 100%;
+                            padding: 20px;
+                            font-size: 20px;
+                            font-weight: 700;
+                            background: var(--ok);
+                            color: #000;
+                            border: none;
+                            border-radius: 12px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            box-shadow: 0 4px 12px rgba(0,255,136,0.3);
+                        " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 6px 20px rgba(0,255,136,0.4)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,255,136,0.3)'">
+                            🚀 INDEX NOW
+                        </button>
+                        
+                        <pre id="simple-output" style="
+                            display: none;
+                            margin-top: 24px;
+                            padding: 20px;
+                            background: var(--code-bg);
+                            color: var(--code-fg);
+                            border: 2px solid var(--line);
+                            border-radius: 8px;
+                            font-family: 'SF Mono', 'Consolas', monospace;
+                            font-size: 12px;
+                            line-height: 1.5;
+                            max-height: 600px;
+                            overflow-y: auto;
+                            white-space: pre-wrap;
+                            word-wrap: break-word;
+                        "></pre>
                     </div>
                 </div>
 
                 <!-- Indexing Operations -->
-                <div class="settings-section" style="border-left: 3px solid #5b9dff;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3>
-                        <span style="color: #5b9dff;">●</span> Build Index
+                        <span style="color: var(--link);">●</span> Build Index
                         <span class="tooltip-wrap">
                             <span class="help-icon">?</span>
                             <div class="tooltip-bubble">
@@ -4012,13 +4055,13 @@
                     <div class="input-row">
                         <div class="input-group">
                             <label>Repository to Index</label>
-                            <select id="index-repo-select" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                            <select id="index-repo-select" style="background: var(--bg-elev2); color: var(--fg); border: 1px solid var(--line); padding: 8px; border-radius: 4px;">
                                 <!-- Populated by JS -->
                             </select>
                         </div>
                         <div class="input-group">
                             <label>Embedding Type</label>
-                            <select name="EMBEDDING_TYPE" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                            <select name="EMBEDDING_TYPE" style="background: var(--bg-elev2); color: var(--fg); border: 1px solid var(--line); padding: 8px; border-radius: 4px;">
                                 <option value="openai">OpenAI (text-embedding-3-large)</option>
                                 <option value="local">Local (BGE-small, no API)</option>
                                 <option value="voyage">Voyage AI</option>
@@ -4026,7 +4069,7 @@
                         </div>
                         <div class="input-group">
                             <label>Skip Dense Index</label>
-                            <select id="index-skip-dense" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                            <select id="index-skip-dense" style="background: var(--bg-elev2); color: var(--fg); border: 1px solid var(--line); padding: 8px; border-radius: 4px;">
                                 <option value="0">No (full index)</option>
                                 <option value="1">Yes (BM25 only, faster)</option>
                             </select>
@@ -4034,82 +4077,41 @@
                     </div>
 
                     <div class="input-row" style="display: flex; gap: 8px;">
-                        <button class="small-button" id="btn-index-start" style="flex: 1; background: #00ff88; color: #000; padding: 12px; font-weight: 600;">
+                        <button class="small-button" id="btn-index-start" style="flex: 1; background: var(--accent); color: var(--accent-contrast); padding: 12px; font-weight: 600;">
                             ▶ Start Indexing
                         </button>
-                        <button class="small-button" id="btn-index-stop" style="flex: 1; background: #ff6b6b; color: #fff; padding: 12px; font-weight: 600;">
+                        <button class="small-button" id="btn-index-stop" style="flex: 1; background: var(--err); color: var(--fg); padding: 12px; font-weight: 600;">
                             ■ Stop
                         </button>
                     </div>
 
                     <div style="margin-top: 16px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #00ff88;">Progress</label>
-                        <div class="progress" style="background:#0a0a0a; border:1px solid #333; border-radius:6px; height:24px; overflow:hidden;">
-                            <div id="index-bar" style="height:100%; width:0%; background: linear-gradient(90deg, #00ff88, #5b9dff); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;">
-                                <span id="index-bar-text" style="font-size: 11px; color: #000; font-weight: 600; mix-blend-mode: difference;"></span>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--accent);">Progress</label>
+                        <div class="progress" style="background:var(--card-bg); border:1px solid var(--line); border-radius:6px; height:24px; overflow:hidden;">
+                            <div id="index-bar" style="height:100%; width:0%; background: linear-gradient(90deg, var(--accent), var(--link)); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                                <span id="index-bar-text" style="font-size: 11px; color: var(--accent-contrast); font-weight: 600; mix-blend-mode: difference;"></span>
                             </div>
                         </div>
-                        <div id="index-status" class="result-display" style="min-height: 100px; max-height: 300px; overflow-y: auto; margin-top: 12px; background: #0a0a0a; color: #aaa; padding: 12px; border: 1px solid #333; border-radius: 6px; font-family: 'SF Mono', monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap;"></div>
-                    </div>
-                </div>
-
-                <!-- Cards Builder -->
-                <div class="settings-section" style="border-left: 3px solid #ffa500;">
-                    <h3>
-                        <span style="color: #ffa500;">●</span> Code Cards
-                        <span class="tooltip-wrap">
-                            <span class="help-icon">?</span>
-                            <div class="tooltip-bubble">
-                                <span class="tt-title">Code Cards</span>
-                                High-level summaries of key code components for quick navigation. Cards are AI-generated overviews that help you quickly understand what code does without reading it all.
-                            </div>
-                        </span>
-                    </h3>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Enrich with AI Summaries</label>
-                            <select name="CARDS_ENRICH_DEFAULT">
-                                <option value="1">Yes</option>
-                                <option value="0">No (metadata only)</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Max Chunks to Process</label>
-                            <input type="number" name="CARDS_MAX" value="0" min="0" step="50" placeholder="0 = all">
-                        </div>
-                    </div>
-
-                    <div class="input-row" style="display: flex; gap: 8px;">
-                        <button class="small-button" id="btn-cards-build" style="flex: 1; background: #ffa500; color: #000; padding: 12px; font-weight: 600;">
-                            ⚡ Build Cards
-                        </button>
-                        <button class="small-button" id="btn-cards-refresh" style="flex: 1; background: #1a1a1a; color: #ffa500; border: 1px solid #ffa500; padding: 12px;">
-                            ↻ Refresh View
-                        </button>
-                    </div>
-
-                    <div id="cards-build-status" style="margin-top: 12px; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; min-height: 60px; font-size: 12px; color: #888; display: none;">
-                        <!-- Status updates will appear here -->
+                        <div id="index-status" class="result-display" style="min-height: 100px; max-height: 300px; overflow-y: auto; margin-top: 12px; background: var(--card-bg); color: var(--fg-muted); padding: 12px; border: 1px solid var(--line); border-radius: 6px; font-family: 'SF Mono', monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap;"></div>
                     </div>
                 </div>
 
                 <!-- Index Settings -->
-                <div class="settings-section" style="border-left: 3px solid #b794f6;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3>
-                        <span style="color: #b794f6;">●</span> Advanced Settings
+                        <span style="color: var(--link);">●</span> Advanced Settings
                     </h3>
                     
                     <div class="input-row">
                         <div class="input-group">
                             <label>Output Directory Base</label>
                             <input type="text" name="OUT_DIR_BASE" placeholder="./out" value="./out">
-                            <p class="small" style="color: #888;">Where to store index files (chunks, BM25, etc.)</p>
+                            <p class="small" style="color: var(--fg-muted);">Where to store index files (chunks, BM25, etc.)</p>
                         </div>
                         <div class="input-group">
                             <label>Collection Name</label>
                             <input type="text" name="COLLECTION_NAME" placeholder="code_chunks_{repo}">
-                            <p class="small" style="color: #888;">Qdrant collection name (leave empty for auto)</p>
+                            <p class="small" style="color: var(--fg-muted);">Qdrant collection name (leave empty for auto)</p>
                         </div>
                     </div>
 
@@ -4128,15 +4130,15 @@
                         </div>
                     </div>
 
-                    <button class="small-button" id="btn-save-index-settings" style="background: #b794f6; color: #000; font-weight: 600;">
+                    <button class="small-button" id="btn-save-index-settings" style="background: var(--link); color: var(--accent-contrast); font-weight: 600;">
                         💾 Save Settings
                     </button>
                 </div>
 
                 <!-- Index Profiles -->
-                <div class="settings-section" style="border-left: 3px solid #ff6b6b;">
+                <div class="settings-section" style="border-left: 3px solid var(--err);">
                     <h3>
-                        <span style="color: #ff6b6b;">●</span> Index Profiles
+                        <span style="color: var(--err);">●</span> Index Profiles
                         <span class="tooltip-wrap">
                             <span class="help-icon">?</span>
                             <div class="tooltip-bubble">
@@ -4154,7 +4156,7 @@
                     <div class="input-row">
                         <div class="input-group" style="flex: 2;">
                             <label>Active Profile</label>
-                            <select id="index-profile-select" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                            <select id="index-profile-select" style="background: var(--bg-elev2); color: var(--fg); border: 1px solid var(--line); padding: 8px; border-radius: 4px;">
                                 <option value="shared">Shared (BM25-only, fast)</option>
                                 <option value="full">Full (BM25 + embeddings)</option>
                                 <option value="dev">Development (small subset)</option>
@@ -4162,13 +4164,13 @@
                         </div>
                         <div class="input-group">
                             <label>&nbsp;</label>
-                            <button class="small-button" id="btn-apply-profile" style="background: #ff6b6b; color: #fff; font-weight: 600; width: 100%;">
+                            <button class="small-button" id="btn-apply-profile" style="background: var(--err); color: var(--fg); font-weight: 600; width: 100%;">
                                 Apply Profile
                             </button>
                         </div>
                     </div>
 
-                    <div id="profile-description" style="margin-top: 12px; padding: 12px; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; font-size: 12px; color: #ccc;">
+                    <div id="profile-description" style="margin-top: 12px; padding: 12px; background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 6px; font-size: 12px; color: var(--fg-muted);">
                         <!-- Profile details populated by JS -->
                     </div>
                 </div>
@@ -4282,7 +4284,7 @@
                     </div>
                 </div>
 
-                <div class="settings-section" style="border-left: 3px solid #5b9dff;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3><span class="accent-blue">●</span> Embedded Editor</h3>
                     <div class="input-row">
                         <div class="input-group">
@@ -4318,7 +4320,7 @@
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
                 <!-- Golden Questions Manager -->
-                <div class="settings-section" style="border-left: 3px solid #5b9dff;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3>
                         <span class="accent-blue">●</span> Golden Questions Manager
                         <span class="tooltip-wrap">
@@ -4336,8 +4338,8 @@
                     <p class="small">Manage test questions for evaluating retrieval quality. Add, edit, test individual questions, or run full evaluation suite.</p>
 
                     <!-- Add New Question Form -->
-                    <div id="golden-add-form" style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; margin-bottom: 16px;">
-                        <h4 style="font-size: 13px; color: #00ff88; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Add New Question</h4>
+                    <div id="golden-add-form" style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 16px;">
+                        <h4 style="font-size: 13px; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Add New Question</h4>
                         <div class="input-group" style="margin-bottom: 12px;">
                             <label>Question Text</label>
                             <textarea id="golden-new-q" placeholder="e.g., Where is OAuth token validated?" style="min-height: 60px;"></textarea>
@@ -4355,28 +4357,28 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button class="small-button" id="btn-golden-add" style="background: #00ff88; color: #000; border: none; width: auto; flex: 1;">Add Question</button>
+                            <button class="small-button" id="btn-golden-add" style="background: var(--accent); color: var(--accent-contrast); border: none; width: auto; flex: 1;">Add Question</button>
                             <button class="small-button" id="btn-golden-test-new" style="width: auto;">Test First</button>
                         </div>
                     </div>
 
                     <!-- Questions List -->
-                    <div id="golden-questions-list" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
-                        <div id="golden-questions-content" style="font-size: 13px; color: #aaa;">
+                    <div id="golden-questions-list" style="background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+                        <div id="golden-questions-content" style="font-size: 13px; color: var(--fg-muted);">
                             Loading questions...
                         </div>
                     </div>
 
                     <div class="action-buttons" style="margin-top: 16px; display:flex; gap:8px; flex-wrap:wrap;">
                         <button id="btn-golden-refresh" style="flex: 1;">Refresh List</button>
-                        <button id="btn-golden-load-recommended" style="flex: 1; background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">Load Recommended</button>
-                        <button id="btn-golden-run-tests" style="flex: 1; background: #1a1a1a; color: #b794f6; border: 1px solid #b794f6;">Run All Tests</button>
-                        <button id="btn-golden-export" style="flex: 1; background: #1a1a1a; color: #00ff88;">Export JSON</button>
+                        <button id="btn-golden-load-recommended" style="flex: 1; background: var(--bg-elev2); color: var(--link); border: 1px solid var(--link);">Load Recommended</button>
+                        <button id="btn-golden-run-tests" style="flex: 1; background: var(--bg-elev2); color: var(--link); border: 1px solid var(--link);">Run All Tests</button>
+                        <button id="btn-golden-export" style="flex: 1; background: var(--bg-elev2); color: var(--accent);">Export JSON</button>
                     </div>
                 </div>
 
                 <!-- Evaluation Runner -->
-                <div class="settings-section" style="border-left: 3px solid #b794f6;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3>
                         <span class="accent-purple">●</span> Evaluation Runner
                         <span class="tooltip-wrap">
@@ -4431,44 +4433,44 @@
                     </div>
 
                     <!-- Run Button -->
-                    <button class="action-buttons" id="btn-eval-run" style="width: 100%; background: #b794f6; color: #000; font-size: 15px; padding: 14px;">
+                    <button class="action-buttons" id="btn-eval-run" style="width: 100%; background: var(--link); color: var(--accent-contrast); font-size: 15px; padding: 14px;">
                         Run Full Evaluation
                     </button>
 
                     <!-- Progress -->
                     <div id="eval-progress" style="margin-top: 16px; display: none;">
-                        <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px;">
-                            <div id="eval-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #b794f6 0%, #ff6b9d 100%); transition: width 0.3s ease;"></div>
+                        <div style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 4px; height: 8px; overflow: hidden; margin-bottom: 8px;">
+                            <div id="eval-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--link) 0%, var(--accent) 100%); transition: width 0.3s ease;"></div>
                         </div>
-                        <div id="eval-status" class="mono" style="font-size: 12px; color: #aaa; text-align: center;">—</div>
+                        <div id="eval-status" class="mono" style="font-size: 12px; color: var(--fg-muted); text-align: center;">—</div>
                     </div>
 
                     <!-- Results Display -->
                     <div id="eval-results" style="margin-top: 16px; display: none;">
                         <!-- Overall Metrics -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
-                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-1 Accuracy</div>
-                                <div id="eval-top1-acc" class="mono" style="font-size: 24px; color: #00ff88; font-weight: 700;">—</div>
+                            <div style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-1 Accuracy</div>
+                                <div id="eval-top1-acc" class="mono" style="font-size: 24px; color: var(--accent); font-weight: 700;">—</div>
                             </div>
-                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
-                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-K Accuracy</div>
-                                <div id="eval-topk-acc" class="mono" style="font-size: 24px; color: #00ff88; font-weight: 700;">—</div>
+                            <div style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-K Accuracy</div>
+                                <div id="eval-topk-acc" class="mono" style="font-size: 24px; color: var(--accent); font-weight: 700;">—</div>
                             </div>
-                            <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; text-align: center;">
-                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Duration</div>
-                                <div id="eval-duration" class="mono" style="font-size: 24px; color: #b794f6; font-weight: 700;">—</div>
+                            <div style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; text-align: center;">
+                                <div style="font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Duration</div>
+                                <div id="eval-duration" class="mono" style="font-size: 24px; color: var(--link); font-weight: 700;">—</div>
                             </div>
                         </div>
 
                         <!-- Per-Question Results -->
-                        <div id="eval-details" style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; max-height: 300px; overflow-y: auto;"></div>
+                        <div id="eval-details" style="background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px; max-height: 300px; overflow-y: auto;"></div>
 
                         <!-- Baseline Actions -->
                         <div class="action-buttons" style="margin-top: 16px;">
                             <button id="btn-eval-save-baseline" style="flex: 1;">Save as Baseline</button>
-                            <button id="btn-eval-compare" style="flex: 1; background: #1a1a1a; color: #00ff88;">Compare to Baseline</button>
-                            <button id="btn-eval-export" style="flex: 1; background: #1a1a1a; color: #00ff88;">Export Results</button>
+                            <button id="btn-eval-compare" style="flex: 1; background: var(--bg-elev2); color: var(--accent);">Compare to Baseline</button>
+                            <button id="btn-eval-export" style="flex: 1; background: var(--bg-elev2); color: var(--accent);">Export Results</button>
                         </div>
                     </div>
 
@@ -4488,31 +4490,31 @@
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
                 
-                <div class="settings-section" style="border-left: 3px solid #9b5eff;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3>🧠 Learning Reranker Training</h3>
                     <p class="small">Train a cross-encoder reranker that learns from user feedback (thumbs up/down) to improve retrieval quality over time. All settings and controls in one place!</p>
                     
-                    <div style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; margin: 16px 0;">
-                        <h4 style="margin: 0 0 12px 0; color: #00ff88;">Training Workflow</h4>
-                        <ol style="margin: 0; padding-left: 20px; color: #999;">
+                    <div style="background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin: 16px 0;">
+                        <h4 style="margin: 0 0 12px 0; color: var(--accent);">Training Workflow</h4>
+                        <ol style="margin: 0; padding-left: 20px; color: var(--fg-muted);">
                             <li>Use the chat (💬 Chat tab) - feedback buttons appear on answers automatically</li>
                             <li>Accumulate ~50+ queries with feedback</li>
                             <li>Mine training triplets from logs → 
-                                <button id="reranker-mine-btn" style="background: #5b9dff; color: #fff; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 8px;">Mine Triplets</button>
+                                <button id="reranker-mine-btn" style="background: var(--link); color: var(--fg); border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 8px;">Mine Triplets</button>
                             </li>
                             <li>Train the reranker model (5-15 min on CPU) → 
-                                <button id="reranker-train-btn" style="background: #00ff88; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Train Model</button>
+                                <button id="reranker-train-btn" style="background: var(--accent); color: var(--accent-contrast); border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Train Model</button>
                             </li>
                             <li>Evaluate performance → 
-                                <button id="reranker-eval-btn" style="background: #ff9b5e; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Evaluate</button>
+                                <button id="reranker-eval-btn" style="background: var(--warn); color: var(--accent-contrast); border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Evaluate</button>
                             </li>
                             <li>Enable reranker below and click "Apply All Changes"</li>
                         </ol>
                     </div>
                     
                     <h4 style="margin: 20px 0 12px 0;">⚙️ Reranker Settings</h4>
-                    <div style="padding: 12px; background: #1a1a1a; border-left: 3px solid #00ff88; margin-bottom: 16px;">
-                        <strong style="color: #00ff88;">Note:</strong> Reranker settings are in the <strong>Reranker</strong> tab to avoid conflicts.
+                    <div style="padding: 12px; background: var(--bg-elev2); border-left: 3px solid var(--accent); margin-bottom: 16px;">
+                        <strong style="color: var(--accent);">Note:</strong> Reranker settings are in the <strong>Reranker</strong> tab to avoid conflicts.
                     </div>
                     
                     <!-- These settings are now only in the Reranker tab to avoid duplicate field conflicts -->
@@ -4537,15 +4539,15 @@
                         </div>
                     </div>
                     
-                    <div style="margin-top: 16px; padding: 12px; background: #0a0a0a; border-radius: 6px; border-left: 3px solid #9b5eff;">
-                        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Status:</div>
-                        <div id="reranker-status" style="font-size: 14px; font-family: 'SF Mono', monospace; color: #666;">Ready</div>
+                    <div style="margin-top: 16px; padding: 12px; background: var(--card-bg); border-radius: 6px; border-left: 3px solid var(--link);">
+                        <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 4px;">Status:</div>
+                        <div id="reranker-status" style="font-size: 14px; font-family: 'SF Mono', monospace; color: var(--fg-muted);">Ready</div>
                     </div>
                     
-                    <div style="margin-top: 16px; background: #0f1f0f; border: 1px solid #2a4a2a; border-radius: 6px; padding: 12px;">
-                        <div style="font-size: 12px; color: #00ff88; margin-bottom: 8px;">✓ How It Works:</div>
-                        <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #999;">
-                            <li>Logs all queries → <code style="background: #0a0a0a; padding: 2px 6px; border-radius: 3px; color: #00ff88;">data/logs/queries.jsonl</code></li>
+                    <div style="margin-top: 16px; background: color-mix(in oklch, var(--ok) 8%, var(--bg)); border: 1px solid color-mix(in oklch, var(--ok) 30%, var(--bg)); border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: var(--accent); margin-bottom: 8px;">✓ How It Works:</div>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: var(--fg-muted);">
+                            <li>Logs all queries → <code style="background: var(--card-bg); padding: 2px 6px; border-radius: 3px; color: var(--accent);">data/logs/queries.jsonl</code></li>
                             <li>Mines positive (thumbs up, clicked) vs negative (not clicked) pairs</li>
                             <li>Trains cross-encoder to rank good results higher</li>
                             <li>No chat model fine-tuning - only reranker learns!</li>
@@ -4565,9 +4567,9 @@
                 </div>
 
                 <!-- MCP RAG Search (debug) -->
-                <div class="settings-section" style="border-left: 3px solid #b794f6;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3>
-                        <span style="color:#b794f6;">●</span> MCP RAG Search (debug)
+                        <span style="color:var(--link);">●</span> MCP RAG Search (debug)
                     </h3>
                     <p class="small">Runs the MCP server's <code>rag_search</code> tool to return file paths and line ranges. Falls back to local retrieval if MCP is unavailable.</p>
                     <div class="input-row">
@@ -4602,9 +4604,9 @@
                 </div>
 
                 <!-- MCP Server Management -->
-                <div class="settings-section" style="border-left: 3px solid #ff6b6b;">
+                <div class="settings-section" style="border-left: 3px solid var(--err);">
                     <h3>
-                        <span style="color:#ff6b6b;">●</span> MCP Server Management
+                        <span style="color:var(--err);">●</span> MCP Server Management
                         <span class="tooltip-wrap">
                             <span class="help-icon">?</span>
                             <div class="tooltip-bubble">
@@ -4623,9 +4625,9 @@
                         </span>
                     </h3>
                     
-                    <div style="padding: 16px; background: #1a1a1a; border: 1px solid #5b9dff; border-radius: 8px; margin-bottom: 16px;">
-                        <div style="color: #5b9dff; font-weight: 600; margin-bottom: 8px;">ℹ️ Two MCP Modes</div>
-                        <p style="color: #ccc; font-size: 13px; line-height: 1.5;">
+                    <div style="padding: 16px; background: var(--bg-elev2); border: 1px solid var(--link); border-radius: 8px; margin-bottom: 16px;">
+                        <div style="color: var(--link); font-weight: 600; margin-bottom: 8px;">ℹ️ Two MCP Modes</div>
+                        <p style="color: var(--fg-muted); font-size: 13px; line-height: 1.5;">
                             <strong>1. stdio mode</strong> (local Claude/Codex) - Launched automatically by client<br>
                             <strong>2. HTTP mode</strong> (port 8013) - Runs as daemon for remote access/testing
                         </p>
@@ -4634,26 +4636,26 @@
                     <div class="input-row" style="margin-bottom: 12px;">
                         <div class="input-group" style="flex: 2;">
                             <label>HTTP MCP Status (port 8013)</label>
-                            <div id="mcp-http-status" style="font-family: monospace; padding: 12px; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; color: #888;">
+                            <div id="mcp-http-status" style="font-family: monospace; padding: 12px; background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 4px; color: var(--fg-muted);">
                                 Checking...
                             </div>
                         </div>
                         <div class="input-group" style="flex: 1;">
                             <label>&nbsp;</label>
-                            <button class="small-button" id="btn-mcp-http-check" style="width: 100%; background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">
+                            <button class="small-button" id="btn-mcp-http-check" style="width: 100%; background: var(--bg-elev2); color: var(--link); border: 1px solid var(--link);">
                                 🔍 Refresh
                             </button>
                         </div>
                     </div>
 
                     <div class="input-row" style="display: flex; gap: 8px; margin-bottom: 16px;">
-                        <button class="small-button" id="btn-mcp-http-start" style="flex: 1; background: #00ff88; color: #000;">
+                        <button class="small-button" id="btn-mcp-http-start" style="flex: 1; background: var(--accent); color: var(--accent-contrast);">
                             ▶ Start HTTP MCP
                         </button>
-                        <button class="small-button" id="btn-mcp-http-stop" style="flex: 1; background: #ff6b6b; color: #fff;">
+                        <button class="small-button" id="btn-mcp-http-stop" style="flex: 1; background: var(--err); color: var(--fg);">
                             ■ Stop HTTP MCP
                         </button>
-                        <button class="small-button" id="btn-mcp-http-restart" style="flex: 1; background: #ffa500; color: #000;">
+                        <button class="small-button" id="btn-mcp-http-restart" style="flex: 1; background: var(--warn); color: var(--accent-contrast);">
                             ↻ Restart
                         </button>
                     </div>
@@ -4661,27 +4663,27 @@
                     <div class="input-row" style="margin-bottom: 16px;">
                         <div class="input-group full-width">
                             <label>Test stdio MCP (local)</label>
-                            <button class="small-button" id="btn-mcp-test" style="width: 100%; background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88; padding: 12px;">
+                            <button class="small-button" id="btn-mcp-test" style="width: 100%; background: var(--bg-elev2); color: var(--accent); border: 1px solid var(--accent); padding: 12px;">
                                 ✓ Test stdio Tools (one-shot test)
                             </button>
-                            <pre id="mcp-test-output" style="margin-top: 8px; min-height: 80px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; background: #0a0a0a; color: #aaa; padding: 12px; border: 1px solid #333; border-radius: 4px; font-size: 11px; display: none;"></pre>
+                            <pre id="mcp-test-output" style="margin-top: 8px; min-height: 80px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; background: var(--card-bg); color: var(--fg-muted); padding: 12px; border: 1px solid var(--line); border-radius: 4px; font-size: 11px; display: none;"></pre>
                         </div>
                     </div>
 
                     <div class="input-row" style="margin-top: 12px;">
                         <div class="input-group full-width">
-                            <details style="background: #1a1a1a; padding: 12px; border-radius: 6px; border: 1px solid #333;">
-                                <summary style="cursor: pointer; font-weight: 600; color: #00ff88; user-select: none;">
+                            <details style="background: var(--bg-elev2); padding: 12px; border-radius: 6px; border: 1px solid var(--line);">
+                                <summary style="cursor: pointer; font-weight: 600; color: var(--accent); user-select: none;">
                                     📖 Setup Instructions
                                 </summary>
-                                <div style="margin-top: 12px; color: #ccc; line-height: 1.6;">
-                                    <h4 style="color: #00ff88; margin-bottom: 8px;">For Codex CLI:</h4>
-                                    <pre style="background: #0a0a0a; padding: 8px; border-radius: 4px; overflow-x: auto; margin-bottom: 12px;"><code>codex mcp add rag-service -- python -m server.mcp.server
+                                <div style="margin-top: 12px; color: var(--fg-muted); line-height: 1.6;">
+                                    <h4 style="color: var(--accent); margin-bottom: 8px;">For Codex CLI:</h4>
+                                    <pre style="background: var(--card-bg); padding: 8px; border-radius: 4px; overflow-x: auto; margin-bottom: 12px;"><code>codex mcp add rag-service -- python -m server.mcp.server
 codex mcp list</code></pre>
 
-                                    <h4 style="color: #00ff88; margin-bottom: 8px;">For Claude Desktop:</h4>
+                                    <h4 style="color: var(--accent); margin-bottom: 8px;">For Claude Desktop:</h4>
                                     <p style="margin-bottom: 8px;">Add to <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:</p>
-                                    <pre style="background: #0a0a0a; padding: 8px; border-radius: 4px; overflow-x: auto; margin-bottom: 12px;"><code>{
+                                    <pre style="background: var(--card-bg); padding: 8px; border-radius: 4px; overflow-x: auto; margin-bottom: 12px;"><code>{
   "mcpServers": {
     "agro-rag": {
       "command": "python",
@@ -4694,13 +4696,13 @@ codex mcp list</code></pre>
   }
 }</code></pre>
 
-                                    <h4 style="color: #00ff88; margin-bottom: 8px;">Test from Terminal:</h4>
-                                    <pre style="background: #0a0a0a; padding: 8px; border-radius: 4px; overflow-x: auto;"><code>cd /Users/davidmontgomery/agro
+                                    <h4 style="color: var(--accent); margin-bottom: 8px;">Test from Terminal:</h4>
+                                    <pre style="background: var(--card-bg); padding: 8px; border-radius: 4px; overflow-x: auto;"><code>cd /Users/davidmontgomery/agro
 . .venv/bin/activate
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m server.mcp.server</code></pre>
 
-                                    <p style="margin-top: 12px; padding: 12px; background: #0a0a0a; border-left: 3px solid #ff6b6b; border-radius: 4px;">
-                                        <strong style="color: #ff6b6b;">⚠️ Important:</strong> MCP server must be running for agents to access RAG tools. Use the buttons above to manage the server without touching terminal commands.
+                                    <p style="margin-top: 12px; padding: 12px; background: var(--card-bg); border-left: 3px solid var(--err); border-radius: 4px;">
+                                        <strong style="color: var(--err);">⚠️ Important:</strong> MCP server must be running for agents to access RAG tools. Use the buttons above to manage the server without touching terminal commands.
                                     </p>
                                 </div>
                             </details>
@@ -4708,44 +4710,124 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                     </div>
                 </div>
 
-                <!-- Cards Viewer -->
-                <div class="settings-section" style="border-left: 3px solid #00ff88;">
+                <!-- Cards Builder & Viewer -->
+                <div class="settings-section" style="border-left: 3px solid var(--accent);">
                     <h3>
-                        <span class="accent-green">●</span> Cards Viewer
+                        <span class="accent-green">●</span> Code Cards Builder & Viewer
                         <span class="tooltip-wrap">
                             <span class="help-icon">?</span>
                             <div class="tooltip-bubble">
                                 <span class="tt-title">Code Cards</span>
-                                High-level code cards for quick navigation and understanding of key components. Click any card to view its source.
+                                High-level semantic summaries of code chunks for faster retrieval with AI-powered enrichment and filtering.
                             </div>
                         </span>
                     </h3>
-                    <div class="action-buttons" style="margin-bottom: 16px; display:flex; gap:8px;">
-                        <button id="btn-cards-refresh" style="flex: 1; background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88;">
-                            <span style="margin-right: 4px;">↻</span> Refresh Cards
-                        </button>
-                        <button id="btn-cards-build" style="flex: 1; background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">
-                            <span style="margin-right: 4px;">⚡</span> Build Cards
-                        </button>
+
+                    <!-- Repository Selection -->
+                    <div class="input-row" style="margin-bottom: 12px;">
+                        <div class="input-group">
+                            <label>Repository to Build Cards For</label>
+                            <select id="cards-repo-select" style="width: 100%;">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="input-row" style="margin-top: -4px; margin-bottom: 8px; align-items: flex-end;">
+
+                    <!-- Filters -->
+                    <div class="input-row" style="margin-bottom: 12px;">
+                        <div class="input-group">
+                            <label>Exclude Directories (comma-separated)</label>
+                            <input type="text" id="cards-exclude-dirs" placeholder="e.g., node_modules, vendor, dist" style="width: 100%;">
+                            <p class="small" style="color:var(--fg-muted);">Directories to skip when building cards</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="margin-bottom: 12px;">
+                        <div class="input-group">
+                            <label>Exclude Patterns (comma-separated)</label>
+                            <input type="text" id="cards-exclude-patterns" placeholder="e.g., .test.js, .spec.ts, .min.js" style="width: 100%;">
+                            <p class="small" style="color:var(--fg-muted);">File patterns to skip</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="margin-bottom: 16px;">
+                        <div class="input-group">
+                            <label>Exclude Keywords (comma-separated)</label>
+                            <input type="text" id="cards-exclude-keywords" placeholder="e.g., deprecated, legacy, TODO" style="width: 100%;">
+                            <p class="small" style="color:var(--fg-muted);">Skip chunks containing these keywords</p>
+                        </div>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="input-row" style="margin-bottom: 16px; align-items: flex-end;">
                         <div class="input-group">
                             <label>Cards Max</label>
                             <input type="number" id="cards-max" name="CARDS_MAX" value="0" min="0" step="10" style="max-width: 160px;">
-                            <p class="small" style="color:#888;">Limit chunks to summarize (0 = all)</p>
+                            <p class="small" style="color:var(--fg-muted);">Limit chunks (0 = all)</p>
                         </div>
                         <div class="input-group">
-                            <label>Default: Enrich Summaries</label>
-                            <select id="cards-enrich-default" name="CARDS_ENRICH_DEFAULT" style="max-width: 160px;">
-                                <option value="1">On</option>
-                                <option value="0">Off</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <button class="small-button" id="cards-settings-apply">Apply</button>
+                            <label>
+                                <input type="checkbox" id="cards-enrich-gui" checked> Enrich with AI
+                            </label>
+                            <p class="small" style="color:var(--fg-muted);">Use LLM for rich semantic cards</p>
                         </div>
                     </div>
-                    <div id="cards-viewer-container" style="background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
+
+                    <!-- PERMANENT VISIBLE PROGRESS DISPLAY -->
+                    <div id="cards-progress-container" style="display: none; background: var(--card-bg); border: 2px solid var(--accent); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div style="font-weight: 700; font-size: 16px; color: var(--fg);">⚡ Building Cards...</div>
+                            <div id="cards-progress-repo" style="font-size: 12px; font-weight: 600; color: var(--accent);"></div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <div id="cards-progress-stage-scan" class="cards-stage-pill" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--fg-muted); background: transparent;">scan</div>
+                            <div id="cards-progress-stage-chunk" class="cards-stage-pill" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--fg-muted); background: transparent;">chunk</div>
+                            <div id="cards-progress-stage-summarize" class="cards-stage-pill" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--fg-muted); background: transparent;">summarize</div>
+                            <div id="cards-progress-stage-sparse" class="cards-stage-pill" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--fg-muted); background: transparent;">sparse</div>
+                            <div id="cards-progress-stage-write" class="cards-stage-pill" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--fg-muted); background: transparent;">write</div>
+                            <div id="cards-progress-stage-finalize" class="cards-stage-pill" style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--fg-muted); background: transparent;">finalize</div>
+                        </div>
+
+                        <div style="background: var(--bg-elev1); border: 1px solid var(--line); border-radius: 6px; height: 24px; overflow: hidden; margin-bottom: 8px; position: relative;">
+                            <div id="cards-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--ok) 0%, var(--accent) 100%); transition: width 0.3s ease;"></div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-family: 'SF Mono', monospace; color: var(--fg); margin-bottom: 12px;">
+                            <div id="cards-progress-stats" style="font-weight: 600;">0 / 0 (0%)</div>
+                            <div id="cards-progress-throughput" style="color: var(--link);">--</div>
+                            <div id="cards-progress-eta" style="color: var(--warn);">ETA: --</div>
+                        </div>
+
+                        <div id="cards-progress-tip" style="font-size: 12px; color: var(--link); margin-bottom: 12px; font-style: italic; padding: 8px; background: var(--bg-elev2); border-radius: 4px;">
+                            💡 Starting...
+                        </div>
+
+                        <div style="display: flex; gap: 8px;">
+                            <button id="cards-progress-cancel" class="small-button" style="flex: 1; background: var(--err); color: #fff; font-weight: 600;">
+                                ■ Cancel Build
+                            </button>
+                            <button id="cards-progress-logs" class="small-button" style="flex: 1; background: var(--bg-elev2); color: var(--link); border: 1px solid var(--link);">
+                                📄 View Logs
+                            </button>
+                            <button id="cards-progress-clear" class="small-button" style="flex: 1; background: var(--bg-elev2); color: var(--fg-muted); border: 1px solid var(--line);">
+                                ✕ Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Build Button -->
+                    <div class="action-buttons" style="margin-bottom: 16px; display:flex; gap:8px;">
+                        <button id="btn-cards-build" style="flex: 1; background: var(--accent); color: var(--fg); font-weight: 600; padding: 12px;">
+                            <span style="margin-right: 4px;">⚡</span> Build Cards
+                        </button>
+                        <button id="btn-cards-refresh" style="flex: 1; background: var(--bg-elev2); color: var(--ok); border: 1px solid var(--ok);">
+                            <span style="margin-right: 4px;">↻</span> Refresh
+                        </button>
+                    </div>
+
+                    <!-- Cards Viewer -->
+                    <div id="cards-viewer-container" style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px; max-height: 400px; overflow-y: auto;">
                         <div id="cards-last-build" class="mono" style="font-size: 11px; color: var(--fg-muted); margin-bottom: 8px; display:none;"></div>
                         <div id="cards-viewer" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px;"></div>
                     </div>
@@ -4809,7 +4891,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                 </div>
 
                 <!-- LangSmith (Preview) -->
-                <div class="settings-section" style="border-left: 3px solid #9ad4ff;">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
                     <h3>
                         <span class="accent-blue">●</span> LangSmith (Preview)
                     </h3>
@@ -4905,10 +4987,164 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                     <button class="subtab-btn" data-subtab="settings-profiles" data-parent="settings">Profiles</button>
                     <button class="subtab-btn" data-subtab="settings-secrets" data-parent="settings">Secrets</button>
                 </div>
-                <div class="settings-section">
-                    <h3>Docker & Colima</h3>
-                    <p class="small">Container and infrastructure settings</p>
-                    <!-- Content will be moved here from old tab-misc -->
+
+                <!-- Infrastructure Services -->
+                <div class="settings-section" style="border-left: 3px solid var(--warn);">
+                    <h3>
+                        <span style="color: var(--warn);">●</span> Infrastructure Services
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Infrastructure</span>
+                                Core services for AGRO:
+                                <ul style="margin-top:8px; padding-left:16px;">
+                                    <li><strong>Qdrant:</strong> Vector database (port 6333)</li>
+                                    <li><strong>Redis:</strong> LangGraph memory (port 6379)</li>
+                                    <li><strong>Prometheus:</strong> Metrics (port 9090)</li>
+                                    <li><strong>Grafana:</strong> Dashboards (port 3000)</li>
+                                </ul>
+                            </div>
+                        </span>
+                    </h3>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                        <!-- Qdrant -->
+                        <div style="background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: var(--accent);">Qdrant</div>
+                                <div id="qdrant-status" style="font-size: 11px; color: var(--fg-muted);">Checking...</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 12px;">
+                                Vector database • Port 6333
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="small-button" id="btn-qdrant-open" style="flex: 1; background: var(--bg-elev2); color: var(--link); border: 1px solid var(--link);">
+                                    🌐 Open UI
+                                </button>
+                                <button class="small-button" id="btn-qdrant-restart" style="flex: 1; background: var(--bg-elev2); color: var(--warn); border: 1px solid var(--warn);">
+                                    ↻ Restart
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Redis -->
+                        <div style="background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: var(--err);">Redis</div>
+                                <div id="redis-status" style="font-size: 11px; color: var(--fg-muted);">Checking...</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 12px;">
+                                Memory store • Port 6379
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="small-button" id="btn-redis-ping" style="flex: 1; background: var(--bg-elev2); color: var(--err); border: 1px solid var(--err);">
+                                    📡 Ping
+                                </button>
+                                <button class="small-button" id="btn-redis-restart" style="flex: 1; background: var(--bg-elev2); color: var(--warn); border: 1px solid var(--warn);">
+                                    ↻ Restart
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Prometheus -->
+                        <div style="background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: var(--warn);">Prometheus</div>
+                                <div id="prometheus-status" style="font-size: 11px; color: var(--fg-muted);">Checking...</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 12px;">
+                                Metrics collector • Port 9090
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="small-button" id="btn-prometheus-open" style="flex: 1; background: var(--bg-elev2); color: var(--warn); border: 1px solid var(--warn);">
+                                    🌐 Open UI
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grafana -->
+                        <div style="background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="font-weight: 600; color: var(--link);">Grafana</div>
+                                <div id="grafana-status" style="font-size: 11px; color: var(--fg-muted);">Checking...</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 12px;">
+                                Dashboards • Port 3000
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="small-button" id="btn-grafana-open" style="flex: 1; background: var(--bg-elev2); color: var(--link); border: 1px solid var(--link);">
+                                    🌐 Open UI
+                                </button>
+                            </div>
+                            <div style="font-size: 10px; color: var(--fg-muted); margin-top: 8px;">
+                                Login: admin / Trenton2023
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button class="small-button" id="btn-infra-up" style="flex: 1; background: var(--accent); color: var(--accent-contrast); padding: 12px; font-weight: 600;">
+                            ▶ Start All Infrastructure
+                        </button>
+                        <button class="small-button" id="btn-infra-down" style="flex: 1; background: var(--err); color: var(--fg); padding: 12px; font-weight: 600;">
+                            ■ Stop All Infrastructure
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Docker Status -->
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
+                    <h3>
+                        <span style="color: var(--link);">●</span> Docker Status
+                        <button class="small-button" id="btn-docker-refresh" style="float: right; padding: 4px 12px; font-size: 11px;">
+                            ↻ Refresh All
+                        </button>
+                    </h3>
+                    
+                    <div id="docker-status-display" style="margin-bottom: 16px;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Running Containers -->
+                <div class="settings-section" style="border-left: 3px solid var(--accent);">
+                    <h3>
+                        <span style="color: var(--accent);">●</span> All Containers
+                        <button class="small-button" id="btn-docker-refresh-containers" style="float: right; padding: 4px 12px; font-size: 11px;">
+                            ↻ Refresh
+                        </button>
+                    </h3>
+                    
+                    <div id="docker-containers-grid" style="display: grid; gap: 12px; margin-bottom: 16px;">
+                        <!-- Container cards populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Docker Settings -->
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
+                    <h3>
+                        <span style="color: var(--link);">●</span> Docker Settings
+                    </h3>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Auto-start Colima</label>
+                            <select name="AUTO_COLIMA">
+                                <option value="1">On (auto-start if needed)</option>
+                                <option value="0">Off (manual start)</option>
+                            </select>
+                            <p class="small" style="color: var(--fg-muted);">Automatically start Colima Docker runtime on macOS</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Colima Profile</label>
+                            <input type="text" name="COLIMA_PROFILE" placeholder="default">
+                            <p class="small" style="color: var(--fg-muted);">Colima profile name (leave empty for default)</p>
+                        </div>
+                    </div>
+
+                    <button class="small-button" id="btn-save-docker-settings" style="background: var(--link); color: var(--accent-contrast); font-weight: 600;">
+                        💾 Save Settings
+                    </button>
                 </div>
             </div>
 
@@ -5151,7 +5387,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                 <button id="cards-view-logs" class="small-button">View Logs</button>
                 <button id="cards-cancel" class="small-button" style="background: color-mix(in oklch, var(--err) 10%, var(--bg)); border-color: color-mix(in oklch, var(--err) 30%, var(--bg)); color: var(--err);">Cancel</button>
             </div>
-            <pre id="cards-logs-view" style="display:none; margin-top:8px; max-height:200px; overflow:auto; background:#0a0a0a; border:1px solid #1a1a1a; border-radius:4px; padding:8px; color:#888; font-size:11px;"></pre>
+            <pre id="cards-logs-view" style="display:none; margin-top:8px; max-height:200px; overflow:auto; background:var(--card-bg); border:1px solid var(--bg-elev2); border-radius:4px; padding:8px; color:var(--fg-muted); font-size:11px;"></pre>
         </div>
 
 
@@ -5181,6 +5417,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
     <script src="/gui/js/mcp_server.js"></script>
     <script src="/gui/js/index_profiles.js"></script>
     <script src="/gui/js/indexing.js"></script>
+    <script src="/gui/js/simple_index.js"></script>
+    <script src="/gui/js/docker.js"></script>
     <script src="/gui/js/langsmith.js"></script>
     <script src="/gui/js/onboarding.js"></script>
 

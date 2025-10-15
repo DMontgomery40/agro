@@ -51,7 +51,7 @@
 
     dz.addEventListener('dragover', (e) => {
       e.preventDefault();
-      dz.style.background = '#111111';
+      dz.style.background = 'var(--panel)';
     });
 
     dz.addEventListener('dragleave', (e) => {
