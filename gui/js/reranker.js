@@ -23,20 +23,20 @@ function addFeedbackButtons(messageElement, eventId) {
     if (!eventId) return;
     
     const feedbackDiv = document.createElement('div');
-    feedbackDiv.style.cssText = 'margin-top:12px; padding:12px; background:#0a0a0a; border-radius:6px; border-left:3px solid #9b5eff;';
+    feedbackDiv.style.cssText = 'margin-top:12px; padding:12px; background:var(--card-bg); border-radius:6px; border-left:3px solid var(--link);';
     feedbackDiv.innerHTML = `
         <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
             <button class="feedback-btn" data-event-id="${eventId}" data-signal="thumbsup" 
-                style="background:#00ff88; color:#000; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">
+                style="background:var(--accent); color:var(--accent-contrast); border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">
                 👍 Helpful
             </button>
             <button class="feedback-btn" data-event-id="${eventId}" data-signal="thumbsdown"
-                style="background:#ff6b6b; color:#fff; border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">
+                style="background:var(--err); color:var(--accent-contrast); border:none; padding:6px 14px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">
                 👎 Not Helpful
             </button>
-            <span style="color:#666;font-size:11px;">or rate:</span>
+            <span style="color:var(--fg-muted);font-size:11px;">or rate:</span>
             ${[1,2,3,4,5].map(n => `<button class="star-btn" data-event-id="${eventId}" data-rating="${n}" 
-                style="background:transparent; color:#ffd700; border:1px solid #444; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:13px;">
+                style="background:transparent; color:#ffd700; border:1px solid var(--line); padding:4px 10px; border-radius:4px; cursor:pointer; font-size:13px;">
                 ${'⭐'.repeat(n)}
             </button>`).join('')}
         </div>
@@ -50,8 +50,8 @@ function addFeedbackButtons(messageElement, eventId) {
                 Submit Note
             </button>
         </details>
-        <div class="feedback-status" style="font-size:11px; color:#666; margin-top:8px;"></div>
-        <div style="font-size:10px; color:#555; margin-top:8px; font-style:italic;">
+        <div class="feedback-status" style="font-size:11px; color:var(--fg-muted); margin-top:8px;"></div>
+        <div style="font-size:10px; color:var(--fg-muted); margin-top:8px; font-style:italic;">
             💡 This helps train search quality (only the reranker, not the chat model)
         </div>
     `;
@@ -102,16 +102,16 @@ async function submitFeedback(eventId, signal, note, feedbackDiv) {
         if (response.ok) {
             const label = signal.startsWith('star') ? `${signal.replace('star', '')} stars` : signal;
             statusSpan.textContent = `✓ Feedback recorded: ${label}`;
-            statusSpan.style.color = '#00ff88';
+            statusSpan.style.color = 'var(--accent)';
             // Disable buttons after feedback
             feedbackDiv.querySelectorAll('.feedback-btn, .star-btn').forEach(b => b.disabled = true);
         } else {
             statusSpan.textContent = '✗ Failed to save';
-            statusSpan.style.color = '#ff6b6b';
+            statusSpan.style.color = 'var(--err)';
         }
     } catch (error) {
         statusSpan.textContent = '✗ Error: ' + error.message;
-        statusSpan.style.color = '#ff6b6b';
+        statusSpan.style.color = 'var(--err)';
     }
 }
 
@@ -203,18 +203,18 @@ function updateRerankerStatusUI(status) {
     
     if (status.running) {
         statusEl.textContent = status.message || `Running ${status.task}...`;
-        statusEl.style.color = '#00ff88';
+        statusEl.style.color = 'var(--accent)';
     } else if (status.result) {
         if (status.result.ok) {
             statusEl.textContent = status.message || 'Task complete';
-            statusEl.style.color = '#00ff88';
+            statusEl.style.color = 'var(--accent)';
         } else {
             statusEl.textContent = status.result.error || 'Task failed';
-            statusEl.style.color = '#ff6b6b';
+            statusEl.style.color = 'var(--err)';
         }
     } else {
         statusEl.textContent = 'Ready';
-        statusEl.style.color = '#666';
+        statusEl.style.color = 'var(--fg-muted)';
     }
 }
 

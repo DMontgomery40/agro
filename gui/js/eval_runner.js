@@ -94,7 +94,7 @@ async function loadEvalResults() {
     } catch (error) {
         console.error('Failed to load results:', error);
         document.getElementById('eval-status').textContent = 'Error: ' + error.message;
-        document.getElementById('eval-status').style.color = '#ff6b6b';
+        document.getElementById('eval-status').style.color = 'var(--err)';
         const btn = document.getElementById('btn-eval-run');
         btn.disabled = false;
         btn.textContent = 'Run Full Evaluation';
@@ -125,16 +125,16 @@ function renderEvalResults() {
 
     let html = `
         <div style="margin-bottom: 12px;">
-            <div style="font-size: 12px; color: #888; margin-bottom: 8px;">
-                <span style="color: #00ff88;">✓ ${passes.length} passed</span>
-                <span style="margin-left: 16px; color: #ff6b6b;">✗ ${failures.length} failed</span>
+            <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 8px;">
+                <span style="color: var(--ok);">✓ ${passes.length} passed</span>
+                <span style="margin-left: 16px; color: var(--err);">✗ ${failures.length} failed</span>
             </div>
         </div>
     `;
 
     // Show failures first
     if (failures.length > 0) {
-        html += '<div style="margin-bottom: 16px;"><div style="font-size: 12px; font-weight: 600; color: #ff6b6b; margin-bottom: 8px;">FAILURES</div>';
+        html += '<div style="margin-bottom: 16px;"><div style="font-size: 12px; font-weight: 600; color: var(--err); margin-bottom: 8px;">FAILURES</div>';
         failures.forEach((r, i) => {
             html += renderQuestionResult(r, true);
         });
@@ -161,28 +161,28 @@ function renderEvalResults() {
 
 // Render individual question result
 function renderQuestionResult(r, isFailure) {
-    const top1Color = r.top1_hit ? '#00ff88' : '#ff6b6b';
-    const topkColor = r.topk_hit ? '#00ff88' : '#ff9b5e';
+    const top1Color = r.top1_hit ? 'var(--ok)' : 'var(--err)';
+    const topkColor = r.topk_hit ? 'var(--ok)' : 'var(--warn)';
 
     return `
-        <div style="background: #0a0a0a; border-left: 3px solid ${isFailure ? '#ff6b6b' : '#00ff88'}; padding: 10px; margin-bottom: 8px; border-radius: 4px;">
+        <div style="background: var(--card-bg); border-left: 3px solid ${isFailure ? 'var(--err)' : 'var(--ok)'}; padding: 10px; margin-bottom: 8px; border-radius: 4px;">
             <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
-                <div style="flex: 1; font-size: 12px; color: #fff; font-weight: 500;">${escapeHtml(r.question)}</div>
+                <div style="flex: 1; font-size: 12px; color: var(--fg); font-weight: 500;">${escapeHtml(r.question)}</div>
                 <div style="font-size: 11px; margin-left: 12px;">
-                    <span style="background: #1a1a1a; padding: 2px 6px; border-radius: 3px;">${r.repo}</span>
+                    <span style="background: var(--bg-elev2); padding: 2px 6px; border-radius: 3px;">${r.repo}</span>
                 </div>
             </div>
-            <div style="font-size: 11px; color: #888; margin-bottom: 4px;">
+            <div style="font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">
                 <strong>Expected:</strong> ${(r.expect_paths || []).join(', ')}
             </div>
             <div style="font-size: 11px;">
                 <span style="color: ${top1Color}; font-weight: 600;">${r.top1_hit ? '✓' : '✗'} Top-1</span>
                 <span style="margin-left: 12px; color: ${topkColor}; font-weight: 600;">${r.topk_hit ? '✓' : '✗'} Top-K</span>
             </div>
-            <div style="margin-top: 6px; font-size: 10px; font-family: 'SF Mono', monospace; color: #666;">
+            <div style="margin-top: 6px; font-size: 10px; font-family: 'SF Mono', monospace; color: var(--fg-muted);">
                 ${(r.top_paths || []).slice(0, 3).map((p, i) => {
                     const match = (r.expect_paths || []).some(exp => p.includes(exp));
-                    const color = match ? '#00ff88' : '#666';
+                    const color = match ? 'var(--ok)' : 'var(--fg-muted)';
                     return `<div style="color: ${color};">${i + 1}. ${escapeHtml(p)}</div>`;
                 }).join('')}
             </div>
@@ -248,33 +248,33 @@ function renderComparison(data) {
 
     const top1Icon = deltaTop1 >= 0 ? '✓' : '✗';
     const topkIcon = deltaTopk >= 0 ? '✓' : '✗';
-    const top1Color = deltaTop1 >= 0 ? '#00ff88' : '#ff6b6b';
-    const topkColor = deltaTopk >= 0 ? '#00ff88' : '#ff6b6b';
+    const top1Color = deltaTop1 >= 0 ? 'var(--ok)' : 'var(--err)';
+    const topkColor = deltaTopk >= 0 ? 'var(--ok)' : 'var(--err)';
 
     let html = `
-        <div style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px;">
-            <h4 style="font-size: 14px; color: #b794f6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+        <div style="background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+            <h4 style="font-size: 14px; color: var(--link); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
                 Baseline Comparison
             </h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; padding: 12px;">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-1 Accuracy</div>
-                    <div style="font-size: 14px; color: #aaa; margin-bottom: 4px;">
+                <div style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 4px; padding: 12px;">
+                    <div style="font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-1 Accuracy</div>
+                    <div style="font-size: 14px; color: var(--fg-muted); margin-bottom: 4px;">
                         Baseline: ${(data.baseline.top1_accuracy * 100).toFixed(1)}%
                     </div>
-                    <div style="font-size: 14px; color: #fff; margin-bottom: 4px;">
+                    <div style="font-size: 14px; color: var(--fg); margin-bottom: 4px;">
                         Current: ${(data.current.top1_accuracy * 100).toFixed(1)}%
                     </div>
                     <div style="font-size: 16px; color: ${top1Color}; font-weight: 700;">
                         ${top1Icon} ${deltaTop1 >= 0 ? '+' : ''}${deltaTop1Pct}
                     </div>
                 </div>
-                <div style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; padding: 12px;">
-                    <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-K Accuracy</div>
-                    <div style="font-size: 14px; color: #aaa; margin-bottom: 4px;">
+                <div style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 4px; padding: 12px;">
+                    <div style="font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Top-K Accuracy</div>
+                    <div style="font-size: 14px; color: var(--fg-muted); margin-bottom: 4px;">
                         Baseline: ${(data.baseline.topk_accuracy * 100).toFixed(1)}%
                     </div>
-                    <div style="font-size: 14px; color: #fff; margin-bottom: 4px;">
+                    <div style="font-size: 14px; color: var(--fg); margin-bottom: 4px;">
                         Current: ${(data.current.topk_accuracy * 100).toFixed(1)}%
                     </div>
                     <div style="font-size: 16px; color: ${topkColor}; font-weight: 700;">
@@ -286,13 +286,13 @@ function renderComparison(data) {
 
     if (data.regressions && data.regressions.length > 0) {
         html += `
-            <div style="background: #1a0000; border: 1px solid #ff6b6b; border-radius: 4px; padding: 12px; margin-bottom: 12px;">
-                <div style="font-size: 12px; font-weight: 600; color: #ff6b6b; margin-bottom: 8px;">
+            <div style="background: color-mix(in oklch, var(--err) 8%, var(--bg)); border: 1px solid var(--err); border-radius: 4px; padding: 12px; margin-bottom: 12px;">
+                <div style="font-size: 12px; font-weight: 600; color: var(--err); margin-bottom: 8px;">
                     ⚠ REGRESSIONS (${data.regressions.length})
                 </div>
                 ${data.regressions.map(r => `
-                    <div style="font-size: 11px; color: #ffaaaa; margin-bottom: 4px;">
-                        <span style="background: #2a1a1a; padding: 2px 6px; border-radius: 2px; margin-right: 6px;">${r.repo}</span>
+                    <div style="font-size: 11px; color: var(--err); opacity: .85; margin-bottom: 4px;">
+                        <span style="background: var(--bg-elev2); padding: 2px 6px; border-radius: 2px; margin-right: 6px;">${r.repo}</span>
                         ${escapeHtml(r.question)}
                     </div>
                 `).join('')}
@@ -302,13 +302,13 @@ function renderComparison(data) {
 
     if (data.improvements && data.improvements.length > 0) {
         html += `
-            <div style="background: #001a00; border: 1px solid #00ff88; border-radius: 4px; padding: 12px;">
-                <div style="font-size: 12px; font-weight: 600; color: #00ff88; margin-bottom: 8px;">
+            <div style="background: color-mix(in oklch, var(--ok) 8%, var(--bg)); border: 1px solid var(--ok); border-radius: 4px; padding: 12px;">
+                <div style="font-size: 12px; font-weight: 600; color: var(--ok); margin-bottom: 8px;">
                     ✓ IMPROVEMENTS (${data.improvements.length})
                 </div>
                 ${data.improvements.map(r => `
-                    <div style="font-size: 11px; color: #aaffaa; margin-bottom: 4px;">
-                        <span style="background: #1a2a1a; padding: 2px 6px; border-radius: 2px; margin-right: 6px;">${r.repo}</span>
+                    <div style="font-size: 11px; color: var(--ok); opacity:.85; margin-bottom: 4px;">
+                        <span style="background: var(--bg-elev2); padding: 2px 6px; border-radius: 2px; margin-right: 6px;">${r.repo}</span>
                         ${escapeHtml(r.question)}
                     </div>
                 `).join('')}
@@ -318,7 +318,7 @@ function renderComparison(data) {
 
     if (!data.has_regressions) {
         html += `
-            <div style="background: #001a00; border: 1px solid #00ff88; border-radius: 4px; padding: 12px; text-align: center; color: #00ff88; font-weight: 600;">
+            <div style="background: color-mix(in oklch, var(--ok) 8%, var(--bg)); border: 1px solid var(--ok); border-radius: 4px; padding: 12px; text-align: center; color: var(--ok); font-weight: 600;">
                 ✓ No significant regressions detected
             </div>
         `;
@@ -355,13 +355,13 @@ function escapeHtml(text) {
 }
 
 function showToast(message, type = 'info') {
-    const color = type === 'success' ? '#00ff88' : type === 'error' ? '#ff6b6b' : '#5b9dff';
+    const color = type === 'success' ? 'var(--ok)' : type === 'error' ? 'var(--err)' : 'var(--link)';
     const toast = document.createElement('div');
     toast.style.cssText = `
         position: fixed;
         top: 80px;
         right: 24px;
-        background: #111;
+        background: var(--panel);
         color: ${color};
         border: 1px solid ${color};
         padding: 12px 20px;

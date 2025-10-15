@@ -93,7 +93,8 @@ conf_avg5: 0.52
 
 ## Highlights
 
-- Repo isolation and citations as guardrails — not “best effort”.
+- **Custom-Trained Search Transformer** — A full transformer-based language model that lives inside AGRO, continuously learning from your usage patterns (clicks, feedback) and training specifically on YOUR codebase. Complete ML pipeline: mine triplets → train → evaluate → promote to production with hot-reload.
+- Repo isolation and citations as guardrails — not "best effort".
 - ***Massive*** reduction in token use with Claude Code / Codex; Rate Limits extended greatly or potentially no longer an issue at all
 - Greatly increased accuracy in the code that CC/Codex deliver
 - More in docs on how to set rules of CC/Codex so that they take full advantage of it
@@ -104,8 +105,9 @@ conf_avg5: 0.52
 
 ## Documentation
 
-- Start here: [Docs Index](docs/README.md)
+- Start here: [Docs Index](docs/README_INDEX.md)
 - **Complete API Reference**: [API_REFERENCE.md](docs/API_REFERENCE.md) ← All endpoints with examples
+- **Learning Reranker**: [LEARNING_RERANKER.md](docs/LEARNING_RERANKER.md) ← Improve search with feedback
 - Quickstart for Codex/Claude (MCP): [QUICKSTART_MCP.md](docs/QUICKSTART_MCP.md)
 - Settings UI & API: [API_GUI.md](docs/API_GUI.md)
 - Evals & cost: [PERFORMANCE_AND_COST.md](docs/PERFORMANCE_AND_COST.md)
@@ -173,7 +175,7 @@ Notes for integrators
 | **CLI Chat** | Interactive terminal chat with memory | `chat_cli.py` |
 | **Eval Harness** | Golden tests with regression tracking | `eval_loop.py` |
 | **Cards Builder** | Summarizes chunks and builds card-level BM25 index | `indexer/build_cards.py` |
-| **Reranker** | Cross-encoder reranking with path and layer bonuses | `retrieval/rerank.py` |
+| **Reranker** | Cross-encoder reranking with feedback collection and model training | `retrieval/rerank.py`, `gui/js/reranker.js` |
 | **Embedding Cache** | Caches embeddings to avoid recomputation | `retrieval/embed_cache.py` |
 | **AST Chunker** | Language-aware code chunking | `retrieval/ast_chunker.py` |
 | **Filtering** | File and directory exclusion rules | `common/filtering.py` |
@@ -1286,8 +1288,9 @@ python analyze_keywords_v2.py /path/to/agro
 
 ## Additional Documentation
 
-📂 **See [docs/README.md](docs/README.md) for complete documentation index**
+📂 **See [docs/README_INDEX.md](docs/README_INDEX.md) for complete documentation index**
 
+- **[Learning Reranker System](docs/LEARNING_RERANKER.md)** - Improve search quality with user feedback and training
 - **[Performance & Cost Analysis](docs/PERFORMANCE_AND_COST.md)** - Real measurements & ROI calculator
 - **[MCP Integration Guide](docs/MCP_README.md)** - Complete MCP documentation
 - **[MCP Quick Start](docs/QUICKSTART_MCP.md)** - Fast reference

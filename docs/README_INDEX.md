@@ -13,6 +13,7 @@ This is the long‑form reference that pairs with the streamlined, tech‑forwar
 
 - Quickstart for agents (Codex/Claude): [QUICKSTART_MCP.md](QUICKSTART_MCP.md)
 - **Complete API Reference**: [API_REFERENCE.md](API_REFERENCE.md) ← **Start here for API docs**
+- **Learning Reranker System**: [LEARNING_RERANKER.md](LEARNING_RERANKER.md) ← **Improve search quality with feedback**
 - Settings UI & API contract: [API_GUI.md](API_GUI.md)
 - CLI Chat usage: [CLI_CHAT.md](CLI_CHAT.md)
 - Performance & cost tuning: [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md)
@@ -113,6 +114,29 @@ These are referenced from the main README as links only (no inline gallery).
 - ✅ Tunneling (ngrok/Cloudflare - coming soon)
 
 **Start here if:** You need remote agent access or production HTTPS deployment.
+
+---
+
+### Search Quality & Training
+
+#### [LEARNING_RERANKER.md](LEARNING_RERANKER.md) - Learning Reranker System (~500 lines)
+**Continuously improve search quality through user feedback and model training.**
+
+**Contents:**
+- ✅ Feedback collection (clicks, thumbs up/down)
+- ✅ Training workflow:
+  - Mine triplets from logs or golden.json
+  - Train cross-encoder models
+  - Evaluate with MRR and Hit@K metrics
+  - Promote models to production
+- ✅ API endpoints for reranker management
+- ✅ Hot-reloading without server restart
+- ✅ GUI integration with feedback buttons
+- ✅ Configuration options (backends, model paths)
+- ✅ Troubleshooting and optimization
+- ✅ Integration at retrieval/hybrid_search.py:170
+
+**Start here if:** You want AGRO to learn from usage and improve search ranking over time.
 
 ---
 
@@ -254,6 +278,11 @@ These are referenced from the main README as links only (no inline gallery).
 1. [PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md) → See the benefits
 2. [../README.md](../README.md) → Architecture section
 
+### "I want to improve search quality over time"
+1. [LEARNING_RERANKER.md](LEARNING_RERANKER.md) → Full training workflow
+2. Collect feedback by using AGRO and clicking results
+3. Run the training cycle when you have enough data
+
 ### "Something's not working"
 1. [../README.md](../README.md) → Troubleshooting section
 2. [QUICKSTART_MCP.md](QUICKSTART_MCP.md) → MCP-specific issues
@@ -268,13 +297,14 @@ These are referenced from the main README as links only (no inline gallery).
 |------|-------|---------|
 | **[../README.md](../README.md)** | 1105 | Main setup guide, complete reference |
 | **[MODEL_RECOMMENDATIONS.md](MODEL_RECOMMENDATIONS.md)** | 589 | Model selection, pricing, hardware reqs |
+| **[LEARNING_RERANKER.md](LEARNING_RERANKER.md)** | ~500 | Learning reranker, feedback, training |
 | **[MCP_README.md](MCP_README.md)** | 244 | Complete MCP technical reference |
 | **[CLI_CHAT.md](CLI_CHAT.md)** | 173 | Interactive CLI chat guide |
 | **[PERFORMANCE_AND_COST.md](PERFORMANCE_AND_COST.md)** | 169 | Real-world metrics and ROI |
 | **[QUICKSTART_MCP.md](QUICKSTART_MCP.md)** | 149 | Fast MCP setup (5 min) |
 | **[REMOTE_MCP.md](REMOTE_MCP.md)** | 55 | HTTP/HTTPS/tunneling |
 | **[GEN_MODEL_COMPARISON.md](GEN_MODEL_COMPARISON.md)** | 48 | Qwen vs OpenAI comparison |
-| **TOTAL** | **~2500+** | **Complete documentation** |
+| **TOTAL** | **~3000+** | **Complete documentation** |
 
 ### Other Key Files
 

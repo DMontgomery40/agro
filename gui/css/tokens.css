@@ -37,10 +37,10 @@ html, :root, [data-theme="dark"] {
   --bg-elev1: #FFFFFF;
   --bg-elev2: #F1F3F7;
   --panel: #FFFFFF;
-  --line: #E3E7EF;
+  --line: #CBD5E1;
 
   --fg: #0F1220;
-  --fg-muted: #4A4F63;
+  --fg-muted: #475569;
 
   --accent: #16A34A;           /* comfortable green on light */
   --accent-contrast: #FFFFFF;
@@ -69,4 +69,3 @@ body { background: var(--bg); color: var(--fg); }
 .panel { background: var(--panel-bg); border-color: var(--line); }
 .card { background: var(--card-bg); border-color: var(--line); }
 .code { background: var(--code-bg); color: var(--code-fg); }
-

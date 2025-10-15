@@ -43,8 +43,8 @@
       placeholder.style.display='flex';
       placeholder.innerHTML = `
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <div style=\"width:48px;height:48px;border:3px solid #2a2a2a;border-top-color:#00ff88;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;\"></div>
-          <p id=\"apv2-phase\" style=\"font-size:14px;color:#666;\">Selecting profile with v2 engine...</p>
+          <div style=\"width:48px;height:48px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;\"></div>
+          <p id=\"apv2-phase\" style=\"font-size:14px;color:var(--fg-muted);\">Selecting profile with v2 engine...</p>
         </div>
         <style>@keyframes spin { to { transform: rotate(360deg); } }</style>`;
     }
@@ -74,7 +74,7 @@
           const sum = document.createElement('summary');
           sum.textContent = 'Diagnostics';
           sum.style.cursor = 'pointer';
-          sum.style.color = '#999';
+          sum.style.color = 'var(--fg-muted)';
           const pre = document.createElement('pre');
           pre.style.color = '#777'; pre.style.whiteSpace = 'pre-wrap'; pre.style.fontSize = '12px'; pre.style.padding = '10px'; pre.style.border = '1px solid #2a2a2a'; pre.style.borderRadius = '6px'; pre.style.background = '#0a0a0a';
           pre.textContent = JSON.stringify({ objective: reason?.objective, budget: reason?.budget, weights: reason?.weights, candidates_total: reason?.candidates_total, policy_relaxed: reason?.policy_relaxed, diag: reason?.diag }, null, 2);

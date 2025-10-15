@@ -126,13 +126,13 @@ function formatIndexStatusDisplay(lines, metadata) {
                     <span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Reranker Cache</span>
                     <span style="font-size:13px;font-weight:700;color:#ffaa00;font-family:'SF Mono',monospace;">${formatBytes(storage.reranker_cache)}</span>
                 </div>
-                <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Redis Cache</span>
-                    <span style="font-size:13px;font-weight:700;color:#7db3ff;font-family:'SF Mono',monospace;">${formatBytes(storage.redis)}</span>
+                <div style="background:var(--card-bg);padding:12px;border-radius:6px;border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:10px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;">Redis Cache</span>
+                    <span style="font-size:13px;font-weight:700;color:var(--link);font-family:'SF Mono',monospace;">${formatBytes(storage.redis)}</span>
                 </div>
-                <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid#1a1a1a;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Keywords</span>
-                    <span style="font-size:13px;font-weight:700;color:#ffcf66;font-family:'SF Mono',monospace;">${metadata.keywords_count.toLocaleString()}</span>
+                <div style="background:var(--card-bg);padding:12px;border-radius:6px;border:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:10px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;">Keywords</span>
+                    <span style="font-size:13px;font-weight:700;color:var(--warn);font-family:'SF Mono',monospace;">${metadata.keywords_count.toLocaleString()}</span>
                 </div>
             </div>
         </div>
@@ -142,21 +142,21 @@ function formatIndexStatusDisplay(lines, metadata) {
     if (metadata.repos && metadata.repos.length > 0) {
         html.push(`
             <details style="margin-bottom:20px;">
-                <summary style="cursor:pointer;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;padding:12px;background:#0a0a0a;border-radius:6px;border:1px solid #2a2a2a;">
-                    <span style="color:#5b9dff;">▸</span> Index Profiles (${metadata.repos.length})
+                <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:1px;padding:12px;background:var(--card-bg);border-radius:6px;border:1px solid var(--line);">
+                    <span style="color:var(--link);">▸</span> Index Profiles (${metadata.repos.length})
                 </summary>
-                <div style="margin-top:12px;padding:12px;background:#0a0a0a;border-radius:6px;border:1px solid #1a1a1a;">
+                <div style="margin-top:12px;padding:12px;background:var(--card-bg);border-radius:6px;border:1px solid var(--line);">
         `);
 
         metadata.repos.forEach(repo => {
             const totalSize = (repo.sizes.chunks || 0) + (repo.sizes.bm25 || 0) + (repo.sizes.cards || 0);
             html.push(`
-                <div style="padding:10px;margin-bottom:8px;background:#0f0f0f;border-radius:4px;border:1px solid ${repo.has_cards ? '#003311' : '#1a1a1a'};">
+                <div style="padding:10px;margin-bottom:8px;background:var(--code-bg);border-radius:4px;border:1px solid ${repo.has_cards ? 'color-mix(in oklch, var(--ok) 30%, var(--line))' : 'var(--line)'};">
                     <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                        <div style="font-size:12px;font-weight:600;color:#fff;">${repo.name} <span style="color:#666;font-weight:400;">/ ${repo.profile}</span></div>
-                        <div style="font-size:12px;font-weight:700;color:#00ff88;font-family:'SF Mono',monospace;">${formatBytes(totalSize)}</div>
+                        <div style="font-size:12px;font-weight:600;color:var(--fg);">${repo.name} <span style="color:var(--fg-muted);font-weight:400;">/ ${repo.profile}</span></div>
+                        <div style="font-size:12px;font-weight:700;color:var(--ok);font-family:'SF Mono',monospace;">${formatBytes(totalSize)}</div>
                     </div>
-                    <div style="font-size:10px;color:#666;">${repo.chunk_count.toLocaleString()} chunks ${repo.has_cards ? '• <span style="color:#00ff88;">✓ Cards</span>' : ''}</div>
+                    <div style="font-size:10px;color:var(--fg-muted);">${repo.chunk_count.toLocaleString()} chunks ${repo.has_cards ? '• <span style="color:var(--ok);">✓ Cards</span>' : ''}</div>
                 </div>
             `);
         });
@@ -166,9 +166,9 @@ function formatIndexStatusDisplay(lines, metadata) {
 
     // TOTAL FOOTER
     html.push(`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px;background:linear-gradient(135deg,#0f1f0f 0%,#0a0a0a 100%);border-radius:8px;border:2px solid #00ff88;">
-            <div style="font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;">Total Index Storage</div>
-            <div style="font-size:24px;font-weight:900;color:#00ff88;font-family:'SF Mono',monospace;text-shadow:0 0 20px rgba(0,255,136,0.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px;background:var(--panel);border-radius:8px;border:2px solid var(--accent);">
+            <div style="font-size:13px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:1px;">Total Index Storage</div>
+            <div style="font-size:24px;font-weight:900;color:var(--accent);font-family:'SF Mono',monospace;">
                 ${formatBytes(metadata.total_storage)}
             </div>
         </div>

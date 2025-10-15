@@ -15,6 +15,10 @@ from server.feedback import router as feedback_router
 from server.reranker_info import router as reranker_info_router
 from server.telemetry import log_query_event
 from server.reranker import rerank_candidates
+from server.metrics import (
+    init_metrics, stage, record_tokens, record_cost,
+    set_retrieval_quality, record_canary, ERRORS_TOTAL
+)
 try:
     # Optional import; used for MCP wrapper endpoints
     from server.mcp.server import MCPServer as _MCPServer
@@ -27,6 +31,9 @@ from collections import Counter, defaultdict
 from pathlib import Path as _Path
 
 app = FastAPI(title="AGRO RAG + GUI")
+
+# Initialize Prometheus metrics middleware and /metrics endpoint
+init_metrics(app)
 
 # Mount feedback router
 app.include_router(feedback_router)
@@ -426,7 +433,8 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
 def search(
     q: str = Query(..., description="Question"),
     repo: Optional[str] = Query(None, description="Repository override: agro|agro"),
-    top_k: int = Query(10, description="Number of results to return")
+    top_k: int = Query(10, description="Number of results to return"),
+    response: Response = None
 ):
     """Search for relevant code locations without generation.
 
@@ -434,32 +442,35 @@ def search(
     """
     import time
     start_time = time.time()
-    
-    docs = search_routed_multi(q, repo_override=repo, m=4, final_k=top_k)
+
+    # Track retrieval stage
+    with stage("retrieve"):
+        docs = search_routed_multi(q, repo_override=repo, m=4, final_k=top_k)
     
     # Apply reranker if enabled
     if os.getenv("AGRO_RERANKER_ENABLED", "0") == "1":
-        # Transform docs to reranker format
-        retrieved_cands = []
-        for d in docs:
-            retrieved_cands.append({
-                "doc_id": d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}",
-                "score": float(d.get("rerank_score", 0.0) or 0.0),
-                "text": d.get("code", "") or "",
-                "clicked": False,
-            })
-        
-        if retrieved_cands and any(c.get("text") for c in retrieved_cands):
-            reranked = rerank_candidates(q, retrieved_cands)
-            # Map back to docs structure
-            doc_map = {(d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}"): d for d in docs}
-            docs = []
-            for rc in reranked:
-                if rc["doc_id"] in doc_map:
-                    d = doc_map[rc["doc_id"]]
-                    d["rerank_score"] = rc["rerank_score"]
-                    d["cross_encoder_score"] = rc.get("cross_encoder_score", 0.0)
-                    docs.append(d)
+        with stage("rerank"):
+            # Transform docs to reranker format
+            retrieved_cands = []
+            for d in docs:
+                retrieved_cands.append({
+                    "doc_id": d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}",
+                    "score": float(d.get("rerank_score", 0.0) or 0.0),
+                    "text": d.get("code", "") or "",
+                    "clicked": False,
+                })
+
+            if retrieved_cands and any(c.get("text") for c in retrieved_cands):
+                reranked = rerank_candidates(q, retrieved_cands)
+                # Map back to docs structure
+                doc_map = {(d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}"): d for d in docs}
+                docs = []
+                for rc in reranked:
+                    if rc["doc_id"] in doc_map:
+                        d = doc_map[rc["doc_id"]]
+                        d["rerank_score"] = rc["rerank_score"]
+                        d["cross_encoder_score"] = rc.get("cross_encoder_score", 0.0)
+                        docs.append(d)
     
     latency_ms = int((time.time() - start_time) * 1000)
     
@@ -494,6 +505,12 @@ def search(
         }
         for d in docs
     ]
+
+    # Set response headers for metrics middleware
+    if response:
+        response.headers["X-Provider"] = "hybrid"  # BM25 + vector
+        response.headers["X-Model"] = "search-only"
+
     return {"results": results, "repo": repo, "count": len(results), "event_id": event_id}
 
 # ---------------- MCP wrapper (HTTP) ----------------

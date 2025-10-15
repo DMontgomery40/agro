@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AGRO - Enterprise RAG Storage Calculator</title>
     <!-- AGRO Storage Calculator v1.2 - With helpful tooltips and clear explanations -->
+    <link rel="stylesheet" href="/gui/css/tokens.css">
     <style>
         * {
             margin: 0;
@@ -14,8 +15,8 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #ffffff;
+            background: var(--bg);
+            color: var(--fg);
             line-height: 1.6;
             padding: 40px 20px;
         }
@@ -29,7 +30,7 @@
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--line);
         }
 
         .header h1 {
@@ -39,13 +40,10 @@
             margin-bottom: 8px;
         }
 
-        .header .brand {
-            font-weight: 700;
-            color: #00ff88;
-        }
+        .header .brand { font-weight: 700; color: var(--accent); }
 
         .header .subtitle {
-            color: #888;
+            color: var(--fg-muted);
             font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -65,8 +63,8 @@
         }
 
         .calculator {
-            background: #111111;
-            border: 1px solid #2a2a2a;
+            background: var(--panel);
+            border: 1px solid var(--line);
             border-radius: 8px;
             padding: 24px;
         }
@@ -76,15 +74,15 @@
             font-weight: 600;
             margin-bottom: 20px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--line);
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .calculator-badge {
-            background: #00ff88;
-            color: #000;
+            background: var(--accent);
+            color: var(--accent-contrast);
             padding: 2px 8px;
             border-radius: 4px;
             font-size: 10px;
@@ -114,7 +112,7 @@
 
         label {
             font-size: 11px;
-            color: #888;
+            color: var(--fg-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 6px;
@@ -138,8 +136,8 @@
         }
 
         .results {
-            background: #0a0a0a;
-            border: 1px solid #2a2a2a;
+            background: var(--card-bg);
+            border: 1px solid var(--line);
             border-radius: 4px;
             padding: 16px;
             margin-top: 20px;
@@ -156,12 +154,12 @@
             display: flex;
             justify-content: space-between;
             padding: 8px 0;
-            border-bottom: 1px solid #1a1a1a;
+            border-bottom: 1px solid var(--line);
         }
 
         .result-label {
             font-size: 12px;
-            color: #666;
+            color: var(--fg-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -169,33 +167,30 @@
         .result-value {
             font-size: 14px;
             font-weight: 600;
-            color: #fff;
+            color: var(--fg);
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
         }
 
         .total-row {
             margin-top: 16px;
             padding-top: 16px;
-            border-top: 2px solid #2a2a2a;
+            border-top: 2px solid var(--line);
         }
 
         .total-row .result-item {
             border: none;
             padding: 12px;
-            background: #1a1a1a;
+            background: var(--bg-elev2);
             border-radius: 4px;
             margin-bottom: 8px;
         }
 
-        .total-row .result-value {
-            font-size: 18px;
-            color: #00ff88;
-        }
+        .total-row .result-value { font-size: 18px; color: var(--accent); }
 
         .warning {
-            background: #331a00;
-            border: 1px solid #664400;
-            color: #ffaa00;
+            background: color-mix(in oklch, var(--warn) 8%, var(--bg));
+            border: 1px solid color-mix(in oklch, var(--warn) 30%, var(--bg));
+            color: var(--warn);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 12px;
@@ -203,9 +198,9 @@
         }
 
         .success {
-            background: #003311;
-            border: 1px solid #006622;
-            color: #00ff88;
+            background: color-mix(in oklch, var(--ok) 8%, var(--bg));
+            border: 1px solid color-mix(in oklch, var(--ok) 30%, var(--bg));
+            color: var(--ok);
             padding: 8px 12px;
             border-radius: 4px;
             font-size: 12px;
@@ -215,13 +210,13 @@
         .plans-section {
             margin-top: 20px;
             padding-top: 20px;
-            border-top: 1px solid #2a2a2a;
+            border-top: 1px solid var(--line);
         }
 
         .plan-title {
             font-size: 12px;
             text-transform: uppercase;
-            color: #666;
+            color: var(--fg-muted);
             margin-bottom: 12px;
             letter-spacing: 1px;
         }
@@ -233,19 +228,15 @@
         }
 
         .plan-card {
-            background: #0a0a0a;
-            border: 1px solid #2a2a2a;
+            background: var(--card-bg);
+            border: 1px solid var(--line);
             padding: 12px;
             border-radius: 4px;
         }
 
-        .plan-card.fits {
-            border-color: #006622;
-        }
+        .plan-card.fits { border-color: var(--ok); }
 
-        .plan-card.exceeds {
-            border-color: #664400;
-        }
+        .plan-card.exceeds { border-color: var(--warn); }
 
         .plan-name {
             font-size: 14px;
@@ -255,39 +246,32 @@
 
         .plan-details {
             font-size: 11px;
-            color: #888;
+            color: var(--fg-muted);
             line-height: 1.6;
         }
 
         .plan-total {
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid #2a2a2a;
+            border-top: 1px solid var(--line);
             font-size: 14px;
             font-weight: 600;
         }
 
-        .fits .plan-total {
-            color: #00ff88;
-        }
+        .fits .plan-total { color: var(--ok); }
 
-        .exceeds .plan-total {
-            color: #ffaa00;
-        }
+        .exceeds .plan-total { color: var(--warn); }
 
         .footer {
             text-align: center;
             margin-top: 40px;
             padding-top: 20px;
-            border-top: 1px solid #2a2a2a;
-            color: #666;
+            border-top: 1px solid var(--line);
+            color: var(--fg-muted);
             font-size: 12px;
         }
 
-        .footer a {
-            color: #00ff88;
-            text-decoration: none;
-        }
+        .footer a { color: var(--accent); text-decoration: none; }
     </style>
 </head>
 <body>
@@ -295,10 +279,10 @@
         <div class="header">
             <h1><span class="brand">AGRO</span> Storage Calculator Suite</h1>
             <p class="subtitle">Another Good RAG Option • Enterprise Memory Planning</p>
-            <div style="max-width: 800px; margin: 20px auto 0; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;">
-                <p style="color: #aaa; font-size: 13px; line-height: 1.6; text-align: left;">
-                    <strong style="color: #fff;">Left:</strong> Calculate exact storage needs for your configuration.<br>
-                    <strong style="color: #fff;">Right:</strong> See if your data fits within a target limit using different strategies.
+            <div style="max-width: 800px; margin: 20px auto 0; padding: 15px; background: var(--bg-elev2); border-radius: 8px; border: 1px solid var(--line);">
+                <p style="color: var(--fg-muted); font-size: 13px; line-height: 1.6; text-align: left;">
+                    <strong style="color: var(--fg);">Left:</strong> Calculate exact storage needs for your configuration.<br>
+                    <strong style="color: var(--fg);">Right:</strong> See if your data fits within a target limit using different strategies.
                 </p>
             </div>
         </div>
@@ -311,7 +295,7 @@
                     <span class="calculator-badge">Full Stack</span>
                 </div>
 
-                <p style="font-size: 12px; color: #888; margin-bottom: 20px; line-height: 1.5;">
+                <p style="font-size: 12px; color: var(--fg-muted); margin-bottom: 20px; line-height: 1.5;">
                     Calculate total storage for your chosen configuration with all components.
                 </p>
 

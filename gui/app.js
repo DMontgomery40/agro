@@ -53,13 +53,13 @@
         wrap.style.marginBottom = '12px';
         const who = document.createElement('div');
         who.style.fontSize = '11px';
-        who.style.color = role === 'user' ? '#5b9dff' : '#00ff88';
+        who.style.color = role === 'user' ? 'var(--link)' : 'var(--accent)';
         who.style.textTransform = 'uppercase';
         who.style.letterSpacing = '0.5px';
         who.textContent = role === 'user' ? 'You' : 'Assistant';
         const msg = document.createElement('div');
-        msg.style.background = '#0f0f0f';
-        msg.style.border = '1px solid #2a2a2a';
+        msg.style.background = 'var(--code-bg)';
+        msg.style.border = '1px solid var(--line)';
         msg.style.borderRadius = '6px';
         msg.style.padding = '10px';
         msg.style.whiteSpace = 'pre-wrap';
@@ -353,13 +353,13 @@
                 </div>`;
             });
             if (groupItems.length) {
-                parts.push(`<div class="section"><strong style="color:#5b9dff;">${group}</strong>${groupItems.join('')}</div>`);
+                parts.push(`<div class="section"><strong style="color:var(--link);">${group}</strong>${groupItems.join('')}</div>`);
             }
         }
 
         if (prof.__estimate__) {
             const est = prof.__estimate__;
-            parts.push(`<div class="section"><strong style="color:#b794f6;">Cost Estimate</strong><div><span class="key">Daily:</span> <span class="value">$${Number(est.daily||0).toFixed(4)}</span></div><div><span class="key">Monthly:</span> <span class="value">$${Number(est.monthly||0).toFixed(2)}</span></div></div>`);
+            parts.push(`<div class="section"><strong style="color:var(--link);">Cost Estimate</strong><div><span class="key">Daily:</span> <span class="value">$${Number(est.daily||0).toFixed(4)}</span></div><div><span class="key">Monthly:</span> <span class="value">$${Number(est.monthly||0).toFixed(2)}</span></div></div>`);
         }
 
         return parts.join('');
@@ -562,8 +562,8 @@
         if (placeholder) {
             placeholder.innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                    <div style="width:48px;height:48px;border:3px solid #2a2a2a;border-top-color:#00ff88;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;"></div>
-                    <p style="font-size:14px;color:#666;">Analyzing hardware and generating profile...</p>
+                    <div style="width:48px;height:48px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px;"></div>
+                    <p style="font-size:14px;color:var(--fg-muted);">Analyzing hardware and generating profile...</p>
                 </div>
                 <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
             `;
@@ -600,7 +600,7 @@
                 console.error('ProfileRenderer error:', err);
                 // Fallback to simple display
                 if (resultsContent) {
-                    resultsContent.innerHTML = '<pre style="color:#ff6b6b;padding:20px;">Error rendering profile: ' + err.message + '</pre>';
+                    resultsContent.innerHTML = '<pre style="color: var(--err);padding:20px;">Error rendering profile: ' + err.message + '</pre>';
                     resultsContent.style.display = 'block';
                     if (placeholder) placeholder.style.display = 'none';
                 }
@@ -609,7 +609,7 @@
             console.error('ProfileRenderer not available:', { hasRenderer: !!window.ProfileRenderer, hasContent: !!resultsContent });
             // Fallback to old method
             if (resultsContent) {
-                resultsContent.innerHTML = '<pre style="padding:20px;color:#aaa;">' + JSON.stringify(winner.env, null, 2) + '</pre>';
+                resultsContent.innerHTML = '<pre style="padding:20px;color: var(--fg-muted);">' + JSON.stringify(winner.env, null, 2) + '</pre>';
                 resultsContent.style.display = 'block';
                 if (placeholder) placeholder.style.display = 'none';
             }
@@ -770,17 +770,17 @@
             state.profiles.forEach((name) => {
                 const li = document.createElement('li');
                 li.textContent = name;
-                li.style.cssText = 'padding: 6px 8px; color: #aaa; cursor: pointer; border-radius: 4px; transition: all 0.15s ease;';
+                li.style.cssText = 'padding: 6px 8px; color: var(--fg-muted); cursor: pointer; border-radius: 4px; transition: all 0.15s ease;';
 
                 li.addEventListener('mouseenter', async (e) => {
-                    li.style.background = '#1a1a1a';
-                    li.style.color = '#00ff88';
+                    li.style.background = 'var(--bg-elev2)';
+                    li.style.color = 'var(--accent)';
                     await showProfileTooltip(name, e);
                 });
 
                 li.addEventListener('mouseleave', () => {
                     li.style.background = 'transparent';
-                    li.style.color = '#aaa';
+                    li.style.color = 'var(--fg-muted)';
                     hideProfileTooltip();
                 });
 
@@ -809,7 +809,7 @@
 
             const entries = Object.entries(prof);
             if (entries.length === 0) {
-                html += '<div style="color: #666; font-size: 11px; font-style: italic;">Empty profile</div>';
+                html += '<div style="color: var(--fg-muted); font-size: 11px; font-style: italic;">Empty profile</div>';
             } else {
                 entries.forEach(([key, value]) => {
                     const displayValue = String(value).length > 40
@@ -939,10 +939,10 @@
         if (!status) return;
 
         const timestamp = new Date().toLocaleTimeString();
-        const color = type === 'success' ? '#00ff88' : type === 'error' ? '#ff6b6b' : '#5b9dff';
+        const color = type === 'success' ? 'var(--accent)' : type === 'error' ? 'var(--err)' : 'var(--link)';
         const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : '•';
 
-        status.innerHTML = `<span style="color:${color};">${icon}</span> <span style="color:#666;">[${timestamp}]</span> ${message}`;
+        status.innerHTML = `<span style="color:${color};">${icon}</span> <span style="color:var(--fg-muted);">[${timestamp}]</span> ${message}`;
 
         if (bar) {
             if (type === 'loading') {
@@ -954,11 +954,11 @@
                 setTimeout(() => { bar.style.width = '0%'; }, 2000);
             } else if (type === 'error') {
                 bar.style.width = '100%';
-                bar.style.background = '#ff6b6b';
+                bar.style.background = 'var(--err)';
                 bar.style.opacity = '1';
                 setTimeout(() => {
                     bar.style.width = '0%';
-                    bar.style.background = 'linear-gradient(90deg, #ff9b5e 0%, #ff6b9d 100%)';
+                    bar.style.background = 'linear-gradient(90deg, var(--warn) 0%, var(--accent) 100%)';
                 }, 2000);
             }
         }
@@ -977,9 +977,9 @@
             tipIdx++;
             if (status) {
                 status.innerHTML = `
-                    <div class="mono" style="color:#bbb;">
+                    <div class="mono" style="color: var(--fg-muted);">
                         🔎 ${label}<br>
-                        Scanning ${step} of ${total}… ${tip ? `<span style='color:#666'>(${tip})</span>` : ''}
+                        Scanning ${step} of ${total}… ${tip ? `<span style='color:var(--fg-muted)'>(${tip})</span>` : ''}
                     </div>
                 `;
             }
@@ -1038,9 +1038,9 @@
                         data-repo="${repo.slug}"
                         style="
                             margin-bottom: 8px;
-                            background: ${isActive ? '#00ff88' : '#1a1a1a'};
-                            color: ${isActive ? '#000' : '#aaa'};
-                            border: 1px solid ${isActive ? '#00ff88' : '#2a2a2a'};
+                            background: ${isActive ? 'var(--accent)' : 'var(--bg-elev2)'};
+                            color: ${isActive ? 'var(--accent-contrast)' : 'var(--fg-muted)'};
+                            border: 1px solid ${isActive ? 'var(--accent)' : 'var(--line)'};
                             width: 100%;
                             text-align: left;
                             padding: 12px;
@@ -1059,7 +1059,7 @@
             if (status) {
                 status.innerHTML = `
                     <div style="padding: 8px;">
-                        <div style="margin-bottom: 12px; color: #00ff88; font-weight: 600;">Select Repository:</div>
+                        <div style="margin-bottom: 12px; color: var(--accent); font-weight: 600;">Select Repository:</div>
                         ${repoHtml}
                     </div>
                 `;
@@ -1145,23 +1145,23 @@
 
                     // Build detailed status message
                     const status = `
-                        <div style="font-size:14px;font-weight:600;color:#00ff88;margin-bottom:8px;">
+                        <div style="font-size:14px;font-weight:600;color:var(--accent);margin-bottom:8px;">
                             ✓ Generated ${total} keywords for repo: ${repo}
                         </div>
-                        <div style="font-size:12px;color:#ddd;margin-bottom:4px;">
-                            <span style="color:#b794f6;">Discriminative:</span> ${discr} keywords
+                        <div style="font-size:12px;color:var(--fg);margin-bottom:4px;">
+                            <span style="color:var(--link);">Discriminative:</span> ${discr} keywords
                         </div>
-                        <div style="font-size:12px;color:#ddd;margin-bottom:4px;">
-                            <span style="color:#5b9dff;">Semantic:</span> ${sema} keywords
+                        <div style="font-size:12px;color:var(--fg);margin-bottom:4px;">
+                            <span style="color:var(--link);">Semantic:</span> ${sema} keywords
                         </div>
-                        <div style="font-size:12px;color:#ddd;margin-bottom:4px;">
-                            <span style="color:#00d6ff;">LLM:</span> ${result.llm?.count || 0} keywords
+                        <div style="font-size:12px;color:var(--fg);margin-bottom:4px;">
+                            <span style="color:var(--link);">LLM:</span> ${result.llm?.count || 0} keywords
                         </div>
-                        <div style="font-size:11px;color:#999;margin-top:8px;">
+                        <div style="font-size:11px;color:var(--fg-muted);margin-top:8px;">
                             Completed in ${duration}s
                         </div>
-                        <div style="font-size:11px;color:#666;margin-top:6px;">
-                            → View keywords in <span style="color:#00ff88;font-weight:600;">Repos & Indexing</span> tab
+                        <div style="font-size:11px;color:var(--fg-muted);margin-top:6px;">
+                            → View keywords in <span style="color:var(--accent);font-weight:600;">Repos & Indexing</span> tab
                         </div>
                     `;
 
@@ -1481,7 +1481,7 @@
             const cardsContainer = document.getElementById('cards-viewer');
             if (cardsContainer) {
                 cardsContainer.innerHTML = cards.length === 0 ?
-                    `<div style="text-align: center; padding: 24px; color: #666;">
+                    `<div style="text-align: center; padding: 24px; color: var(--fg-muted);">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 12px;">
                             <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
                             <line x1="3" y1="9" x2="21" y2="9"></line>
@@ -1492,17 +1492,17 @@
                     </div>` :
                     cards.map(card => `
                         <div class="card-item" data-filepath="${card.file_path}" data-line="${card.start_line || 1}"
-                             style="background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;"
-                             onmouseover="this.style.borderColor='#00ff88'; this.style.background='#1f1f1f';"
-                             onmouseout="this.style.borderColor='#2a2a2a'; this.style.background='#1a1a1a';">
-                            <h4 style="margin: 0 0 8px 0; color: #00ff88; font-size: 14px; font-weight: 600;">
+                             style="background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;"
+                             onmouseover="this.style.borderColor='var(--accent)'; this.style.background='var(--bg-elev1)';"
+                             onmouseout="this.style.borderColor='var(--line)'; this.style.background='var(--bg-elev2)';">
+                            <h4 style="margin: 0 0 8px 0; color: var(--accent); font-size: 14px; font-weight: 600;">
                                 ${(card.symbols && card.symbols[0]) ? card.symbols[0] : (card.file_path || '').split('/').slice(-1)[0]}
                             </h4>
-                            <p style="margin: 0 0 8px 0; color: #aaa; font-size: 12px; line-height: 1.4;">
+                            <p style="margin: 0 0 8px 0; color: var(--fg-muted); font-size: 12px; line-height: 1.4;">
                                 ${card.purpose || 'No description available'}
                             </p>
-                            <div style="font-size: 10px; color: #666;">
-                                <span style="color: #5b9dff;">${card.file_path || 'Unknown file'}</span>
+                            <div style="font-size: 10px; color: var(--fg-muted);">
+                                <span style="color: var(--link);">${card.file_path || 'Unknown file'}</span>
                                 ${card.start_line ? ` : ${card.start_line}` : ''}
                             </div>
                         </div>
@@ -1521,7 +1521,7 @@
             console.error('Error loading cards:', error);
             const cardsContainer = document.getElementById('cards-viewer');
             if (cardsContainer) {
-                cardsContainer.innerHTML = `<div style="text-align: center; padding: 24px; color: #ff5555;">
+                cardsContainer.innerHTML = `<div style="text-align: center; padding: 24px; color: var(--err);">
                     Error loading cards: ${error.message}
                 </div>`;
             }
@@ -1543,15 +1543,15 @@
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: fixed; bottom: 20px; right: 20px;
-            background: #1a1a1a; border: 1px solid #00ff88;
+            background: var(--bg-elev2); border: 1px solid var(--accent);
             padding: 12px 16px; border-radius: 6px;
-            color: #fff; font-size: 13px; z-index: 10000;
+            color: var(--fg); font-size: 13px; z-index: 10000;
             animation: slideInRight 0.3s ease;
         `;
         notification.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="color: #00ff88;">📍</span>
-                <span>Navigate to: <strong style="color: #5b9dff;">${filePath}:${lineNumber}</strong></span>
+                <span style="color: var(--accent);">📍</span>
+                <span>Navigate to: <strong style="color: var(--link);">${filePath}:${lineNumber}</strong></span>
             </div>
         `;
         document.body.appendChild(notification);
@@ -1745,8 +1745,8 @@
 
     function formatIndexStatus(lines, metadata) {
         if (!metadata) {
-            if (!lines || !lines.length) return '<div style="color:#666;font-size:13px;">Ready to index...</div>';
-            return `<div style="color:#aaa;font-size:12px;">${lines.join('<br>')}</div>`;
+            if (!lines || !lines.length) return '<div style="color:var(--fg-muted);font-size:13px;">Ready to index...</div>';
+            return `<div style="color: var(--fg-muted);font-size:12px;">${lines.join('<br>')}</div>`;
         }
 
         // Enterprise-grade comprehensive display
@@ -1754,17 +1754,17 @@
 
         // Header with repo/branch
         html.push(`
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #2a2a2a;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line);">
                 <div style="display:flex;align-items:center;gap:12px;">
-                    <div style="width:6px;height:6px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;"></div>
+                    <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);"></div>
                     <div>
-                        <div style="font-size:16px;font-weight:600;color:#fff;letter-spacing:-0.3px;">${metadata.current_repo}</div>
-                        <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">
-                            Branch: <span style="color:#5b9dff;">${metadata.current_branch}</span>
+                        <div style="font-size:16px;font-weight:600;color:var(--fg);letter-spacing:-0.3px;">${metadata.current_repo}</div>
+                        <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">
+                            Branch: <span style="color:var(--link);">${metadata.current_branch}</span>
                         </div>
                     </div>
                 </div>
-                <div style="text-align:right;font-size:10px;color:#666;">
+                <div style="text-align:right;font-size:10px;color:var(--fg-muted);">
                     ${new Date(metadata.timestamp).toLocaleString()}
                 </div>
             </div>
@@ -1773,68 +1773,68 @@
         // Configuration section
         html.push(`
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-                <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid #2a2a2a;">
-                    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Embedding Model</div>
-                    <div style="font-size:14px;font-weight:600;color:#b794f6;font-family:'SF Mono',monospace;">${metadata.embedding_model}</div>
+                <div style="background:var(--code-bg);padding:12px;border-radius:6px;border:1px solid var(--line);">
+                    <div style="font-size:10px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Embedding Model</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--link);font-family:'SF Mono',monospace;">${metadata.embedding_model}</div>
                 </div>
-                <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid #2a2a2a;">
-                    <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Keywords</div>
-                    <div style="font-size:14px;font-weight:600;color:#ff9b5e;font-family:'SF Mono',monospace;">${metadata.keywords_count.toLocaleString()}</div>
+                <div style="background:var(--code-bg);padding:12px;border-radius:6px;border:1px solid var(--line);">
+                    <div style="font-size:10px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Keywords</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--warn);font-family:'SF Mono',monospace;">${metadata.keywords_count.toLocaleString()}</div>
                 </div>
             </div>
         `);
 
         // Index profiles section
         if (metadata.repos && metadata.repos.length > 0) {
-            html.push(`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:#00ff88;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Index Profiles</div></div>`);
+            html.push(`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Index Profiles</div></div>`);
 
             metadata.repos.forEach(repo => {
                 const totalSize = (repo.sizes.chunks || 0) + (repo.sizes.bm25 || 0) + (repo.sizes.cards || 0);
 
                 html.push(`
-                    <div style="background:#0f0f0f;border:1px solid ${repo.has_cards ? '#006622' : '#2a2a2a'};border-radius:6px;padding:12px;margin-bottom:8px;">
+                    <div style="background:var(--code-bg);border:1px solid ${repo.has_cards ? 'var(--accent)' : 'var(--line)'};border-radius:6px;padding:12px;margin-bottom:8px;">
                         <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;">
                             <div>
-                                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;">
-                                    ${repo.name} <span style="font-size:10px;color:#666;font-weight:400;">/ ${repo.profile}</span>
+                                <div style="font-size:13px;font-weight:600;color:var(--fg);margin-bottom:4px;">
+                                    ${repo.name} <span style="font-size:10px;color:var(--fg-muted);font-weight:400;">/ ${repo.profile}</span>
                                 </div>
-                                <div style="font-size:11px;color:#666;">
+                                <div style="font-size:11px;color:var(--fg-muted);">
                                     ${repo.chunk_count.toLocaleString()} chunks
-                                    ${repo.has_cards ? ' • <span style="color:#00ff88;">✓ Cards</span>' : ' • <span style="color:#666;">No cards</span>'}
+                                    ${repo.has_cards ? ' • <span style="color:var(--accent);">✓ Cards</span>' : ' • <span style="color:var(--fg-muted);">No cards</span>'}
                                 </div>
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:14px;font-weight:600;color:#00ff88;font-family:'SF Mono',monospace;">
+                                <div style="font-size:14px;font-weight:600;color:var(--accent);font-family:'SF Mono',monospace;">
                                     ${formatBytes(totalSize)}
                                 </div>
                             </div>
                         </div>
                         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:10px;">
                             ${repo.paths.chunks ? `
-                                <div style="background:#0a0a0a;padding:6px 8px;border-radius:4px;border:1px solid #1a1a1a;">
-                                    <div style="color:#888;margin-bottom:2px;">Chunks</div>
-                                    <div style="color:#5b9dff;font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.chunks)}</div>
+                                <div style="background:var(--code-bg);padding:6px 8px;border-radius:4px;border:1px solid var(--line);">
+                                    <div style="color:var(--fg-muted);margin-bottom:2px;">Chunks</div>
+                                    <div style="color:var(--link);font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.chunks)}</div>
                                 </div>
                             ` : ''}
                             ${repo.paths.bm25 ? `
-                                <div style="background:#0a0a0a;padding:6px 8px;border-radius:4px;border:1px solid #1a1a1a;">
-                                    <div style="color:#888;margin-bottom:2px;">BM25 Index</div>
-                                    <div style="color:#ff9b5e;font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.bm25)}</div>
+                                <div style="background:var(--code-bg);padding:6px 8px;border-radius:4px;border:1px solid var(--line);">
+                                    <div style="color:var(--fg-muted);margin-bottom:2px;">BM25 Index</div>
+                                    <div style="color:var(--warn);font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.bm25)}</div>
                                 </div>
                             ` : ''}
                             ${repo.paths.cards ? `
-                                <div style="background:#0a0a0a;padding:6px 8px;border-radius:4px;border:1px solid #1a1a1a;">
-                                    <div style="color:#888;margin-bottom:2px;">Cards</div>
-                                    <div style="color:#00ff88;font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.cards)}</div>
+                                <div style="background:var(--code-bg);padding:6px 8px;border-radius:4px;border:1px solid var(--line);">
+                                    <div style="color:var(--fg-muted);margin-bottom:2px;">Cards</div>
+                                    <div style="color:var(--accent);font-family:'SF Mono',monospace;font-size:11px;">${formatBytes(repo.sizes.cards)}</div>
                                 </div>
                             ` : ''}
                         </div>
                         ${repo.paths.chunks ? `
                             <details style="margin-top:8px;">
-                                <summary style="cursor:pointer;font-size:10px;color:#666;padding:4px 0;">
-                                    <span style="color:#5b9dff;">▸</span> File Paths
+                                <summary style="cursor:pointer;font-size:10px;color:var(--fg-muted);padding:4px 0;">
+                                    <span style="color:var(--link);">▸</span> File Paths
                                 </summary>
-                                <div style="margin-top:6px;padding:8px;background:#0a0a0a;border-radius:4px;font-size:10px;font-family:'SF Mono',monospace;color:#888;">
+                                <div style="margin-top:6px;padding:8px;background:var(--code-bg);border-radius:4px;font-size:10px;font-family:'SF Mono',monospace;color:var(--fg-muted);">
                                     ${repo.paths.chunks ? `<div style="margin-bottom:2px;">📄 ${repo.paths.chunks}</div>` : ''}
                                     ${repo.paths.bm25 ? `<div style="margin-bottom:2px;">📁 ${repo.paths.bm25}</div>` : ''}
                                     ${repo.paths.cards ? `<div>🎴 ${repo.paths.cards}</div>` : ''}
@@ -1848,9 +1848,9 @@
 
         // Total storage footer
         html.push(`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #2a2a2a;">
-                <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Total Index Storage</div>
-                <div style="font-size:18px;font-weight:700;color:#00ff88;font-family:'SF Mono',monospace;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--line);">
+                <div style="font-size:12px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Index Storage</div>
+                <div style="font-size:18px;font-weight:700;color:var(--accent);font-family:'SF Mono',monospace;">
                     ${formatBytes(metadata.total_storage)}
                 </div>
             </div>

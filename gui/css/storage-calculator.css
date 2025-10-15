@@ -22,7 +22,7 @@
 .storage-calc-header .brand { font-weight: 700; color: var(--accent); }
 
 .storage-calc-header .subtitle {
-    color: #888;
+    color: var(--fg-muted);
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -38,14 +38,14 @@
 }
 
 .storage-calc-header .info-box p {
-    color: #aaa;
+    color: var(--fg-muted);
     font-size: 13px;
     line-height: 1.6;
     text-align: left;
 }
 
 .storage-calc-header .info-box strong {
-    color: #fff;
+    color: var(--fg);
 }
 
 .calculators-grid {
@@ -198,7 +198,7 @@
 .total-row .result-item {
     border: none;
     padding: 12px;
-    background: #1a1a1a;
+    background: var(--bg-elev2);
     border-radius: 4px;
     margin-bottom: 8px;
 }
@@ -206,9 +206,9 @@
 .total-row .result-value { font-size: 18px; color: var(--accent); }
 
 .warning {
-    background: #331a00;
-    border: 1px solid #664400;
-    color: #ffaa00;
+    background: color-mix(in oklch, var(--warn) 8%, var(--bg));
+    border: 1px solid color-mix(in oklch, var(--warn) 30%, var(--bg));
+    color: var(--warn);
     padding: 8px 12px;
     border-radius: 4px;
     font-size: 12px;
@@ -216,9 +216,9 @@
 }
 
 .success {
-    background: #003311;
-    border: 1px solid #006622;
-    color: #00ff88;
+    background: color-mix(in oklch, var(--ok) 8%, var(--bg));
+    border: 1px solid color-mix(in oklch, var(--ok) 30%, var(--bg));
+    color: var(--ok);
     padding: 8px 12px;
     border-radius: 4px;
     font-size: 12px;
@@ -228,13 +228,13 @@
 .plans-section {
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 1px solid #2a2a2a;
+    border-top: 1px solid var(--line);
 }
 
 .plan-title {
     font-size: 12px;
     text-transform: uppercase;
-    color: #666;
+    color: var(--fg-muted);
     margin-bottom: 12px;
     letter-spacing: 1px;
 }
@@ -246,18 +246,18 @@
 }
 
 .plan-card {
-    background: #0a0a0a;
-    border: 1px solid #2a2a2a;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
     padding: 12px;
     border-radius: 4px;
 }
 
 .plan-card.fits {
-    border-color: #006622;
+    border-color: var(--ok);
 }
 
 .plan-card.exceeds {
-    border-color: #664400;
+    border-color: var(--warn);
 }
 
 .plan-name {
@@ -268,24 +268,24 @@
 
 .plan-details {
     font-size: 11px;
-    color: #888;
+    color: var(--fg-muted);
     line-height: 1.6;
 }
 
 .plan-total {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid #2a2a2a;
+    border-top: 1px solid var(--line);
     font-size: 14px;
     font-weight: 600;
 }
 
 .fits .plan-total {
-    color: #00ff88;
+    color: var(--ok);
 }
 
 .exceeds .plan-total {
-    color: #ffaa00;
+    color: var(--warn);
 }
 
 .storage-calc-footer {

@@ -1,5 +1,5 @@
 {
-  "default_repo": "",
+  "default_repo": "agro",
   "repos": [
     {
       "name": "agro",

@@ -37,7 +37,7 @@ ensure_docker() {
 
 ensure_docker
 
-echo "[up] Starting infra (Qdrant + Redis) ..."
+echo "[up] Starting infra (Qdrant + Redis + Prometheus + Grafana) ..."
 (
   cd "$ROOT_DIR/infra"
   docker compose up -d
@@ -49,6 +49,20 @@ curl -s http://127.0.0.1:6333/collections >/dev/null || echo "[warn] Qdrant not 
 echo "[up] Verifying Redis ..."
 if docker ps --format '{{.Names}}' | grep -qi redis; then
   docker exec "$(docker ps --format '{{.Names}}' | grep -i redis | head -n1)" redis-cli ping || true
+fi
+
+echo "[up] Verifying Prometheus ..."
+if curl -s http://127.0.0.1:9090/-/ready >/dev/null 2>&1; then
+  echo "[up] Prometheus ready at http://127.0.0.1:9090"
+else
+  echo "[warn] Prometheus not ready yet (check 'docker logs agro-prometheus')"
+fi
+
+echo "[up] Verifying Grafana ..."
+if curl -s http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
+  echo "[up] Grafana ready at http://127.0.0.1:3000 (admin/Trenton2023)"
+else
+  echo "[warn] Grafana not ready yet (check 'docker logs agro-grafana')"
 fi
 
 echo "[up] Starting MCP server in background ..."
