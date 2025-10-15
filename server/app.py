@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Query, HTTPException, Request, UploadFile, File, Form
-# Canonical location: server/app.py
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from pathlib import Path
@@ -13,6 +12,7 @@ from common.config_loader import load_repos, out_dir
 from server.index_stats import get_index_stats as _get_index_stats
 from typing import cast
 from server.feedback import router as feedback_router
+from server.reranker_info import router as reranker_info_router
 from server.telemetry import log_query_event
 from server.reranker import rerank_candidates
 try:
@@ -30,6 +30,7 @@ app = FastAPI(title="AGRO RAG + GUI")
 
 # Mount feedback router
 app.include_router(feedback_router)
+app.include_router(reranker_info_router)
 
 _graph = None
 def get_graph():
@@ -2153,6 +2154,37 @@ def reranker_evaluate() -> Dict[str, Any]:
                 output = result.stdout
                 _RERANKER_STATUS["message"] = "Evaluation complete!"
                 _RERANKER_STATUS["result"] = {"ok": True, "output": output}
+
+                # Save eval results to data/evals/latest.json
+                try:
+                    import time
+                    metrics = {}
+                    for line in output.split("\n"):
+                        if "MRR:" in line:
+                            metrics["mrr"] = float(line.split(":")[-1].strip())
+                        elif "Hit@1:" in line:
+                            metrics["hit_at_1"] = float(line.split(":")[-1].strip())
+                        elif "Hit@3:" in line:
+                            metrics["hit_at_3"] = float(line.split(":")[-1].strip())
+                        elif "Hit@5:" in line:
+                            metrics["hit_at_5"] = float(line.split(":")[-1].strip())
+                        elif "Hit@10:" in line:
+                            metrics["hit_at_10"] = float(line.split(":")[-1].strip())
+
+                    if metrics:
+                        eval_path = repo_root() / "data" / "evals" / "latest.json"
+                        eval_path.parent.mkdir(parents=True, exist_ok=True)
+                        timestamp = time.strftime("%b %d, %Y %I:%M %p", time.localtime())
+                        model_path = os.getenv("AGRO_RERANKER_MODEL_PATH", "models/cross-encoder-agro")
+                        with open(eval_path, "w") as f:
+                            json.dump({
+                                "timestamp": timestamp,
+                                "model_path": model_path,
+                                "metrics": metrics,
+                                "raw_output": output
+                            }, f, indent=2)
+                except Exception:
+                    pass  # Don't fail if persistence fails
             else:
                 _RERANKER_STATUS["message"] = f"Evaluation failed: {result.stderr[:200]}"
                 _RERANKER_STATUS["result"] = {"ok": False, "error": result.stderr}
@@ -2166,6 +2198,19 @@ def reranker_evaluate() -> Dict[str, Any]:
     thread = threading.Thread(target=run_eval, daemon=True)
     thread.start()
     return {"ok": True, "message": "Evaluation started"}
+
+@app.get("/api/reranker/eval/latest")
+def get_latest_reranker_eval() -> Dict[str, Any]:
+    """Get latest reranker evaluation results."""
+    eval_path = repo_root() / "data" / "evals" / "latest.json"
+    if not eval_path.exists():
+        return {"metrics": None}
+
+    try:
+        with open(eval_path) as f:
+            return json.load(f)
+    except Exception:
+        return {"metrics": None}
 
 @app.get("/api/reranker/status")
 def reranker_status() -> Dict[str, Any]:

@@ -5,7 +5,17 @@ import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-LOG_PATH = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+# Get log path, ensure it's relative to repo root
+_log_path_str = os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl")
+if Path(_log_path_str).is_absolute():
+    # If absolute path, use as-is
+    LOG_PATH = Path(_log_path_str)
+else:
+    # If relative, make it relative to repo root
+    from common.paths import repo_root
+    LOG_PATH = repo_root() / _log_path_str
+
+# Create parent directory if it doesn't exist
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def _now() -> str:
