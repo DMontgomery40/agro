@@ -14,6 +14,7 @@ LANG_MAP = {
     ".go": "go", ".java": "java", ".rs": "rust",
     ".c": "c", ".h": "c", ".cpp": "cpp", ".cc": "cpp", ".hpp": "cpp",
     ".sh": "bash", ".bash": "bash",
+    ".md": "markdown",
 }
 
 OVERLAP_LINES = 20
