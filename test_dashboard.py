@@ -8,8 +8,14 @@ async def test_dashboard():
         browser = await p.chromium.launch(headless=False)
         page = await browser.new_page()
 
-        # Navigate to dashboard with auth token
-        dashboard_url = "http://localhost:3000/d/agro-overview/agro-overview?auth_token=glsa_VapoEF4luvdkdeZv3sX3aGNnnpcgQWpn_30c4006e&kiosk=tv"
+        # Navigate to dashboard; use token from env if present
+        import os
+        token = os.getenv('GRAFANA_AUTH_TOKEN', '')
+        base = os.getenv('GRAFANA_URL', 'http://localhost:3000')
+        if token:
+            dashboard_url = f"{base}/d/agro-overview/agro-overview?auth_token={token}&kiosk=tv"
+        else:
+            dashboard_url = f"{base}/d/agro-overview/agro-overview?kiosk=tv"
         print(f"Opening dashboard: {dashboard_url}")
         await page.goto(dashboard_url)
 
