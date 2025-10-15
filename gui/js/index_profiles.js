@@ -22,7 +22,7 @@
                 SKIP_DENSE: '1',
                 EMBEDDING_TYPE: 'local'
             },
-            color: '#00ff88'
+            color: 'var(--accent)'
         },
         full: {
             name: 'Full (Best Quality)',
@@ -33,7 +33,7 @@
                 SKIP_DENSE: '0',
                 EMBEDDING_TYPE: 'openai'
             },
-            color: '#5b9dff'
+            color: 'var(--link)'
         },
         dev: {
             name: 'Development (Testing)',
@@ -45,7 +45,7 @@
                 EMBEDDING_TYPE: 'local',
                 CARDS_MAX: '50'
             },
-            color: '#ffa500'
+            color: 'var(--warn)'
         }
     };
 
@@ -67,14 +67,14 @@
             <div style="color: ${profile.color}; font-weight: 600; margin-bottom: 8px;">
                 ${profile.name}
             </div>
-            <p style="color: #ccc; margin-bottom: 12px;">${profile.description}</p>
-            <div style="background: #0a0a0a; padding: 12px; border-radius: 4px; border: 1px solid #333;">
-                <div style="color: #888; font-size: 11px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+            <p style="color: var(--fg-muted); margin-bottom: 12px;">${profile.description}</p>
+            <div style="background: var(--card-bg); padding: 12px; border-radius: 4px; border: 1px solid var(--line);">
+                <div style="color: var(--fg-muted); font-size: 11px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
                     Settings that will be applied:
                 </div>
-                <div style="font-family: 'SF Mono', monospace; font-size: 11px; color: #aaa; line-height: 1.8;">
+                <div style="font-family: 'SF Mono', monospace; font-size: 11px; color: var(--fg-muted); line-height: 1.8;">
                     ${Object.entries(profile.settings)
-                        .map(([key, value]) => `<div><span style="color: #00ff88;">${key}:</span> ${value || '(auto)'}</div>`)
+                        .map(([key, value]) => `<div><span style="color: var(--accent);">${key}:</span> ${value || '(auto)'}</div>`)
                         .join('')}
                 </div>
             </div>

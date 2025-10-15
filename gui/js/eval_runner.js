@@ -145,7 +145,7 @@ function renderEvalResults() {
     if (passes.length > 0) {
         html += `
             <details style="margin-top: 12px;">
-                <summary style="font-size: 12px; font-weight: 600; color: #00ff88; margin-bottom: 8px; cursor: pointer;">
+                <summary style="font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 8px; cursor: pointer;">
                     PASSES (${passes.length})
                 </summary>
                 <div style="margin-top: 8px;">

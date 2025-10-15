@@ -108,7 +108,6 @@ def main():
                 train_dataloader=train_dl,
                 epochs=1,
                 warmup_steps=warmup_steps if epoch == 0 else 0,
-                evaluation_steps=max(50, len(train_pairs) // 5),
                 output_path=args.out,
                 use_amp=False,
                 show_progress_bar=False

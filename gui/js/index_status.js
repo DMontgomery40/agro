@@ -13,47 +13,47 @@
 
   function formatIndexStatus(lines, metadata){
     if (!metadata){
-      if (!lines || !lines.length) return '<div style="color:#666;font-size:13px;">Ready to index...</div>';
-      return `<div style="color:#aaa;font-size:12px;">${(lines||[]).join('<br>')}</div>`;
+      if (!lines || !lines.length) return '<div style="color:var(--fg-muted);font-size:13px;">Ready to index...</div>';
+      return `<div style="color:var(--fg-muted);font-size:12px;">${(lines||[]).join('<br>')}</div>`;
     }
     const html = [];
     html.push(`
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #2a2a2a;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line);">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:6px;height:6px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;"></div>
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);"></div>
           <div>
-            <div style="font-size:16px;font-weight:600;color:#fff;letter-spacing:-0.3px;">${metadata.current_repo}</div>
-            <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Branch: <span style="color:#5b9dff;">${metadata.current_branch}</span></div>
+            <div style="font-size:16px;font-weight:600;color: var(--fg);letter-spacing:-0.3px;">${metadata.current_repo}</div>
+            <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">Branch: <span style="color:var(--link);">${metadata.current_branch}</span></div>
           </div>
         </div>
-        <div style="text-align:right;font-size:10px;color:#666;">${new Date(metadata.timestamp).toLocaleString()}</div>
+        <div style="text-align:right;font-size:10px;color:var(--fg-muted);">${new Date(metadata.timestamp).toLocaleString()}</div>
       </div>
     `);
     html.push(`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-        <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid #2a2a2a;">
-          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Embedding Model</div>
-          <div style="font-size:14px;font-weight:600;color:#b794f6;font-family:'SF Mono',monospace;">${metadata.embedding_model}</div>
+        <div style="background:var(--card-bg);padding:12px;border-radius:6px;border:1px solid var(--line);">
+          <div style="font-size:10px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Embedding Model</div>
+          <div style="font-size:14px;font-weight:600;color:var(--link);font-family:'SF Mono',monospace;">${metadata.embedding_model}</div>
         </div>
-        <div style="background:#0a0a0a;padding:12px;border-radius:6px;border:1px solid #2a2a2a;">
-          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Keywords</div>
-          <div style="font-size:14px;font-weight:600;color:#ff9b5e;font-family:'SF Mono',monospace;">${metadata.keywords_count.toLocaleString()}</div>
+        <div style="background:var(--card-bg);padding:12px;border-radius:6px;border:1px solid var(--line);">
+          <div style="font-size:10px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Keywords</div>
+          <div style="font-size:14px;font-weight:600;color:var(--warn);font-family:'SF Mono',monospace;">${metadata.keywords_count.toLocaleString()}</div>
         </div>
       </div>
     `);
     if (metadata.repos && metadata.repos.length>0){
-      html.push(`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:#00ff88;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Index Profiles</div>`);
+      html.push(`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Index Profiles</div>`);
       metadata.repos.forEach(repo => {
         const totalSize = (repo.sizes.chunks||0) + (repo.sizes.bm25||0) + (repo.sizes.cards||0);
         html.push(`
-          <div style="background:#0f0f0f;border:1px solid ${repo.has_cards?'#006622':'#2a2a2a'};border-radius:6px;padding:12px;margin-bottom:8px;">
+          <div style="background:var(--code-bg);border:1px solid ${repo.has_cards?'var(--ok)':'var(--line)'};border-radius:6px;padding:12px;margin-bottom:8px;">
             <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px;">
               <div>
-                <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:4px;">${repo.name} <span style="font-size:10px;color:#666;font-weight:400;">/ ${repo.profile}</span></div>
-                <div style="font-size:11px;color:#666;">${repo.chunk_count.toLocaleString()} chunks ${repo.has_cards ? ' • <span style="color:#00ff88;">✓ Cards</span>' : ' • <span style="color:#666;">No cards</span>'}</div>
+                <div style="font-size:13px;font-weight:600;color: var(--fg);margin-bottom:4px;">${repo.name} <span style="font-size:10px;color:var(--fg-muted);font-weight:400;">/ ${repo.profile}</span></div>
+                <div style="font-size:11px;color:var(--fg-muted);">${repo.chunk_count.toLocaleString()} chunks ${repo.has_cards ? ' • <span style="color:var(--accent);">✓ Cards</span>' : ' • <span style="color:var(--fg-muted);">No cards</span>'}</div>
               </div>
               <div style="text-align:right;">
-                <div style="font-size:14px;font-weight:600;color:#00ff88;font-family:'SF Mono',monospace;">${formatBytes(totalSize)}</div>
+                <div style="font-size:14px;font-weight:600;color:var(--accent);font-family:'SF Mono',monospace;">${formatBytes(totalSize)}</div>
               </div>
             </div>
           </div>
@@ -62,9 +62,9 @@
       html.push(`</div>`);
     }
     html.push(`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #2a2a2a;">
-        <div style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Total Index Storage</div>
-        <div style="font-size:18px;font-weight:700;color:#00ff88;font-family:'SF Mono',monospace;">${formatBytes(metadata.total_storage)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--line);">
+        <div style="font-size:12px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Index Storage</div>
+        <div style="font-size:18px;font-weight:700;color:var(--accent);font-family:'SF Mono',monospace;">${formatBytes(metadata.total_storage)}</div>
       </div>
     `);
     return html.join('');

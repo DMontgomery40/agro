@@ -221,8 +221,8 @@ function addMessage(role, content, isLoading = false, isError = false, saveToHis
     messageDiv.id = messageId;
     messageDiv.style.cssText = 'margin-bottom: 16px; animation: fadeIn 0.2s;';
 
-    const roleColor = role === 'user' ? '#5b9dff' : '#00ff88';
-    const roleBg = role === 'user' ? '#0f1f2f' : '#0f1f0f';
+    const roleColor = role === 'user' ? 'var(--link)' : 'var(--accent)';
+    const roleBg = role === 'user' ? 'color-mix(in oklch, var(--link) 12%, var(--card-bg))' : 'color-mix(in oklch, var(--accent) 12%, var(--card-bg))';
     const roleLabel = role === 'user' ? 'You' : 'Assistant';
 
     // Process content for file links and formatting
@@ -239,8 +239,8 @@ function addMessage(role, content, isLoading = false, isError = false, saveToHis
                 ${roleLabel[0]}
             </div>
             <div style="flex: 1;">
-                <div style="font-size: 12px; color: #888; margin-bottom: 4px;">${roleLabel}</div>
-                <div style="color: ${isError ? '#ff6b6b' : '#ddd'}; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">
+                <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 4px;">${roleLabel}</div>
+                <div style="color: ${isError ? 'var(--err)' : 'var(--fg)'}; line-height: 1.6; white-space: pre-wrap; word-break: break-word;">
                     ${processedContent}
                 </div>
             </div>
@@ -289,20 +289,20 @@ function formatAssistantMessage(content) {
             const docId = `${filePath}${lineRange}`;
             // Track clicks if event_id is available
             const clickHandler = currentEventId ? `onclick="trackFileClick('${currentEventId}', '${docId}')"` : '';
-            return `<a href="vscode://file/${filePath}${startLine ? ':' + startLine : ''}" ${clickHandler} style="color: #5b9dff; text-decoration: none; border-bottom: 1px solid #5b9dff; font-family: 'SF Mono', monospace; font-size: 13px; cursor: pointer;" title="Open in editor">${displayText}</a>`;
+            return `<a href="vscode://file/${filePath}${startLine ? ':' + startLine : ''}" ${clickHandler} style="color: var(--link); text-decoration: none; border-bottom: 1px solid var(--link); font-family: 'SF Mono', monospace; font-size: 13px; cursor: pointer;" title="Open in editor">${displayText}</a>`;
         }
     );
 
     // Extract repo header (e.g., [repo: agro])
     formatted = formatted.replace(
         /\[repo:\s*([^\]]+)\]/g,
-        '<span style="background: #1a1a1a; color: #888; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: \'SF Mono\', monospace;">repo: $1</span>'
+        '<span style="background: var(--bg-elev2); color: var(--fg-muted); padding: 2px 8px; border-radius: 3px; font-size: 11px; font-family: \'SF Mono\', monospace;">repo: $1</span>'
     );
 
     // Simple code block formatting (backticks)
     formatted = formatted.replace(
         /`([^`]+)`/g,
-        '<code style="background: #1a1a1a; color: #00ff88; padding: 2px 6px; border-radius: 3px; font-family: \'SF Mono\', monospace; font-size: 13px;">$1</code>'
+        '<code style="background: var(--bg-elev2); color: var(--accent); padding: 2px 6px; border-radius: 3px; font-family: \'SF Mono\', monospace; font-size: 13px;">$1</code>'
     );
 
     // Multi-line code blocks
@@ -310,7 +310,7 @@ function formatAssistantMessage(content) {
         /```([^\n]*)\n([\s\S]*?)```/g,
         (match, lang, code) => {
             const escapedCode = code.trim();
-            return `<pre style="background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 6px; padding: 12px; overflow-x: auto; margin: 8px 0;"><code style="color: #ddd; font-family: 'SF Mono', monospace; font-size: 13px;">${escapedCode}</code></pre>`;
+            return `<pre style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; overflow-x: auto; margin: 8px 0;"><code style="color: var(--fg); font-family: 'SF Mono', monospace; font-size: 13px;">${escapedCode}</code></pre>`;
         }
     );
 
@@ -323,7 +323,7 @@ function clearChat() {
 
     const messagesContainer = document.getElementById('chat-messages');
     messagesContainer.innerHTML = `
-        <div style="text-align: center; color: #666; padding: 40px 20px;">
+        <div style="text-align: center; color: var(--fg-muted); padding: 40px 20px;">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 12px;">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
@@ -392,12 +392,12 @@ function loadChatHistory() {
 
             // Add separator for historical messages
             const separator = document.createElement('div');
-            separator.style.cssText = 'text-align: center; color: #666; margin: 20px 0; font-size: 11px;';
+            separator.style.cssText = 'text-align: center; color: var(--fg-muted); margin: 20px 0; font-size: 11px;';
             separator.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                    <div style="flex: 1; height: 1px; background: var(--line);"></div>
                     <span>Previous conversation (${history.length} messages)</span>
-                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                    <div style="flex: 1; height: 1px; background: var(--line);"></div>
                 </div>
             `;
             messagesContainer.appendChild(separator);
@@ -409,12 +409,12 @@ function loadChatHistory() {
 
             // Add separator for new session
             const newSessionSeparator = document.createElement('div');
-            newSessionSeparator.style.cssText = 'text-align: center; color: #666; margin: 20px 0; font-size: 11px;';
+            newSessionSeparator.style.cssText = 'text-align: center; color: var(--fg-muted); margin: 20px 0; font-size: 11px;';
             newSessionSeparator.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                    <div style="flex: 1; height: 1px; background: var(--line);"></div>
                     <span>New session started</span>
-                    <div style="flex: 1; height: 1px; background: #2a2a2a;"></div>
+                    <div style="flex: 1; height: 1px; background: var(--line);"></div>
                 </div>
             `;
             messagesContainer.appendChild(newSessionSeparator);
@@ -443,13 +443,13 @@ function renderHistoryDropdown(history) {
         const items = (history || []).slice(-20).reverse();
         if (items.length === 0) {
             const empty = document.createElement('div');
-            empty.style.cssText = 'color:#666; font-size:12px; padding:8px 12px;';
+            empty.style.cssText = 'color:var(--fg-muted); font-size:12px; padding:8px 12px;';
             empty.textContent = 'No saved messages yet';
             listWrap.appendChild(empty);
         } else {
             items.forEach((m, idx) => {
                 const btn = document.createElement('button');
-                btn.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color:#ddd;padding:6px 12px;font-size:12px;cursor:pointer;';
+                btn.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color: var(--fg);padding:6px 12px;font-size:12px;cursor:pointer;';
                 const label = `${m.role === 'user' ? 'You' : 'Assistant'}: ${m.content.replace(/\s+/g,' ').slice(0, 60)}${m.content.length>60?'…':''}`;
                 btn.textContent = label;
                 btn.title = m.timestamp ? new Date(m.timestamp).toLocaleString() : '';
@@ -458,7 +458,7 @@ function renderHistoryDropdown(history) {
                     addMessage(m.role, m.content, false, false, false);
                     dropdown.style.display = 'none';
                 });
-                btn.addEventListener('mouseover', () => btn.style.background = '#131313');
+                btn.addEventListener('mouseover', () => btn.style.background = 'var(--bg-elev1)');
                 btn.addEventListener('mouseout', () => btn.style.background = 'transparent');
                 listWrap.appendChild(btn);
             });
@@ -466,20 +466,20 @@ function renderHistoryDropdown(history) {
 
         dropdown.appendChild(listWrap);
         // Divider
-        const div = document.createElement('div'); div.style.cssText = 'height:1px;background:#333;'; dropdown.appendChild(div);
+        const div = document.createElement('div'); div.style.cssText = 'height:1px;background:var(--line);'; dropdown.appendChild(div);
         // Action buttons
         const exp = document.createElement('button');
         exp.id = 'chat-export-history';
-        exp.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color:#ddd;padding:8px 12px;font-size:12px;cursor:pointer;';
+        exp.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color: var(--fg);padding:8px 12px;font-size:12px;cursor:pointer;';
         exp.textContent = '📥 Export History';
         exp.addEventListener('click', exportChatHistory);
         const clr = document.createElement('button');
         clr.id = 'chat-clear-history';
-        clr.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color:#ff6b6b;padding:8px 12px;font-size:12px;cursor:pointer;';
+        clr.style.cssText = 'display:block;width:100%;text-align:left;background:none;border:none;color:var(--err);padding:8px 12px;font-size:12px;cursor:pointer;';
         clr.textContent = '🗑️ Clear History';
         clr.addEventListener('click', clearChatHistory);
         dropdown.appendChild(exp);
-        dropdown.appendChild(document.createElement('div')).style.cssText = 'height:1px;background:#333;';
+        dropdown.appendChild(document.createElement('div')).style.cssText = 'height:1px;background:var(--line);';
         dropdown.appendChild(clr);
     } catch (e) {
         console.warn('Failed to render history dropdown:', e);

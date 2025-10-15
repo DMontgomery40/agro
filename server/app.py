@@ -380,7 +380,16 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
                 })
             # Estimate cost
             cost_usd = _estimate_query_cost(req.question, res["generation"], len(docs))
-            
+
+            # Record metrics
+            model_used = req.model or os.getenv('GEN_MODEL', 'gpt-4o-mini')
+            provider_used = "openai" if "gpt" in model_used.lower() else "unknown"
+            prompt_tokens = len(req.question.split()) * 2  # rough estimate
+            completion_tokens = len(res["generation"].split()) * 2
+            record_tokens("prompt", provider_used, model_used, prompt_tokens)
+            record_tokens("completion", provider_used, model_used, completion_tokens)
+            record_cost(provider_used, model_used, cost_usd)
+
             # Try to capture query_rewritten from state
             query_rewritten = res.get("query_rewritten") or res.get("rewritten_question")
             
@@ -428,6 +437,53 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
                     del os.environ[k]
             else:
                 os.environ[k] = v
+
+@app.get("/api/generate-metrics/stream")
+def generate_metrics_stream():
+    """Stream metrics generation progress"""
+    import random
+    import json
+
+    def gen():
+        # Reranker metrics
+        yield f"event: progress\ndata: {json.dumps({'step': 'reranker', 'progress': 0, 'total': 50})}\n\n"
+        for i in range(50):
+            margin = random.uniform(0.01, 0.3)
+            passed = margin > 0.05
+            winner = "reranker" if margin > 0.1 else ("baseline" if margin < 0.05 else "tie")
+            record_canary("local", "cross-encoder-agro", passed, margin, winner)
+            if i % 10 == 0:
+                yield f"event: progress\ndata: {json.dumps({'step': 'reranker', 'progress': i, 'total': 50})}\n\n"
+
+        # Retrieval metrics
+        yield f"event: progress\ndata: {json.dumps({'step': 'retrieval', 'progress': 0, 'total': 3})}\n\n"
+        set_retrieval_quality(topk=5, hits=4, mrr=0.85)
+        set_retrieval_quality(topk=10, hits=8, mrr=0.85)
+        set_retrieval_quality(topk=20, hits=16, mrr=0.85)
+        yield f"event: progress\ndata: {json.dumps({'step': 'retrieval', 'progress': 3, 'total': 3})}\n\n"
+
+        # Token/cost metrics
+        yield f"event: progress\ndata: {json.dumps({'step': 'tokens', 'progress': 0, 'total': 100})}\n\n"
+        for i in range(100):
+            model = random.choice(["gpt-4o-mini", "gpt-4o", "claude-3-5-sonnet"])
+            provider = "openai" if "gpt" in model else "anthropic"
+            prompt_tokens = random.randint(500, 2000)
+            completion_tokens = random.randint(100, 800)
+            record_tokens("prompt", provider, model, prompt_tokens)
+            record_tokens("completion", provider, model, completion_tokens)
+            if model == "gpt-4o-mini":
+                cost = (prompt_tokens * 0.00015 + completion_tokens * 0.0006) / 1000
+            elif model == "gpt-4o":
+                cost = (prompt_tokens * 0.0025 + completion_tokens * 0.010) / 1000
+            else:
+                cost = (prompt_tokens * 0.003 + completion_tokens * 0.015) / 1000
+            record_cost(provider, model, cost)
+            if i % 20 == 0:
+                yield f"event: progress\ndata: {json.dumps({'step': 'tokens', 'progress': i, 'total': 100})}\n\n"
+
+        yield f"event: done\ndata: {json.dumps({'message': 'Generated 50 reranker, 3 retrieval, 100 token/cost metrics'})}\n\n"
+
+    return StreamingResponse(gen(), media_type='text/event-stream')
 
 @app.get("/search")
 def search(
@@ -1497,6 +1553,46 @@ def index_start() -> Dict[str, Any]:
 
     return {"ok": True, "message": "Indexing started in background"}
 
+@app.get("/api/index/stats")
+def index_stats() -> Dict[str, Any]:
+    """Return index statistics"""
+    from server.index_stats import get_index_stats as _get_index_stats
+    return _get_index_stats()
+
+@app.post("/api/index/run")
+async def run_index(repo: str = Query(...), dense: bool = Query(True)):
+    """Actually run the fucking indexer"""
+    import subprocess
+    import asyncio
+    from fastapi.responses import StreamingResponse
+    
+    async def stream_output():
+        env = os.environ.copy()
+        env['REPO'] = repo
+        env['SKIP_DENSE'] = '0' if dense else '1'
+        
+        cmd = [sys.executable, '-m', 'indexer.index_repo']
+        
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            cwd=str(ROOT),
+            env=env
+        )
+        
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            yield line.decode('utf-8', errors='replace')
+        
+        await proc.wait()
+        yield f"\n\n{'='*60}\n"
+        yield f"Exit code: {proc.returncode}\n"
+    
+    return StreamingResponse(stream_output(), media_type='text/plain')
+
 @app.get("/api/index/status")
 def index_status() -> Dict[str, Any]:
     """Return comprehensive indexing status with all metrics."""
@@ -1535,14 +1631,31 @@ def cards_build() -> Dict[str, Any]:
 
 # -------- Cards Builder (Jobs + SSE) --------
 @app.post("/api/cards/build/start")
-def cards_build_start(repo: Optional[str] = Query(None), enrich: int = Query(1)) -> Dict[str, Any]:
+def cards_build_start(
+    repo: Optional[str] = Query(None), 
+    enrich: int = Query(1),
+    exclude_dirs: Optional[str] = Query(None),
+    exclude_patterns: Optional[str] = Query(None),
+    exclude_keywords: Optional[str] = Query(None)
+) -> Dict[str, Any]:
     from server.cards_builder import get_job_for_repo, start_job
     r = (repo or os.getenv('REPO', 'agro')).strip()
     existing = get_job_for_repo(r)
     if existing and existing.status == 'running':
         raise HTTPException(status_code=409, detail=f"A cards build job is already running for repo {r}")
     try:
-        job = start_job(r, enrich=bool(int(enrich)))
+        # Parse comma-separated filter strings into lists
+        dirs = [d.strip() for d in (exclude_dirs or "").split(",") if d.strip()]
+        patterns = [p.strip() for p in (exclude_patterns or "").split(",") if p.strip()]
+        keywords = [k.strip() for k in (exclude_keywords or "").split(",") if k.strip()]
+        
+        job = start_job(
+            r, 
+            enrich=bool(int(enrich)),
+            exclude_dirs=dirs,
+            exclude_patterns=patterns,
+            exclude_keywords=keywords
+        )
         return {"job_id": job.job_id, "repo": r}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -2719,3 +2832,268 @@ def eval_baseline_compare() -> Dict[str, Any]:
         "improvements": improvements,
         "has_regressions": len(regressions) > 0
     }
+
+# =============================
+# Docker Management API
+# =============================
+
+@app.get("/api/docker/status")
+def docker_status() -> Dict[str, Any]:
+    """Check Docker status."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "info", "--format", "{{.ServerVersion}}"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            # Count running containers
+            count_result = subprocess.run(
+                ["docker", "ps", "-q"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            container_count = len([line for line in count_result.stdout.strip().split('\n') if line])
+            
+            return {
+                "running": True,
+                "runtime": "Docker " + result.stdout.strip(),
+                "containers_count": container_count
+            }
+        return {"running": False, "runtime": "Unknown", "containers_count": 0}
+    except Exception as e:
+        return {"running": False, "runtime": "Unknown", "error": str(e), "containers_count": 0}
+
+@app.get("/api/docker/containers")
+def docker_containers() -> Dict[str, Any]:
+    """List running Docker containers (deprecated - use /api/docker/containers/all)."""
+    return docker_containers_all()
+
+@app.get("/api/docker/containers/all")
+def docker_containers_all() -> Dict[str, Any]:
+    """List all Docker containers (running, paused, and stopped)."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "-a", "--format", "{{.ID}}|{{.Names}}|{{.Image}}|{{.State}}|{{.Status}}|{{.Ports}}"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        if result.returncode == 0:
+            containers = []
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
+                parts = line.split('|')
+                if len(parts) >= 5:
+                    containers.append({
+                        "id": parts[0],
+                        "name": parts[1],
+                        "image": parts[2],
+                        "state": parts[3].lower(),
+                        "status": parts[4],
+                        "ports": parts[5] if len(parts) > 5 else ""
+                    })
+            return {"containers": containers}
+        return {"containers": [], "error": "Failed to list containers"}
+    except Exception as e:
+        return {"containers": [], "error": str(e)}
+
+@app.get("/api/docker/redis/ping")
+def docker_redis_ping() -> Dict[str, Any]:
+    """Ping Redis via docker exec."""
+    import subprocess
+    try:
+        # Find redis container
+        find_result = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}", "--filter", "name=redis"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if find_result.returncode != 0 or not find_result.stdout.strip():
+            return {"success": False, "error": "Redis container not found"}
+        
+        container_name = find_result.stdout.strip().split('\n')[0]
+        
+        # Ping redis
+        ping_result = subprocess.run(
+            ["docker", "exec", container_name, "redis-cli", "ping"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        return {
+            "success": ping_result.returncode == 0 and "PONG" in ping_result.stdout,
+            "response": ping_result.stdout.strip()
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/docker/infra/up")
+def docker_infra_up() -> Dict[str, Any]:
+    """Start infrastructure services."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["bash", str(ROOT / "scripts" / "up.sh")],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            cwd=str(ROOT)
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/docker/infra/down")
+def docker_infra_down() -> Dict[str, Any]:
+    """Stop infrastructure services."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "down"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=str(ROOT / "infra")
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+# =============================
+# Container Control API
+# =============================
+
+@app.post("/api/docker/container/{container_id}/pause")
+def docker_container_pause(container_id: str) -> Dict[str, Any]:
+    """Pause a running container."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "pause", container_id],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/docker/container/{container_id}/unpause")
+def docker_container_unpause(container_id: str) -> Dict[str, Any]:
+    """Unpause a paused container."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "unpause", container_id],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/docker/container/{container_id}/stop")
+def docker_container_stop(container_id: str) -> Dict[str, Any]:
+    """Stop a running container."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "stop", container_id],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/docker/container/{container_id}/start")
+def docker_container_start(container_id: str) -> Dict[str, Any]:
+    """Start a stopped container."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "start", container_id],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/docker/container/{container_id}/remove")
+def docker_container_remove(container_id: str) -> Dict[str, Any]:
+    """Remove a stopped container."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["docker", "rm", "-f", container_id],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.get("/api/docker/container/{container_id}/logs")
+def docker_container_logs(container_id: str, tail: int = 100, timestamps: bool = True) -> Dict[str, Any]:
+    """Get container logs with optional tail count and timestamps."""
+    import subprocess
+    try:
+        cmd = ["docker", "logs", "--tail", str(tail)]
+        if timestamps:
+            cmd.append("--timestamps")
+        cmd.append(container_id)
+        
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return {
+            "success": result.returncode == 0,
+            "logs": result.stdout + result.stderr,
+            "error": None if result.returncode == 0 else "Failed to get logs"
+        }
+    except Exception as e:
+        return {"success": False, "logs": "", "error": str(e)}

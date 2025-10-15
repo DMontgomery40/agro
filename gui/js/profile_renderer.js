@@ -70,27 +70,27 @@
   };
 
   const TIER_INFO = {
-    0: { name: 'Free Tier', color: '#4ecdc4', badge: 'LOCAL ONLY' },
-    10: { name: 'Starter', color: '#5b9dff', badge: 'BUDGET FRIENDLY' },
-    50: { name: 'Professional', color: '#b794f6', badge: 'BALANCED' },
-    200: { name: 'Enterprise', color: '#00ff88', badge: 'MAXIMUM PERFORMANCE' }
+    0: { name: 'Free Tier', color: 'var(--link)', badge: 'LOCAL ONLY' },
+    10: { name: 'Starter', color: 'var(--link)', badge: 'BUDGET FRIENDLY' },
+    50: { name: 'Professional', color: 'var(--link)', badge: 'BALANCED' },
+    200: { name: 'Enterprise', color: 'var(--accent)', badge: 'MAXIMUM PERFORMANCE' }
   };
 
   function renderProfileResults(profile, scan, budget) {
-    const tierInfo = TIER_INFO[budget] || { name: 'Custom', color: '#999', badge: 'CUSTOM CONFIG' };
+    const tierInfo = TIER_INFO[budget] || { name: 'Custom', color: 'var(--fg-muted)', badge: 'CUSTOM CONFIG' };
     
-    let html = '<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid #2a2a2a;">';
+    let html = '<div style="margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--line);">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">';
     html += '<div>';
-    html += '<h4 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;">' + tierInfo.name + ' Profile</h4>';
+    html += '<h4 style="font-size:18px;font-weight:700;color: var(--fg);margin-bottom:4px;">' + tierInfo.name + ' Profile</h4>';
     html += '<span style="font-size:11px;color:' + tierInfo.color + ';font-weight:600;letter-spacing:0.8px;">' + tierInfo.badge + '</span>';
     html += '</div>';
     html += '<div style="font-size:28px;font-weight:800;color:' + tierInfo.color + ';">$' + budget + '/mo</div>';
     html += '</div>';
     
-    html += '<div style="background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:14px;margin-top:12px;">';
-    html += '<p style="font-size:13px;color:#aaa;line-height:1.6;margin:0;">';
-    html += '<strong style="color:#00ff88;">Baseline Configuration</strong> — ';
+    html += '<div style="background: var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:12px;">';
+    html += '<p style="font-size:13px;color:var(--fg-muted);line-height:1.6;margin:0;">';
+    html += '<strong style="color:var(--accent);">Baseline Configuration</strong> — ';
     html += 'This profile gives you a strong starting point optimized for your hardware and budget. ';
     html += 'You can fine-tune any setting in the Models, Retrieval, or Infrastructure tabs. ';
     html += 'Consider saving multiple profiles for different use cases (e.g., "dev-fast" vs "prod-quality").';
@@ -111,8 +111,8 @@
 
     // Render each category
     Object.entries(categories).forEach(([catName, settings]) => {
-      html += '<div style="background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:16px;">';
-      html += '<h5 style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:0.8px;font-weight:600;margin-bottom:14px;">';
+      html += '<div style="background:var(--card-bg);border:1px solid var(--line);border-radius:6px;padding:16px;">';
+      html += '<h5 style="font-size:12px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:600;margin-bottom:14px;">';
       html += catName + '</h5>';
       html += '<div style="display:flex;flex-direction:column;gap:12px;">';
 
@@ -126,14 +126,14 @@
           }
         }
         html += '<div style="display:flex;gap:12px;">';
-        html += '<div style="font-size:20px;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:#1a1a1a;border-radius:6px;">';
+        html += '<div style="font-size:20px;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--bg-elev2);border-radius:6px;">';
         html += info.icon + '</div>';
         html += '<div style="flex:1;">';
         html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">';
-        html += '<span style="font-size:13px;font-weight:600;color:#fff;">' + info.name + '</span>';
-        html += '<code style="font-size:12px;color:#00ff88;background:#0a0a0a;padding:2px 8px;border-radius:4px;font-family:\'SF Mono\',monospace;">';
+        html += '<span style="font-size:13px;font-weight:600;color: var(--fg);">' + info.name + '</span>';
+        html += '<code style="font-size:12px;color:var(--accent);background:var(--card-bg);padding:2px 8px;border-radius:4px;font-family:\'SF Mono\',monospace;">';
         html += displayValue + '</code></div>';
-        html += '<p style="font-size:12px;color:#888;line-height:1.5;margin:0;">' + info.description + '</p>';
+        html += '<p style="font-size:12px;color:var(--fg-muted);line-height:1.5;margin:0;">' + info.description + '</p>';
         html += '</div></div>';
       });
 
@@ -142,17 +142,17 @@
 
     html += '</div>';
 
-    html += '<div style="display:flex;gap:12px;padding-top:16px;border-top:1px solid #2a2a2a;">';
-    html += '<button id="apply-profile-btn" class="small-button" style="flex:1;background:#00ff88;color:#000;border:none;padding:12px;font-weight:700;">';
+    html += '<div style="display:flex;gap:12px;padding-top:16px;border-top:1px solid var(--line);">';
+    html += '<button id="apply-profile-btn" class="small-button" style="flex:1;background:var(--accent);color: var(--accent-contrast);border:none;padding:12px;font-weight:700;">';
     html += 'Apply This Profile</button>';
-    html += '<button id="export-profile-btn" class="small-button" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;padding:12px;">';
+    html += '<button id="export-profile-btn" class="small-button" style="background:var(--bg-elev2);border:1px solid var(--line);color:var(--fg-muted);padding:12px;">';
     html += 'Export JSON</button>';
-    html += '<button id="save-profile-btn" class="small-button" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;padding:12px;">';
+    html += '<button id="save-profile-btn" class="small-button" style="background:var(--bg-elev2);border:1px solid var(--line);color:var(--fg-muted);padding:12px;">';
     html += 'Save As...</button></div>';
 
-    html += '<div style="margin-top:20px;padding:14px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;">';
-    html += '<div style="font-size:11px;color:#666;line-height:1.6;">';
-    html += '<strong style="color:#888;">Hardware Detected:</strong> ';
+    html += '<div style="margin-top:20px;padding:14px;background:var(--card-bg);border:1px solid var(--line);border-radius:6px;">';
+    html += '<div style="font-size:11px;color:var(--fg-muted);line-height:1.6;">';
+    html += '<strong style="color:var(--fg-muted);">Hardware Detected:</strong> ';
     html += (scan && scan.info && scan.info.os) || 'Unknown';
     html += ' • ';
     html += (scan && scan.info && scan.info.arch) || 'Unknown';

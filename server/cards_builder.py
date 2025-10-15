@@ -79,6 +79,9 @@ def _log(msg: str) -> None:
 class CardsBuildJob:
     repo: str
     enrich: bool = True
+    exclude_dirs: List[str] = field(default_factory=list)
+    exclude_patterns: List[str] = field(default_factory=list)
+    exclude_keywords: List[str] = field(default_factory=list)
     job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     started_at: float = field(default_factory=time.time)
     stage: str = "scan"
@@ -159,6 +162,28 @@ class CardsBuildJob:
         data = self._progress_payload(tip)
         self._emit_event("progress", data)
 
+    def _should_filter_chunk(self, chunk: Dict[str, Any]) -> bool:
+        """Check if chunk should be filtered based on user-specified criteria."""
+        fp = chunk.get("file_path", "")
+        code = chunk.get("code", "")
+        
+        # Check exclude_dirs
+        for exclude_dir in self.exclude_dirs:
+            if exclude_dir and (f"/{exclude_dir}/" in fp or fp.startswith(f"{exclude_dir}/")):
+                return True
+        
+        # Check exclude_patterns (file extensions or name patterns)
+        for pattern in self.exclude_patterns:
+            if pattern and (pattern in fp or fp.endswith(pattern)):
+                return True
+        
+        # Check exclude_keywords (in code content)
+        for keyword in self.exclude_keywords:
+            if keyword and keyword.lower() in code.lower():
+                return True
+        
+        return False
+
     def _ensure_cards_dirs(self) -> Dict[str, Path]:
         base = Path(out_dir(self.repo))
         base.mkdir(parents=True, exist_ok=True)
@@ -196,12 +221,20 @@ class CardsBuildJob:
 
             max_chunks = int(os.getenv("CARDS_MAX", "0") or "0")
             written = 0
+            skipped = 0
             with paths["cards"].open("w", encoding="utf-8") as out_json, paths["cards_txt"].open("w", encoding="utf-8") as out_txt:
                 for idx, ch in enumerate(_read_jsonl(chunks_path)):
                     if self._cancel.is_set():
                         self.status = "cancelled"
                         self._emit_event("cancelled", {"message": "Cancelled by user"})
                         return
+                    
+                    # Apply filters
+                    if self._should_filter_chunk(ch):
+                        skipped += 1
+                        self.done = idx + 1
+                        continue
+                    
                     code = (ch.get("code") or "")[:2000]
                     fp = ch.get("file_path", "")
                     if self.enrich:
@@ -240,21 +273,21 @@ class CardsBuildJob:
                             card = {"symbols": [], "purpose": "", "routes": []}
                     else:
                         # Heuristic fallback (no external models)
-                        syms: List[str] = []
+                        heur_syms: List[str] = []
                         try:
                             import re
-                            syms = re.findall(r"\b(class|def|function|interface|type)\s+([A-Za-z_][A-Za-z0-9_]*)", code)
-                            syms = [s[1] for s in syms][:5]
+                            heur_syms = re.findall(r"\b(class|def|function|interface|type)\s+([A-Za-z_][A-Za-z0-9_]*)", code)
+                            heur_syms = [s[1] for s in heur_syms][:5]
                         except Exception:
-                            syms = []
+                            heur_syms = []
                         purpose = f"High-level card from {os.path.basename(fp)}"
-                        routes = []
+                        heur_routes = []
                         try:
                             import re
-                            routes = re.findall(r"['\"](/[^'\"\s]*)['\"]", code)[:5]
+                            heur_routes = re.findall(r"['\"](/[^'\"\s]*)['\"]", code)[:5]
                         except Exception:
-                            routes = []
-                        card = {"symbols": syms, "purpose": purpose, "routes": routes}
+                            heur_routes = []
+                        card = {"symbols": heur_syms, "purpose": purpose, "routes": heur_routes}
                     card["file_path"] = fp
                     card["id"] = ch.get("id")
                     # Ensure minimal purpose is present
@@ -306,7 +339,11 @@ class CardsBuildJob:
             self.stage = "finalize"
             self.done = self.total
             snap = self._progress_payload(QUICK_TIPS[4])
-            snap["result"] = {"cards_written": written, "duration_s": int(time.time() - self.started_at)}
+            snap["result"] = {
+                "cards_written": written,
+                "chunks_skipped": skipped,
+                "duration_s": int(time.time() - self.started_at)
+            }
             try:
                 prog_path = _progress_dir(self.repo) / "progress.json"
                 prog_path.write_text(json.dumps(snap, indent=2))
@@ -314,7 +351,7 @@ class CardsBuildJob:
                 pass
             self.status = "done"
             self._emit_event("done", snap)
-            _log(f"cards-build done repo={self.repo} cards={written}")
+            _log(f"cards-build done repo={self.repo} cards={written} skipped={skipped}")
         except Exception as e:
             self.status = "error"
             self.error = str(e)
@@ -328,14 +365,21 @@ class _Registry:
         self.jobs_by_id: Dict[str, CardsBuildJob] = {}
         self.jobs_by_repo: Dict[str, str] = {}
 
-    def start(self, repo: str, enrich: bool) -> CardsBuildJob:
+    def start(self, repo: str, enrich: bool, exclude_dirs: Optional[List[str]] = None, 
+              exclude_patterns: Optional[List[str]] = None, exclude_keywords: Optional[List[str]] = None) -> CardsBuildJob:
         with self._lock:
             if repo in self.jobs_by_repo:
                 jid = self.jobs_by_repo[repo]
                 job = self.jobs_by_id.get(jid)
                 if job and job.status == "running":
                     raise RuntimeError(f"Job already running for repo {repo}")
-            job = CardsBuildJob(repo=repo, enrich=enrich)
+            job = CardsBuildJob(
+                repo=repo, 
+                enrich=enrich,
+                exclude_dirs=exclude_dirs or [],
+                exclude_patterns=exclude_patterns or [],
+                exclude_keywords=exclude_keywords or []
+            )
             self.jobs_by_id[job.job_id] = job
             self.jobs_by_repo[repo] = job.job_id
         job.start()
@@ -359,8 +403,15 @@ class _Registry:
 REGISTRY = _Registry()
 
 
-def start_job(repo: str, enrich: bool) -> CardsBuildJob:
-    return REGISTRY.start(repo.strip(), bool(int(enrich) if isinstance(enrich, (int, str)) else enrich))
+def start_job(repo: str, enrich: bool, exclude_dirs: Optional[List[str]] = None, 
+              exclude_patterns: Optional[List[str]] = None, exclude_keywords: Optional[List[str]] = None) -> CardsBuildJob:
+    return REGISTRY.start(
+        repo.strip(), 
+        bool(int(enrich) if isinstance(enrich, (int, str)) else enrich),
+        exclude_dirs=exclude_dirs,
+        exclude_patterns=exclude_patterns,
+        exclude_keywords=exclude_keywords
+    )
 
 
 def get_job(job_id: str) -> Optional[CardsBuildJob]:
