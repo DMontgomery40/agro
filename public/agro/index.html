@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AGRO — Another Good RAG Option</title>
-    <link rel="stylesheet" href="/gui/css/tokens.css">
+    <link rel="stylesheet" href="./css/tokens.css">
     <style>
         * {
             margin: 0;
@@ -73,14 +73,9 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
             transition: all 0.2s;
-            min-height: 44px;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            touch-action: manipulation;
         }
 
         .top-actions button:hover { filter: brightness(0.95); }
-        .top-actions button:active { transform: scale(0.98); }
 
         #health-status {
             color: var(--fg-muted);
@@ -252,10 +247,6 @@
             font-weight: 500;
             white-space: nowrap;
             transition: all 0.15s;
-            min-height: 44px;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            touch-action: manipulation;
         }
 
         .tab-bar button:hover { filter: brightness(1.05); color: var(--fg); border-color: var(--line); }
@@ -799,7 +790,7 @@
             background: #2a2a2a !important;
         }
     </style>
-    <link rel="stylesheet" href="/gui/css/storage-calculator.css">
+    <link rel="stylesheet" href="./css/storage-calculator.css">
     <style>
         .dash-two {
             display: grid;
@@ -853,399 +844,6 @@
             .dash-two {
                 grid-template-columns: 1fr;
             }
-        }
-
-        /* ===================================
-           TABLET RESPONSIVE (768px - 1024px)
-           PRIMARY FOCUS - Most Used
-           =================================== */
-        @media (max-width: 1024px) {
-            :root {
-                --sidepanel-width: 350px;
-            }
-
-            /* More compact topbar */
-            .topbar {
-                padding: 12px 16px;
-                height: 52px;
-            }
-
-            .topbar .brand {
-                font-size: 24px;
-            }
-
-            .topbar .tagline {
-                font-size: 10px;
-                letter-spacing: 2px;
-            }
-
-            /* Adjust top actions */
-            .top-actions {
-                gap: 8px;
-            }
-
-            #global-search {
-                width: 240px;
-                height: 36px;
-                font-size: 13px;
-            }
-
-            .top-actions button {
-                padding: 7px 12px;
-                font-size: 12px;
-            }
-
-            /* Tab bar optimization */
-            .tab-bar {
-                padding: 8px 12px;
-                gap: 4px;
-            }
-
-            .tab-bar button {
-                padding: 8px 14px;
-                font-size: 12px;
-            }
-
-            /* Settings sections: maintain readability */
-            .settings-section {
-                padding: 16px;
-                margin-bottom: 16px;
-            }
-
-            .settings-section h3 {
-                font-size: 15px;
-                margin-bottom: 14px;
-            }
-
-            /* Input rows: keep 2-column on landscape tablet */
-            .input-row {
-                gap: 12px;
-            }
-
-            /* Sidepanel adjustments */
-            .sidepanel {
-                padding: 16px;
-            }
-
-            /* Action buttons grid: adapt to tablet */
-            .action-buttons {
-                flex-wrap: wrap;
-            }
-
-            /* Reduce spacing overall */
-            .tab-content {
-                padding: 16px;
-            }
-        }
-
-        /* ===================================
-           MOBILE & SMALL TABLET (<768px)
-           =================================== */
-        @media (max-width: 768px) {
-            /* Hide regular tab bar, show hamburger */
-            .tab-bar {
-                display: none;
-            }
-
-            /* Hamburger menu button */
-            .mobile-nav-toggle {
-                display: flex !important;
-            }
-
-            /* Adjust topbar for mobile */
-            .topbar {
-                padding: 10px 12px;
-                height: auto;
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-
-            .topbar h1 {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
-                flex: 1;
-            }
-
-            .topbar .brand {
-                font-size: 20px;
-            }
-
-            .topbar .tagline {
-                font-size: 9px;
-                letter-spacing: 1.5px;
-                opacity: 0.7;
-            }
-
-            /* Top actions: stack or wrap */
-            .top-actions {
-                flex-wrap: wrap;
-                width: 100%;
-                gap: 6px;
-            }
-
-            #global-search {
-                width: 100%;
-                order: 10;
-            }
-
-            #search-results {
-                right: 12px;
-                left: 12px;
-                width: auto;
-            }
-
-            /* Layout: full single column */
-            .layout {
-                height: auto;
-                min-height: calc(100vh - 80px);
-            }
-
-            .content {
-                border-right: none;
-            }
-
-            /* Sidepanel: stacked below */
-            .sidepanel {
-                border-top: 1px solid var(--line);
-                max-height: 60vh;
-            }
-
-            .resize-handle {
-                display: none;
-            }
-
-            /* Tab content: reduced padding */
-            .tab-content {
-                padding: 12px;
-            }
-
-            /* Settings sections: single column */
-            .settings-section {
-                padding: 14px;
-                margin-bottom: 14px;
-            }
-
-            .settings-section h3 {
-                font-size: 14px;
-                margin-bottom: 12px;
-            }
-
-            /* Input rows: SINGLE COLUMN on mobile */
-            .input-row {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            .input-group.full-width {
-                grid-column: span 1;
-            }
-
-            /* Dash two: single column */
-            .dash-two {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-
-            /* Action buttons: stack */
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .action-buttons button {
-                width: 100%;
-            }
-
-            /* Small buttons: full width */
-            .small-button {
-                width: 100%;
-                padding: 10px;
-            }
-
-            /* Sidepanel sections: compact */
-            .sidepanel-section {
-                padding: 12px;
-                margin-bottom: 12px;
-            }
-
-            .sidepanel-section h4 {
-                font-size: 13px;
-            }
-
-            /* Onboarding: single column */
-            .ob-container {
-                grid-template-columns: 1fr;
-                padding: 20px 12px;
-                gap: 20px;
-            }
-
-            .ob-choice-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .ob-help-panel {
-                position: static;
-            }
-        }
-
-        /* ===================================
-           PHONE PORTRAIT (<480px)
-           =================================== */
-        @media (max-width: 480px) {
-            .topbar {
-                padding: 8px 10px;
-            }
-
-            .topbar .brand {
-                font-size: 18px;
-            }
-
-            .topbar .tagline {
-                display: none;
-            }
-
-            .top-actions button {
-                padding: 6px 10px;
-                font-size: 11px;
-                min-height: 40px;
-            }
-
-            #health-status {
-                display: none;
-            }
-
-            .tab-content {
-                padding: 10px;
-            }
-
-            .settings-section {
-                padding: 12px;
-            }
-
-            /* Tighter input spacing */
-            input, select, textarea {
-                padding: 8px 10px;
-                font-size: 13px;
-            }
-
-            label {
-                font-size: 11px;
-            }
-
-            /* Card builder modal: full width on tiny screens */
-            #cards-builder-modal {
-                width: calc(100vw - 20px);
-            }
-        }
-
-        /* ===================================
-           HAMBURGER MENU STYLES
-           =================================== */
-        .mobile-nav-toggle {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            width: 44px;
-            height: 44px;
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            cursor: pointer;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            touch-action: manipulation;
-            transition: all 0.2s;
-        }
-
-        .mobile-nav-toggle:active {
-            transform: scale(0.95);
-        }
-
-        .mobile-nav-toggle svg {
-            width: 24px;
-            height: 24px;
-            stroke: var(--fg);
-            transition: transform 0.3s ease;
-        }
-
-        .mobile-nav-toggle.active svg {
-            transform: rotate(90deg);
-        }
-
-        .mobile-nav-drawer {
-            position: fixed;
-            top: 0;
-            left: -100%;
-            width: 280px;
-            height: 100vh;
-            background: var(--panel);
-            border-right: 1px solid var(--line);
-            z-index: 1000;
-            transition: left 0.3s ease;
-            overflow-y: auto;
-            padding: 20px 0;
-            box-shadow: 4px 0 12px rgba(0,0,0,0.3);
-        }
-
-        .mobile-nav-drawer.active {
-            left: 0;
-        }
-
-        .mobile-nav-drawer .nav-header {
-            padding: 0 20px 16px;
-            border-bottom: 1px solid var(--line);
-            margin-bottom: 16px;
-        }
-
-        .mobile-nav-drawer .nav-header h2 {
-            margin: 0;
-            font-size: 20px;
-            color: var(--accent);
-        }
-
-        .mobile-nav-drawer button {
-            display: block;
-            width: 100%;
-            text-align: left;
-            background: transparent;
-            border: none;
-            padding: 14px 20px;
-            color: var(--fg-muted);
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-left: 3px solid transparent;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
-
-        .mobile-nav-drawer button:active {
-            background: var(--bg-elev1);
-        }
-
-        .mobile-nav-drawer button.active {
-            background: var(--bg-elev2);
-            color: var(--accent);
-            border-left-color: var(--accent);
-            font-weight: 600;
-        }
-
-        .mobile-nav-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.6);
-            z-index: 999;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .mobile-nav-overlay.active {
-            opacity: 1;
-            pointer-events: all;
         }
 
         /* Action Button Styles */
@@ -2117,13 +1715,6 @@
 </head>
 <body>
     <div class="topbar">
-        <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="Toggle navigation">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-            </svg>
-        </button>
         <h1>
             <span class="brand">AGRO</span>
             <span class="tagline">Another Good RAG Option</span>
@@ -2141,19 +1732,6 @@
         </div>
     </div>
 
-    <!-- Mobile Navigation Drawer -->
-    <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
-    <nav class="mobile-nav-drawer" id="mobile-nav-drawer">
-        <button data-tab="start">🚀 Get Started</button>
-        <button class="active" data-tab="dashboard">📊 Dashboard</button>
-        <button data-tab="chat">💬 Chat</button>
-        <button data-tab="config">⚙️ Configuration</button>
-        <button data-tab="data">🗄️ Data & Indexing</button>
-        <button data-tab="devtools">🛠️ Developer Tools</button>
-        <button data-tab="analytics">📈 Analytics</button>
-        <button data-tab="settings">⚙️ Settings</button>
-    </nav>
-
     <div class="layout">
         <div class="resize-handle"></div>
         <div class="content">
@@ -2163,7 +1741,6 @@
                 <button data-tab="chat">💬 Chat</button>
                 <button data-tab="config">⚙️ Configuration</button>
                 <button data-tab="data">🗄️ Data & Indexing</button>
-                <button data-tab="reranker">🧠 Learning Reranker</button>
                 <button data-tab="devtools">🛠️ Developer Tools</button>
                 <button data-tab="analytics">📈 Analytics</button>
                 <button data-tab="settings">⚙️ Settings</button>
@@ -2985,11 +2562,11 @@
                                 <span class="help-icon">?</span>
                                 <div class="tooltip-bubble">
                                     <span class="tt-title">System Instructions</span>
-                                    Override default system prompt. Leave empty to use expert prompt ( plugin development + AGRO RAG specialist). Use to change tone, add rules, etc.
+                                    Override default system prompt. Leave empty to use default ("You answer strictly from the provided code context..."). Use to change tone, add rules, etc.
                                 </div>
                             </span>
                         </label>
-                        <textarea id="chat-system-prompt" placeholder="Leave empty for expert system prompt ( plugin dev + AGRO RAG expert)" style="min-height: 80px;"></textarea>
+                        <textarea id="chat-system-prompt" placeholder="Leave empty for default system prompt" style="min-height: 80px;"></textarea>
                     </div>
 
                     <!-- History Settings Section -->
@@ -3086,221 +2663,11 @@
                 <div id="storage-calculator-container"></div>
             </div>
 
-            <!-- Tab: Learning Reranker (Dedicated Tab) -->
-            <div id="tab-reranker" class="tab-content">
-                <div class="settings-section" style="border-left: 3px solid var(--link);">
-                    <h2 style="color: var(--link);">🧠 Learning Reranker System</h2>
-                    <p class="small">Self-improving retrieval through user feedback. Trains a cross-encoder that learns from thumbs-up/down and clicks to rank better results higher - without touching your chat model.</p>
-                </div>
-
-                <!-- Status Overview -->
-                <div class="settings-section">
-                    <h3>📊 System Status</h3>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Reranker Status</label>
-                            <div id="reranker-enabled-status" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px;">...</div>
-                        </div>
-                        <div class="input-group">
-                            <label>Logged Queries</label>
-                            <div id="reranker-query-count" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px;">...</div>
-                        </div>
-                        <div class="input-group">
-                            <label>Training Triplets</label>
-                            <div id="reranker-triplet-count" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px;">...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Training Workflow -->
-                <div class="settings-section" style="border-left: 3px solid var(--accent);">
-                    <h3>🎓 Training Workflow</h3>
-                    <p class="small">Click buttons below in order. Each step shows progress and results.</p>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0;">
-                        <div style="background: var(--chip-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
-                            <h4 style="margin: 0 0 8px 0; color: var(--link);">1. Mine Triplets</h4>
-                            <p style="font-size: 11px; color: var(--fg-muted); margin-bottom: 12px;">Extract training data from logs</p>
-                            <button id="reranker-mine-btn" style="width: 100%; background: var(--link); color: var(--fg); border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Mine Triplets</button>
-                            <div id="reranker-mine-result" style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);"></div>
-                        </div>
-                        
-                        <div style="background: var(--chip-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
-                            <h4 style="margin: 0 0 8px 0; color: var(--accent);">2. Train Model</h4>
-                            <p style="font-size: 11px; color: var(--fg-muted); margin-bottom: 12px;">Fine-tune cross-encoder (5-15 min)</p>
-                            <button id="reranker-train-btn" style="width: 100%; background: var(--accent); color: var(--accent-contrast); border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Train Model</button>
-                            <div id="reranker-train-result" style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);"></div>
-                        </div>
-                        
-                        <div style="background: var(--chip-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
-                            <h4 style="margin: 0 0 8px 0; color: var(--warn);">3. Evaluate</h4>
-                            <p style="font-size: 11px; color: var(--fg-muted); margin-bottom: 12px;">Measure MRR and Hit@K metrics</p>
-                            <button id="reranker-eval-btn" style="width: 100%; background: var(--warn); color: var(--fg); border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Evaluate</button>
-                            <div id="reranker-eval-result" style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);"></div>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 16px; padding: 12px; background: var(--card-bg); border-radius: 6px; border-left: 3px solid var(--link);">
-                        <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 4px;">Current Task:</div>
-                        <div id="reranker-status" style="font-size: 14px; font-family: 'SF Mono', monospace; color: var(--fg-muted);">Ready</div>
-                    </div>
-                </div>
-
-                <!-- Settings -->
-                <div class="settings-section">
-                    <h3>⚙️ Reranker Configuration</h3>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Enable Learning Reranker</label>
-                            <select name="AGRO_RERANKER_ENABLED">
-                                <option value="0">OFF</option>
-                                <option value="1">ON</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Model Path</label>
-                            <input type="text" name="AGRO_RERANKER_MODEL_PATH" placeholder="models/cross-encoder-agro" value="models/cross-encoder-agro">
-                        </div>
-                        <div class="input-group">
-                            <label>Telemetry Log Path</label>
-                            <input type="text" name="AGRO_LOG_PATH" placeholder="data/logs/queries.jsonl" value="data/logs/queries.jsonl">
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Blend Alpha (CE Weight)</label>
-                            <input type="number" name="AGRO_RERANKER_ALPHA" value="0.7" min="0.0" max="1.0" step="0.05">
-                        </div>
-                        <div class="input-group">
-                            <label>Max Sequence Length</label>
-                            <input type="number" name="AGRO_RERANKER_MAXLEN" value="512" min="128" max="1024" step="64">
-                        </div>
-                        <div class="input-group">
-                            <label>Batch Size (Inference)</label>
-                            <input type="number" name="AGRO_RERANKER_BATCH" value="16" min="1" max="64" step="4">
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Training Epochs</label>
-                            <input type="number" id="reranker-epochs" value="2" min="1" max="10">
-                        </div>
-                        <div class="input-group">
-                            <label>Training Batch Size</label>
-                            <input type="number" id="reranker-batch" value="16" min="1" max="64" step="4">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Evaluation Results -->
-                <div class="settings-section" style="border-left: 3px solid var(--warn);">
-                    <h3>📊 Evaluation Metrics</h3>
-                    <div id="reranker-metrics-display" style="background: var(--card-bg); border-radius: 6px; padding: 16px; min-height: 120px;">
-                        <div style="color: var(--fg-muted); text-align: center; padding: 20px;">No evaluation results yet. Click "Evaluate" above.</div>
-                    </div>
-                    
-                    <div class="input-row" style="margin-top: 16px;">
-                        <div class="input-group">
-                            <button id="reranker-save-baseline" style="background: var(--link); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Save as Baseline</button>
-                        </div>
-                        <div class="input-group">
-                            <button id="reranker-compare-baseline" style="background: var(--warn); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">Compare vs Baseline</button>
-                        </div>
-                        <div class="input-group">
-                            <button id="reranker-rollback" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Rollback Model</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Log Viewer -->
-                <div class="settings-section">
-                    <h3>📝 Query Logs</h3>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <button id="reranker-view-logs" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">View Logs</button>
-                        </div>
-                        <div class="input-group">
-                            <button id="reranker-download-logs" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Download Logs</button>
-                        </div>
-                        <div class="input-group">
-                            <button id="reranker-clear-logs" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Clear Logs</button>
-                        </div>
-                    </div>
-                    <div id="reranker-logs-viewer" style="margin-top: 16px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; max-height: 400px; overflow-y: auto; display: none; font-family: 'SF Mono', monospace; font-size: 11px;"></div>
-                </div>
-
-                <!-- Automation -->
-                <div class="settings-section" style="border-left: 3px solid var(--warn);">
-                    <h3>🔄 Automation</h3>
-                    <p class="small">Set up nightly training to automatically improve the reranker.</p>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Nightly Training Time</label>
-                            <input type="time" id="reranker-cron-time" value="02:15">
-                        </div>
-                        <div class="input-group">
-                            <label>&nbsp;</label>
-                            <button id="reranker-setup-cron" style="background: var(--link); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Setup Nightly Job</button>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 8px;">
-                        <button id="reranker-remove-cron" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Remove Nightly Job</button>
-                    </div>
-                    
-                    <div id="reranker-cron-status" style="margin-top: 12px; padding: 8px; background: var(--card-bg); border-radius: 4px; font-size: 12px; color: var(--fg-muted);"></div>
-                </div>
-
-                <!-- Smoke Test -->
-                <div class="settings-section" style="border-left: 3px solid var(--accent);">
-                    <h3>🧪 Smoke Test</h3>
-                    <p class="small">Verify end-to-end functionality: query → retrieve → rerank → log → feedback.</p>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Test Query</label>
-                            <input type="text" id="reranker-test-query" placeholder="Where is OAuth validated?" value="Where is OAuth validated?">
-                        </div>
-                        <div class="input-group">
-                            <label>&nbsp;</label>
-                            <button id="reranker-smoke-test" style="background: var(--accent); color: var(--accent-contrast); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">Run Smoke Test</button>
-                        </div>
-                    </div>
-                    <div id="reranker-smoke-result" style="margin-top: 16px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: none; font-family: 'SF Mono', monospace; font-size: 11px;"></div>
-                </div>
-
-                <!-- Cost Tracking -->
-                <div class="settings-section" style="border-left: 3px solid var(--warn);">
-                    <h3>💰 Cost Tracking</h3>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Total Cost (Last 24h)</label>
-                            <div id="reranker-cost-24h" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px; color: var(--accent);">$0.00</div>
-                        </div>
-                        <div class="input-group">
-                            <label>Avg Cost per Query</label>
-                            <div id="reranker-cost-avg" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px; color: var(--accent);">$0.00</div>
-                        </div>
-                    </div>
-                    <button id="reranker-cost-details" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 8px; font-weight: 600;">View Cost Breakdown</button>
-                </div>
-
-                <!-- No-Hit Tracking -->
-                <div class="settings-section" style="border-left: 3px solid var(--err);">
-                    <h3>⚠️ No-Hit Queries</h3>
-                    <p class="small">Queries that returned no relevant results. Consider reindexing or adding these terms to your corpus.</p>
-                    <div id="reranker-nohits-list" style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; max-height: 200px; overflow-y: auto; font-family: 'SF Mono', monospace; font-size: 11px;">
-                        <div style="color: var(--fg-muted); text-align: center; padding: 20px;">No no-hit queries tracked yet.</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Tab: Developer Tools - Editor -->
             <div id="tab-devtools-editor" class="tab-content">
                 <div class="subtab-bar">
                     <button class="subtab-btn active" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
-                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -3492,26 +2859,6 @@
                             </label>
                             <input type="number" name="FINAL_K" value="10" min="1">
                         </div>
-                        <div class="input-group">
-                            <label>
-                                Use Semantic Synonyms
-                                <span class="tooltip-wrap">
-                                    <span class="help-icon">?</span>
-                                    <div class="tooltip-bubble">
-                                        <span class="tt-title">Semantic Synonym Expansion</span>
-                                        Expands queries with semantic synonyms to improve retrieval. Example: "auth" → "auth authentication oauth jwt bearer". Defined in semantic_synonyms.json. Default: ON.
-                                        <div class="tt-badges">
-                                            <span class="tt-badge info">Better Recall</span>
-                                            <span class="tt-badge">No Re-index</span>
-                                        </div>
-                                    </div>
-                                </span>
-                            </label>
-                            <select name="USE_SEMANTIC_SYNONYMS">
-                                <option value="1">ON</option>
-                                <option value="0">OFF</option>
-                            </select>
-                        </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
@@ -3611,69 +2958,24 @@
                                 <option value="prefer_vendor">Prefer Vendor</option>
                             </select>
                         </div>
+                        <div class="input-group">
+                            <label>
+                                agro Path Boosts (CSV)
+                                <span class="tooltip-wrap">
+                                    <span class="help-icon">?</span>
+                                    <div class="tooltip-bubble">
+                                        <span class="tt-title">Path-Specific Score Boosts</span>
+                                        Comma-separated list of path prefixes to boost. Each matching prefix adds +0.06 to chunk score (max +0.18). For example, "app/,lib/,config/" boosts results from those directories. Repo-specific tuning.
+                                        <div class="tt-badges">
+                                            <span class="tt-badge">Repo-Specific</span>
+                                        </div>
+                                    </div>
+                                </span>
+                            </label>
+                            <input type="text" name="agro_PATH_BOOSTS" placeholder="app/,lib/,config/">
+                        </div>
                     </div>
                     
-                </div>
-
-                <div class="settings-section" style="margin-top:16px; border-left: 3px solid #ff6b9d;">
-                    <h3>
-                        <span class="accent-pink">●</span> Reranking
-                        <span class="tooltip-wrap">
-                            <span class="help-icon">?</span>
-                            <div class="tooltip-bubble">
-                                <span class="tt-title">Cross‑Encoder Reranking</span>
-                                Configure reranking backend and models. Set to "none" for offline/BM25‑only operation.
-                                <div class="tt-badges">
-                                    <span class="tt-badge info">Quality Boost</span>
-                                    <span class="tt-badge warn">May require downloads</span>
-                                </div>
-                            </div>
-                        </span>
-                    </h3>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Rerank Backend (RERANK_BACKEND)</label>
-                            <select name="RERANK_BACKEND">
-                                <option value="none">none</option>
-                                <option value="local">local</option>
-                                <option value="hf">hf</option>
-                                <option value="cohere">cohere</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Local/HF Model (RERANKER_MODEL)</label>
-                            <input type="text" name="RERANKER_MODEL" placeholder="BAAI/bge-reranker-v2-m3">
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Cohere Model (COHERE_RERANK_MODEL)</label>
-                            <select name="COHERE_RERANK_MODEL">
-                                <option value="">(select model)</option>
-                                <option value="rerank-3.5">rerank-3.5</option>
-                                <option value="rerank-english-v3.0">rerank-english-v3.0</option>
-                                <option value="rerank-multilingual-v3.0">rerank-multilingual-v3.0</option>
-                                <option value="rerank-english-lite-v3.0">rerank-english-lite-v3.0</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Cohere API Key (COHERE_API_KEY)</label>
-                            <input type="password" name="COHERE_API_KEY" placeholder="ck_...">
-                        </div>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>HF Trust Remote Code (TRANSFORMERS_TRUST_REMOTE_CODE)</label>
-                            <select name="TRANSFORMERS_TRUST_REMOTE_CODE">
-                                <option value="1">1</option>
-                                <option value="0">0</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Input Snippet Chars (RERANK_INPUT_SNIPPET_CHARS)</label>
-                            <input type="number" name="RERANK_INPUT_SNIPPET_CHARS" value="700" min="200" max="2000" step="50">
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Advanced RAG Tuning -->
@@ -4138,7 +3440,6 @@
                 <div class="subtab-bar">
                     <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn active" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
-                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -4303,112 +3604,10 @@
             </div>
 
             <!-- Tab: Developer Tools - Debug -->
-            <!-- Tab: Developer Tools - Reranker -->
-            <div id="tab-devtools-reranker" class="tab-content">
-                <div class="subtab-bar">
-                    <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
-                    <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
-                    <button class="subtab-btn active" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
-                    <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
-                    <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
-                </div>
-                
-                <div class="settings-section" style="border-left: 3px solid #9b5eff;">
-                    <h3>🧠 Learning Reranker Training</h3>
-                    <p class="small">Train a cross-encoder reranker that learns from user feedback (thumbs up/down) to improve retrieval quality over time. All settings and controls in one place!</p>
-                    
-                    <div style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; margin: 16px 0;">
-                        <h4 style="margin: 0 0 12px 0; color: #00ff88;">Training Workflow</h4>
-                        <ol style="margin: 0; padding-left: 20px; color: #999;">
-                            <li>Use the chat (💬 Chat tab) - feedback buttons appear on answers automatically</li>
-                            <li>Accumulate ~50+ queries with feedback</li>
-                            <li>Mine training triplets from logs → 
-                                <button id="reranker-mine-btn" style="background: #5b9dff; color: #fff; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 8px;">Mine Triplets</button>
-                            </li>
-                            <li>Train the reranker model (5-15 min on CPU) → 
-                                <button id="reranker-train-btn" style="background: #00ff88; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Train Model</button>
-                            </li>
-                            <li>Evaluate performance → 
-                                <button id="reranker-eval-btn" style="background: #ff9b5e; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Evaluate</button>
-                            </li>
-                            <li>Enable reranker below and click "Apply All Changes"</li>
-                        </ol>
-                    </div>
-                    
-                    <h4 style="margin: 20px 0 12px 0;">⚙️ Reranker Settings</h4>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Enable Learning Reranker</label>
-                            <select name="AGRO_RERANKER_ENABLED">
-                                <option value="0">OFF</option>
-                                <option value="1">ON</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Model Path</label>
-                            <input type="text" name="AGRO_RERANKER_MODEL_PATH" placeholder="models/cross-encoder-agro" value="models/cross-encoder-agro">
-                        </div>
-                    </div>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Blend Alpha (CE Weight)</label>
-                            <input type="number" name="AGRO_RERANKER_ALPHA" value="0.7" min="0.0" max="1.0" step="0.05">
-                        </div>
-                        <div class="input-group">
-                            <label>Max Sequence Length</label>
-                            <input type="number" name="AGRO_RERANKER_MAXLEN" value="512" min="128" max="1024" step="64">
-                        </div>
-                        <div class="input-group">
-                            <label>Batch Size (Inference)</label>
-                            <input type="number" name="AGRO_RERANKER_BATCH" value="16" min="1" max="64" step="4">
-                        </div>
-                    </div>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Telemetry Log Path</label>
-                            <input type="text" name="AGRO_LOG_PATH" placeholder="data/logs/queries.jsonl" value="data/logs/queries.jsonl">
-                        </div>
-                    </div>
-                    
-                    <h4 style="margin: 20px 0 12px 0;">🎓 Training Parameters</h4>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Training Epochs</label>
-                            <input type="number" id="reranker-epochs" value="2" min="1" max="10" style="width: 100px;">
-                        </div>
-                        <div class="input-group">
-                            <label>Training Batch Size</label>
-                            <input type="number" id="reranker-batch" value="16" min="1" max="64" step="4" style="width: 100px;">
-                        </div>
-                    </div>
-                    
-                    <div style="margin-top: 16px; padding: 12px; background: #0a0a0a; border-radius: 6px; border-left: 3px solid #9b5eff;">
-                        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Status:</div>
-                        <div id="reranker-status" style="font-size: 14px; font-family: 'SF Mono', monospace; color: #666;">Ready</div>
-                    </div>
-                    
-                    <div style="margin-top: 16px; background: #0f1f0f; border: 1px solid #2a4a2a; border-radius: 6px; padding: 12px;">
-                        <div style="font-size: 12px; color: #00ff88; margin-bottom: 8px;">✓ How It Works:</div>
-                        <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #999;">
-                            <li>Logs all queries → <code style="background: #0a0a0a; padding: 2px 6px; border-radius: 3px; color: #00ff88;">data/logs/queries.jsonl</code></li>
-                            <li>Mines positive (thumbs up, clicked) vs negative (not clicked) pairs</li>
-                            <li>Trains cross-encoder to rank good results higher</li>
-                            <li>No chat model fine-tuning - only reranker learns!</li>
-                            <li>Privacy-safe: Everything runs locally</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
             <div id="tab-devtools-debug" class="tab-content">
                 <div class="subtab-bar">
                     <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
-                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn active" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -4500,7 +3699,6 @@
                 <div class="subtab-bar">
                     <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
-                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn active" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -4884,119 +4082,50 @@
 
     <datalist id="keywords-list"></datalist>
     <!-- Core utilities (must load first) -->
-    <script src="/gui/fetch-shim.js?v=1760443960222"></script>
-    <script src="/gui/js/core-utils.js?v=1760443960222"></script>
-    <script src="/gui/api-base-override.js?v=1760443960222"></script>
+    <script src="./fetch-shim.js"></script>
+    <script src="./js/core-utils.js"></script>
+    <script src="./api-base-override.js"></script>
 
     <!-- UI helpers -->
-    <script src="/gui/js/ui-helpers.js"></script>
-    <script src="/gui/js/theme.js"></script>
+    <script src="./js/ui-helpers.js"></script>
+    <script src="./js/theme.js"></script>
 
     <!-- Feature modules -->
-    <script src="/gui/js/tabs.js"></script>
-    <script src="/gui/js/config.js"></script>
-    <script src="/gui/js/health.js"></script>
-    <script src="/gui/js/git-hooks.js"></script>
-    <script src="/gui/js/keywords.js"></script>
-    <script src="/gui/js/autotune.js"></script>
-    <script src="/gui/js/search.js"></script>
-    <script src="/gui/js/editor.js"></script>
-    <script src="/gui/js/secrets.js"></script>
-    <script src="/gui/js/model_flows.js"></script>
-    <script src="/gui/js/index_status.js"></script>
-    <script src="/gui/js/mcp_rag.js"></script>
-    <script src="/gui/js/langsmith.js"></script>
-    <script src="/gui/js/onboarding.js"></script>
+    <script src="./js/tabs.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/health.js"></script>
+    <script src="./js/git-hooks.js"></script>
+    <script src="./js/keywords.js"></script>
+    <script src="./js/autotune.js"></script>
+    <script src="./js/search.js"></script>
+    <script src="./js/editor.js"></script>
+    <script src="./js/secrets.js"></script>
+    <script src="./js/model_flows.js"></script>
+    <script src="./js/index_status.js"></script>
+    <script src="./js/mcp_rag.js"></script>
+    <script src="./js/langsmith.js"></script>
+    <script src="./js/onboarding.js"></script>
 
     <!-- Existing modules -->
-    <script src="/gui/js/index-display.js"></script>
-    <script src="/gui/js/cards.js"></script>
-    <script src="/gui/js/cards_builder.js"></script>
-    <script src="/gui/js/storage-calculator-template.js"></script>
-    <script src="/gui/js/storage-calculator.js"></script>
-    <script src="/gui/js/profile_logic.js"></script>
-    <script src="/gui/js/tooltips.js"></script>
-    <script src="/gui/js/profile_renderer.js"></script>
-    <script src="/gui/js/autoprofile_v2.js"></script>
-    <script src="/gui/js/cost_logic.js"></script>
-    <script src="/gui/js/golden_questions.js"></script>
-    <script src="/gui/js/eval_runner.js"></script>
-    <script src="/gui/js/chat.js"></script>
-    <script src="/gui/js/reranker.js"></script>
-    <script src="/gui/js/trace.js"></script>
+    <script src="./js/index-display.js"></script>
+    <script src="./js/cards.js"></script>
+    <script src="./js/cards_builder.js"></script>
+    <script src="./js/storage-calculator-template.js"></script>
+    <script src="./js/storage-calculator.js"></script>
+    <script src="./js/profile_logic.js"></script>
+    <script src="./js/tooltips.js"></script>
+    <script src="./js/profile_renderer.js"></script>
+    <script src="./js/autoprofile_v2.js"></script>
+    <script src="./js/cost_logic.js"></script>
+    <script src="./js/golden_questions.js"></script>
+    <script src="./js/eval_runner.js"></script>
+    <script src="./js/chat.js"></script>
+    <script src="./js/trace.js"></script>
 
     <!-- Main app coordination (must load LAST) -->
-    <script src="/gui/app.js"></script>
-
-    <!-- Mobile Navigation Menu -->
-    <script>
-    (function() {
-        const toggle = document.getElementById('mobile-nav-toggle');
-        const drawer = document.getElementById('mobile-nav-drawer');
-        const overlay = document.getElementById('mobile-nav-overlay');
-
-        if (!toggle || !drawer || !overlay) return;
-
-        // Toggle menu open/close
-        function toggleMenu(open) {
-            if (open) {
-                drawer.classList.add('active');
-                overlay.classList.add('active');
-                document.body.style.overflow = 'hidden'; // Prevent body scroll when menu is open
-            } else {
-                drawer.classList.remove('active');
-                overlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        }
-
-        // Open menu when hamburger is clicked
-        toggle.addEventListener('click', function() {
-            const isOpen = drawer.classList.contains('active');
-            toggleMenu(!isOpen);
-        });
-
-        // Close menu when overlay is clicked
-        overlay.addEventListener('click', function() {
-            toggleMenu(false);
-        });
-
-        // Close menu and switch tabs when drawer button is clicked
-        const drawerButtons = drawer.querySelectorAll('button[data-tab]');
-        drawerButtons.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                // Close the drawer
-                toggleMenu(false);
-
-                // Let the existing tabs.js handle the tab switching
-                // Just simulate a click on the corresponding desktop tab button
-                const tabName = btn.getAttribute('data-tab');
-                const desktopBtn = document.querySelector('.tab-bar button[data-tab="' + tabName + '"]');
-                if (desktopBtn) {
-                    desktopBtn.click();
-                }
-            });
-        });
-
-        // Sync active state from desktop tab-bar to mobile drawer
-        // Listen for tab changes and update drawer button states
-        const desktopButtons = document.querySelectorAll('.tab-bar button[data-tab]');
-        desktopButtons.forEach(function(desktopBtn) {
-            desktopBtn.addEventListener('click', function() {
-                // Remove active class from all drawer buttons
-                drawerButtons.forEach(function(db) {
-                    db.classList.remove('active');
-                });
-
-                // Add active class to corresponding drawer button
-                const tabName = desktopBtn.getAttribute('data-tab');
-                const drawerBtn = drawer.querySelector('button[data-tab="' + tabName + '"]');
-                if (drawerBtn) {
-                    drawerBtn.classList.add('active');
-                }
-            });
-        });
-    })();
-    </script>
+    <script src="./app.js"></script>
+    
+  <script src="./popout-helper.js"></script>
+  <script src="./wire-popout.js"></script>
 </body>
 </html>
