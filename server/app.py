@@ -16,7 +16,7 @@ from server.reranker_info import router as reranker_info_router
 from server.telemetry import log_query_event
 from server.reranker import rerank_candidates
 from server.metrics import (
-    init_metrics, stage, record_tokens, record_cost,
+    init_metrics_fastapi, stage, record_tokens, record_cost,
     set_retrieval_quality, record_canary, ERRORS_TOTAL
 )
 try:
@@ -33,7 +33,7 @@ from pathlib import Path as _Path
 app = FastAPI(title="AGRO RAG + GUI")
 
 # Initialize Prometheus metrics middleware and /metrics endpoint
-init_metrics(app)
+init_metrics_fastapi(app)
 
 # Mount feedback router
 app.include_router(feedback_router)
@@ -1547,6 +1547,110 @@ def cards_build_start(repo: Optional[str] = Query(None), enrich: int = Query(1))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@app.get("/api/mcp/http/status")
+def mcp_http_status() -> Dict[str, Any]:
+    """Check HTTP MCP server status (port 8013)"""
+    import requests
+    try:
+        # Try to hit the health endpoint
+        r = requests.get("http://127.0.0.1:8013/health", timeout=2)
+        if r.status_code == 200:
+            return {
+                "running": True,
+                "port": 8013,
+                "mode": "http",
+                "url": "http://127.0.0.1:8013"
+            }
+    except:
+        pass
+    
+    return {
+        "running": False,
+        "port": 8013,
+        "mode": "http"
+    }
+
+@app.post("/api/mcp/http/start")
+def mcp_http_start() -> Dict[str, Any]:
+    """Start HTTP MCP server on port 8013"""
+    import subprocess
+    try:
+        # Check if already running
+        status = mcp_http_status()
+        if status["running"]:
+            return {"success": False, "error": "HTTP MCP already running on port 8013"}
+        
+        # Start in background
+        subprocess.Popen(
+            [str(ROOT / ".venv" / "bin" / "python"), "-m", "server.mcp.http"],
+            cwd=str(ROOT),
+            stdout=open("/tmp/agro_mcp_http.log", "w"),
+            stderr=subprocess.STDOUT
+        )
+        
+        # Wait a moment and check
+        import time
+        time.sleep(2)
+        status = mcp_http_status()
+        return {"success": status["running"], "port": 8013}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/mcp/http/stop")
+def mcp_http_stop() -> Dict[str, Any]:
+    """Stop HTTP MCP server"""
+    import subprocess
+    try:
+        # Kill process on port 8013
+        result = subprocess.run(
+            ["pkill", "-f", "server.mcp.http"],
+            capture_output=True, text=True, timeout=5
+        )
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/mcp/http/restart")
+def mcp_http_restart() -> Dict[str, Any]:
+    """Restart HTTP MCP server"""
+    stop_result = mcp_http_stop()
+    if not stop_result["success"]:
+        return stop_result
+    
+    import time
+    time.sleep(1)
+    return mcp_http_start()
+
+@app.get("/api/mcp/test")
+def mcp_stdio_test() -> Dict[str, Any]:
+    """Test stdio MCP server (one-shot)"""
+    import subprocess
+    try:
+        # Test stdio MCP
+        result = subprocess.run(
+            [str(ROOT / ".venv" / "bin" / "python"), "-m", "server.mcp.server"],
+            input='{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}\n',
+            capture_output=True, text=True, timeout=10, cwd=str(ROOT)
+        )
+        
+        if result.returncode == 0 and result.stdout:
+            import json
+            try:
+                response = json.loads(result.stdout.strip())
+                tools = response.get("result", [])
+                return {
+                    "success": True,
+                    "tools_count": len(tools),
+                    "tools": [t.get("name") for t in tools] if isinstance(tools, list) else [],
+                    "output": result.stdout[:500]
+                }
+            except:
+                pass
+        
+        return {"success": False, "error": "Failed to parse MCP response", "output": result.stdout + "\n" + result.stderr}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 @app.get("/api/cards/build/stream/{job_id}")
 def cards_build_stream(job_id: str):

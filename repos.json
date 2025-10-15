@@ -3,6 +3,7 @@
   "repos": [
     {
       "name": "agro",
+      "slug": "agro",
       "path": "/Users/davidmontgomery/agro",
       "keywords": [
         "models",
@@ -28,6 +29,7 @@
     },
     {
       "name": "",
+      "slug": "",
       "path": "/Users/davidmontgomery/",
       "keywords": [
         "plugin",

@@ -2162,6 +2162,7 @@
                 <button data-tab="reranker">🧠 Learning Reranker</button>
                 <button data-tab="devtools">🛠️ Developer Tools</button>
                 <button data-tab="analytics">📈 Analytics</button>
+                <button data-tab="metrics">📊 Metrics</button>
                 <button data-tab="settings">⚙️ Settings</button>
             </div>
 
@@ -2717,6 +2718,7 @@
                                 <select id="chat-repo-select" style="background: #0a0a0a; border: 1px solid #333; color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 12px;">
                                     <option value="">Auto-detect repo</option>
                                     <option value="agro">agro</option>
+                                    <option value=""></option>
                                 </select>
 
                                 <!-- History Button with Dropdown -->
@@ -3971,29 +3973,206 @@
 
             <!-- Tab: Data & Indexing -->
             <div id="tab-data-indexing" class="tab-content">
-                <div class="settings-section">
-                    <h3>Indexing Configuration</h3>
-                    <p class="mono" style="color: #888; margin-bottom: 16px;">
-                        Most indexing settings are constants in code. Rebuild indices after changing repository paths or sources.
-                    </p>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Run Indexer for Repo</label>
-                            <button class="small-button" id="btn-index-start">Index Server</button>
-                        </div>
-                        <div class="input-group">
-                            <label>Cards</label>
-                            <div style="display:flex; gap:8px;">
-                                <button class="small-button" id="btn-cards-build">Build Cards</button>
-                                <button class="small-button" id="btn-cards-refresh">Refresh</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="index-status" class="result-display" style="min-height: 80px;"></div>
-                    <div class="progress" style="margin-top:12px; background:#111; border:1px solid #2a2a2a; border-radius:4px; height:12px;">
-                        <div id="index-bar" style="height:100%; width:0%; background:#ff9b5e; transition: width 0.3s ease;"></div>
+                
+                <!-- Index Overview Dashboard -->
+                <div class="settings-section" style="border-left: 3px solid #00ff88;">
+                    <h3>
+                        <span style="color: #00ff88;">●</span> Index Overview
+                        <button class="small-button" id="btn-refresh-index-stats" style="float: right; padding: 4px 12px; font-size: 11px;">
+                            ↻ Refresh
+                        </button>
+                    </h3>
+                    
+                    <div id="index-overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                        <!-- Stats cards will be populated by JS -->
                     </div>
                 </div>
+
+                <!-- Indexing Operations -->
+                <div class="settings-section" style="border-left: 3px solid #5b9dff;">
+                    <h3>
+                        <span style="color: #5b9dff;">●</span> Build Index
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Indexing Process</span>
+                                Indexing processes your codebase to enable RAG:
+                                <ul style="margin-top:8px; padding-left:16px;">
+                                    <li>Chunks code into semantic segments</li>
+                                    <li>Creates BM25 sparse index</li>
+                                    <li>Generates embeddings (OpenAI or local)</li>
+                                    <li>Stores vectors in Qdrant</li>
+                                </ul>
+                                <br>
+                                Run after code changes for fresh results.
+                            </div>
+                        </span>
+                    </h3>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Repository to Index</label>
+                            <select id="index-repo-select" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Embedding Type</label>
+                            <select name="EMBEDDING_TYPE" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                                <option value="openai">OpenAI (text-embedding-3-large)</option>
+                                <option value="local">Local (BGE-small, no API)</option>
+                                <option value="voyage">Voyage AI</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Skip Dense Index</label>
+                            <select id="index-skip-dense" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                                <option value="0">No (full index)</option>
+                                <option value="1">Yes (BM25 only, faster)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="display: flex; gap: 8px;">
+                        <button class="small-button" id="btn-index-start" style="flex: 1; background: #00ff88; color: #000; padding: 12px; font-weight: 600;">
+                            ▶ Start Indexing
+                        </button>
+                        <button class="small-button" id="btn-index-stop" style="flex: 1; background: #ff6b6b; color: #fff; padding: 12px; font-weight: 600;">
+                            ■ Stop
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #00ff88;">Progress</label>
+                        <div class="progress" style="background:#0a0a0a; border:1px solid #333; border-radius:6px; height:24px; overflow:hidden;">
+                            <div id="index-bar" style="height:100%; width:0%; background: linear-gradient(90deg, #00ff88, #5b9dff); transition: width 0.3s ease; display: flex; align-items: center; justify-content: center;">
+                                <span id="index-bar-text" style="font-size: 11px; color: #000; font-weight: 600; mix-blend-mode: difference;"></span>
+                            </div>
+                        </div>
+                        <div id="index-status" class="result-display" style="min-height: 100px; max-height: 300px; overflow-y: auto; margin-top: 12px; background: #0a0a0a; color: #aaa; padding: 12px; border: 1px solid #333; border-radius: 6px; font-family: 'SF Mono', monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap;"></div>
+                    </div>
+                </div>
+
+                <!-- Cards Builder -->
+                <div class="settings-section" style="border-left: 3px solid #ffa500;">
+                    <h3>
+                        <span style="color: #ffa500;">●</span> Code Cards
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Code Cards</span>
+                                High-level summaries of key code components for quick navigation. Cards are AI-generated overviews that help you quickly understand what code does without reading it all.
+                            </div>
+                        </span>
+                    </h3>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Enrich with AI Summaries</label>
+                            <select name="CARDS_ENRICH_DEFAULT">
+                                <option value="1">Yes</option>
+                                <option value="0">No (metadata only)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Max Chunks to Process</label>
+                            <input type="number" name="CARDS_MAX" value="0" min="0" step="50" placeholder="0 = all">
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="display: flex; gap: 8px;">
+                        <button class="small-button" id="btn-cards-build" style="flex: 1; background: #ffa500; color: #000; padding: 12px; font-weight: 600;">
+                            ⚡ Build Cards
+                        </button>
+                        <button class="small-button" id="btn-cards-refresh" style="flex: 1; background: #1a1a1a; color: #ffa500; border: 1px solid #ffa500; padding: 12px;">
+                            ↻ Refresh View
+                        </button>
+                    </div>
+
+                    <div id="cards-build-status" style="margin-top: 12px; padding: 12px; background: #0a0a0a; border: 1px solid #333; border-radius: 6px; min-height: 60px; font-size: 12px; color: #888; display: none;">
+                        <!-- Status updates will appear here -->
+                    </div>
+                </div>
+
+                <!-- Index Settings -->
+                <div class="settings-section" style="border-left: 3px solid #b794f6;">
+                    <h3>
+                        <span style="color: #b794f6;">●</span> Advanced Settings
+                    </h3>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Output Directory Base</label>
+                            <input type="text" name="OUT_DIR_BASE" placeholder="./out" value="./out">
+                            <p class="small" style="color: #888;">Where to store index files (chunks, BM25, etc.)</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Collection Name</label>
+                            <input type="text" name="COLLECTION_NAME" placeholder="code_chunks_{repo}">
+                            <p class="small" style="color: #888;">Qdrant collection name (leave empty for auto)</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Chunk Size (tokens)</label>
+                            <input type="number" name="CHUNK_SIZE" value="1000" min="100" max="4000" step="100">
+                        </div>
+                        <div class="input-group">
+                            <label>Chunk Overlap (tokens)</label>
+                            <input type="number" name="CHUNK_OVERLAP" value="200" min="0" max="1000" step="50">
+                        </div>
+                        <div class="input-group">
+                            <label>Max Workers</label>
+                            <input type="number" name="INDEX_MAX_WORKERS" value="4" min="1" max="16">
+                        </div>
+                    </div>
+
+                    <button class="small-button" id="btn-save-index-settings" style="background: #b794f6; color: #000; font-weight: 600;">
+                        💾 Save Settings
+                    </button>
+                </div>
+
+                <!-- Index Profiles -->
+                <div class="settings-section" style="border-left: 3px solid #ff6b6b;">
+                    <h3>
+                        <span style="color: #ff6b6b;">●</span> Index Profiles
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Index Profiles</span>
+                                Different index configurations for different use cases:
+                                <ul style="margin-top:8px; padding-left:16px;">
+                                    <li><strong>shared:</strong> Fast BM25-only, no API calls</li>
+                                    <li><strong>full:</strong> BM25 + dense embeddings (best quality)</li>
+                                    <li><strong>dev:</strong> Small subset for testing</li>
+                                </ul>
+                            </div>
+                        </span>
+                    </h3>
+                    
+                    <div class="input-row">
+                        <div class="input-group" style="flex: 2;">
+                            <label>Active Profile</label>
+                            <select id="index-profile-select" style="background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                                <option value="shared">Shared (BM25-only, fast)</option>
+                                <option value="full">Full (BM25 + embeddings)</option>
+                                <option value="dev">Development (small subset)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>&nbsp;</label>
+                            <button class="small-button" id="btn-apply-profile" style="background: #ff6b6b; color: #fff; font-weight: 600; width: 100%;">
+                                Apply Profile
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="profile-description" style="margin-top: 12px; padding: 12px; background: #1a1a1a; border: 1px solid #333; border-radius: 6px; font-size: 12px; color: #ccc;">
+                        <!-- Profile details populated by JS -->
+                    </div>
+                </div>
+
             </div>
 
             <!-- Tab: Settings - General -->
@@ -4332,35 +4511,11 @@
                     </div>
                     
                     <h4 style="margin: 20px 0 12px 0;">⚙️ Reranker Settings</h4>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Enable Learning Reranker</label>
-                            <select name="AGRO_RERANKER_ENABLED">
-                                <option value="0">OFF</option>
-                                <option value="1">ON</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Model Path</label>
-                            <input type="text" name="AGRO_RERANKER_MODEL_PATH" placeholder="models/cross-encoder-agro" value="models/cross-encoder-agro">
-                        </div>
+                    <div style="padding: 12px; background: #1a1a1a; border-left: 3px solid #00ff88; margin-bottom: 16px;">
+                        <strong style="color: #00ff88;">Note:</strong> Reranker settings are in the <strong>Reranker</strong> tab to avoid conflicts.
                     </div>
                     
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label>Blend Alpha (CE Weight)</label>
-                            <input type="number" name="AGRO_RERANKER_ALPHA" value="0.7" min="0.0" max="1.0" step="0.05">
-                        </div>
-                        <div class="input-group">
-                            <label>Max Sequence Length</label>
-                            <input type="number" name="AGRO_RERANKER_MAXLEN" value="512" min="128" max="1024" step="64">
-                        </div>
-                        <div class="input-group">
-                            <label>Batch Size (Inference)</label>
-                            <input type="number" name="AGRO_RERANKER_BATCH" value="16" min="1" max="64" step="4">
-                        </div>
-                    </div>
+                    <!-- These settings are now only in the Reranker tab to avoid duplicate field conflicts -->
                     
                     <div class="input-row">
                         <div class="input-group">
@@ -4444,6 +4599,113 @@
                         </div>
                     </div>
                     <pre id="mcp-rag-results" class="result-display" style="min-height: 120px; white-space: pre-wrap; background: var(--code-bg);"></pre>
+                </div>
+
+                <!-- MCP Server Management -->
+                <div class="settings-section" style="border-left: 3px solid #ff6b6b;">
+                    <h3>
+                        <span style="color:#ff6b6b;">●</span> MCP Server Management
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">MCP Server</span>
+                                Manage the Model Context Protocol server that exposes RAG tools to Codex CLI, Claude Code, and other MCP-compatible clients.
+                                <br><br>
+                                <strong>Tools Exposed:</strong>
+                                <ul style="margin-top:8px; padding-left:16px;">
+                                    <li>rag_answer - Full answer with citations</li>
+                                    <li>rag_search - Retrieval only (debugging)</li>
+                                    <li>rag_feedback - Submit ratings</li>
+                                    <li>netlify_deploy - Trigger builds</li>
+                                    <li>web_get - Allowlisted HTTP GET</li>
+                                </ul>
+                            </div>
+                        </span>
+                    </h3>
+                    
+                    <div style="padding: 16px; background: #1a1a1a; border: 1px solid #5b9dff; border-radius: 8px; margin-bottom: 16px;">
+                        <div style="color: #5b9dff; font-weight: 600; margin-bottom: 8px;">ℹ️ Two MCP Modes</div>
+                        <p style="color: #ccc; font-size: 13px; line-height: 1.5;">
+                            <strong>1. stdio mode</strong> (local Claude/Codex) - Launched automatically by client<br>
+                            <strong>2. HTTP mode</strong> (port 8013) - Runs as daemon for remote access/testing
+                        </p>
+                    </div>
+
+                    <div class="input-row" style="margin-bottom: 12px;">
+                        <div class="input-group" style="flex: 2;">
+                            <label>HTTP MCP Status (port 8013)</label>
+                            <div id="mcp-http-status" style="font-family: monospace; padding: 12px; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; color: #888;">
+                                Checking...
+                            </div>
+                        </div>
+                        <div class="input-group" style="flex: 1;">
+                            <label>&nbsp;</label>
+                            <button class="small-button" id="btn-mcp-http-check" style="width: 100%; background: #1a1a1a; color: #5b9dff; border: 1px solid #5b9dff;">
+                                🔍 Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="display: flex; gap: 8px; margin-bottom: 16px;">
+                        <button class="small-button" id="btn-mcp-http-start" style="flex: 1; background: #00ff88; color: #000;">
+                            ▶ Start HTTP MCP
+                        </button>
+                        <button class="small-button" id="btn-mcp-http-stop" style="flex: 1; background: #ff6b6b; color: #fff;">
+                            ■ Stop HTTP MCP
+                        </button>
+                        <button class="small-button" id="btn-mcp-http-restart" style="flex: 1; background: #ffa500; color: #000;">
+                            ↻ Restart
+                        </button>
+                    </div>
+
+                    <div class="input-row" style="margin-bottom: 16px;">
+                        <div class="input-group full-width">
+                            <label>Test stdio MCP (local)</label>
+                            <button class="small-button" id="btn-mcp-test" style="width: 100%; background: #1a1a1a; color: #00ff88; border: 1px solid #00ff88; padding: 12px;">
+                                ✓ Test stdio Tools (one-shot test)
+                            </button>
+                            <pre id="mcp-test-output" style="margin-top: 8px; min-height: 80px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; background: #0a0a0a; color: #aaa; padding: 12px; border: 1px solid #333; border-radius: 4px; font-size: 11px; display: none;"></pre>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="margin-top: 12px;">
+                        <div class="input-group full-width">
+                            <details style="background: #1a1a1a; padding: 12px; border-radius: 6px; border: 1px solid #333;">
+                                <summary style="cursor: pointer; font-weight: 600; color: #00ff88; user-select: none;">
+                                    📖 Setup Instructions
+                                </summary>
+                                <div style="margin-top: 12px; color: #ccc; line-height: 1.6;">
+                                    <h4 style="color: #00ff88; margin-bottom: 8px;">For Codex CLI:</h4>
+                                    <pre style="background: #0a0a0a; padding: 8px; border-radius: 4px; overflow-x: auto; margin-bottom: 12px;"><code>codex mcp add rag-service -- python -m server.mcp.server
+codex mcp list</code></pre>
+
+                                    <h4 style="color: #00ff88; margin-bottom: 8px;">For Claude Desktop:</h4>
+                                    <p style="margin-bottom: 8px;">Add to <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>:</p>
+                                    <pre style="background: #0a0a0a; padding: 8px; border-radius: 4px; overflow-x: auto; margin-bottom: 12px;"><code>{
+  "mcpServers": {
+    "agro-rag": {
+      "command": "python",
+      "args": ["-m", "server.mcp.server"],
+      "cwd": "/Users/davidmontgomery/agro",
+      "env": {
+        "PATH": "/Users/davidmontgomery/agro/.venv/bin:${PATH}"
+      }
+    }
+  }
+}</code></pre>
+
+                                    <h4 style="color: #00ff88; margin-bottom: 8px;">Test from Terminal:</h4>
+                                    <pre style="background: #0a0a0a; padding: 8px; border-radius: 4px; overflow-x: auto;"><code>cd /Users/davidmontgomery/agro
+. .venv/bin/activate
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m server.mcp.server</code></pre>
+
+                                    <p style="margin-top: 12px; padding: 12px; background: #0a0a0a; border-left: 3px solid #ff6b6b; border-radius: 4px;">
+                                        <strong style="color: #ff6b6b;">⚠️ Important:</strong> MCP server must be running for agents to access RAG tools. Use the buttons above to manage the server without touching terminal commands.
+                                    </p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Cards Viewer -->
@@ -4682,6 +4944,21 @@
                 </div>
             </div>
 
+            <!-- Tab: Metrics & Observability -->
+            <div id="tab-metrics" class="tab-content">
+                <div class="settings-section">
+                    <h3>Grafana Metrics Dashboard</h3>
+                    <p class="small">Real-time observability powered by Prometheus + Grafana</p>
+                    <div style="margin-top: 16px; height: calc(100vh - 200px); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;">
+                        <iframe
+                            src="http://localhost:3000/d/agro-overview/agro-overview?auth_token=glsa_VapoEF4luvdkdeZv3sX3aGNnnpcgQWpn_30c4006e&kiosk=tv"
+                            style="width: 100%; height: 100%; border: none;"
+                            title="Grafana Dashboard"
+                        ></iframe>
+                    </div>
+                </div>
+            </div>
+
             <div class="action-buttons" style="padding: 0 24px 24px;">
                 <button id="save-btn">Apply All Changes</button>
             </div>
@@ -4901,6 +5178,9 @@
     <script src="/gui/js/model_flows.js"></script>
     <script src="/gui/js/index_status.js"></script>
     <script src="/gui/js/mcp_rag.js"></script>
+    <script src="/gui/js/mcp_server.js"></script>
+    <script src="/gui/js/index_profiles.js"></script>
+    <script src="/gui/js/indexing.js"></script>
     <script src="/gui/js/langsmith.js"></script>
     <script src="/gui/js/onboarding.js"></script>
 

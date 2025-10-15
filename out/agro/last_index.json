@@ -1,0 +1,8 @@
+{
+  "repo": "agro",
+  "timestamp": "2025-10-15T09:30:11.424264Z",
+  "chunks_path": "/Users/davidmontgomery/agro/out/agro/chunks.jsonl",
+  "bm25_index_dir": "/Users/davidmontgomery/agro/out/agro/bm25_index",
+  "chunk_count": 950,
+  "collection_name": ""
+}

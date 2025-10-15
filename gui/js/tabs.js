@@ -49,6 +49,7 @@
             data: ['data-indexing'],
             devtools: ['devtools-editor'],  // Show only first subtab initially
             analytics: ['analytics-cost'],  // Show only first subtab initially
+            metrics: ['metrics'],  // Metrics & Observability tab
             settings: ['settings-general']  // Show only first subtab initially
         };
         const show = groups[tabName] || [tabName];
