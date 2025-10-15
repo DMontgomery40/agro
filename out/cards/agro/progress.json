@@ -2,15 +2,15 @@
   "repo": "agro",
   "stage": "summarize",
   "total": 1078,
-  "done": 264,
-  "pct": 24.49,
+  "done": 288,
+  "pct": 26.72,
   "model": {
     "embed": "text-embedding-3-large",
     "enrich": "gpt-4o-mini",
     "rerank": "rerank-english-v3.0"
   },
-  "tip": "Short, concrete briefs beat generic text; include unique module names.",
+  "tip": "Add Semantic synonyms: auth\u2192oauth,jwt,bearer; events\u2192sse,ws,subscribe.",
   "started_at": "2025-10-15T12:27:09Z",
-  "eta_s": 2414,
-  "throughput": "20.2 chunks/min"
+  "eta_s": 2255,
+  "throughput": "21.0 chunks/min"
 }

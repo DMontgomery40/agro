@@ -1,17 +1,17 @@
 {
   "repo": "agro",
-  "id": "b34c38c6",
-  "question": "test 25",
-  "started_at": "2025-10-15T06:14:25.357962",
-  "finished_at": "2025-10-15T06:14:42.643761",
+  "id": "f30a81ae",
+  "question": "test",
+  "started_at": "2025-10-15T06:39:57.725431",
+  "finished_at": "2025-10-15T06:40:25.211005",
   "events": [
     {
-      "ts": "2025-10-15T06:14:25.430691",
+      "ts": "2025-10-15T06:39:57.821787",
       "kind": "router.decide",
       "data": {
         "policy": "code",
         "intent": "server",
-        "query_original": "test 25",
+        "query_original": "test",
         "query_rewrites": [],
         "knobs": {
           "topk_sparse": 75,
@@ -22,14 +22,14 @@
       }
     },
     {
-      "ts": "2025-10-15T06:14:25.763665",
+      "ts": "2025-10-15T06:39:58.217002",
       "kind": "retriever.retrieve",
       "data": {
         "k_sparse": 75,
         "k_dense": 75,
         "candidates": [
           {
-            "path": "/Users/davidmontgomery/agro/scripts/benchmark_improvements.py",
+            "path": "/Users/davidmontgomery/agro/docs/CONTRIBUTING.md",
             "start": 1,
             "end": 33,
             "card_hit": false,
@@ -37,17 +37,17 @@
             "dense_rank": 1
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-implementation-notes.md",
+            "path": "/Users/davidmontgomery/agro/scripts/playwright.local.config.ts",
             "start": 1,
-            "end": 33,
+            "end": 16,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 2
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/onboarding.js",
             "start": 1,
-            "end": 42,
+            "end": 10,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 3
@@ -55,146 +55,98 @@
           {
             "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
             "start": 1,
-            "end": 37,
+            "end": 42,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 4
           },
           {
-            "path": "/Users/davidmontgomery/agro/CLAUDE.md",
+            "path": "/Users/davidmontgomery/agro/README.md",
             "start": 1,
-            "end": 44,
+            "end": 39,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 5
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/archive/IMPLEMENTATION_COMPLETE.md",
+            "path": "/Users/davidmontgomery/agro/gui/js/mcp_server.js",
             "start": 1,
-            "end": 43,
+            "end": 41,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 6
           },
           {
-            "path": "/Users/davidmontgomery/agro/test-results/visual-Reranker-buttons-are-readable-in-light-mode/error-context.md",
+            "path": "/Users/davidmontgomery/agro/README.md",
             "start": 1,
-            "end": 42,
+            "end": 56,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 7
           },
           {
-            "path": "/Users/davidmontgomery/agro/CLAUDE.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/eval_runner.js",
             "start": 1,
-            "end": 26,
+            "end": 36,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 8
           },
           {
-            "path": "/Users/davidmontgomery/agro/CLAUDE.md",
+            "path": "/Users/davidmontgomery/agro/playwright.config.ts",
             "start": 1,
-            "end": 46,
+            "end": 23,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 9
           },
           {
-            "path": "/Users/davidmontgomery/agro/retrieval/hybrid_search.py",
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
             "start": 1,
-            "end": 22,
+            "end": 36,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 10
           },
           {
-            "path": "/Users/davidmontgomery/agro/public/agro/js/profile_renderer.js",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/golden_questions.js",
             "start": 1,
-            "end": 29,
+            "end": 154,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 11
           },
           {
-            "path": "/Users/davidmontgomery/agro/retrieval/hybrid_search.py",
+            "path": "/Users/davidmontgomery/agro/scripts/test_mcp.sh",
             "start": 1,
-            "end": 26,
+            "end": 45,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 12
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranks-runbook.md",
+            "path": "/Users/davidmontgomery/agro/scripts/test_mcp.sh",
             "start": 1,
-            "end": 22,
+            "end": 54,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 13
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
             "start": 1,
-            "end": 3,
+            "end": 154,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 14
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/eval_runner.js",
             "start": 1,
-            "end": 25,
+            "end": 77,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 15
-          },
-          {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-phase2.md",
-            "start": 1,
-            "end": 40,
-            "card_hit": false,
-            "bm25_rank": null,
-            "dense_rank": 16
-          },
-          {
-            "path": "/Users/davidmontgomery/agro/docs/LEARNING_RERANKER.md",
-            "start": 1,
-            "end": 37,
-            "card_hit": false,
-            "bm25_rank": null,
-            "dense_rank": 17
-          },
-          {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-phase2.md",
-            "start": 1,
-            "end": 47,
-            "card_hit": false,
-            "bm25_rank": null,
-            "dense_rank": 18
-          },
-          {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
-            "start": 1,
-            "end": 41,
-            "card_hit": false,
-            "bm25_rank": null,
-            "dense_rank": 19
-          },
-          {
-            "path": "/Users/davidmontgomery/agro/gui/app.js",
-            "start": 1,
-            "end": 22,
-            "card_hit": false,
-            "bm25_rank": null,
-            "dense_rank": 20
-          },
-          {
-            "path": "/Users/davidmontgomery/agro/public/agro/app.js",
-            "start": 1,
-            "end": 20,
-            "card_hit": false,
-            "bm25_rank": null,
-            "dense_rank": 21
           },
           {
             "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
@@ -202,28 +154,76 @@
             "end": 32,
             "card_hit": false,
             "bm25_rank": null,
+            "dense_rank": 16
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/internal_docs.md/archive/IMPLEMENTATION_COMPLETE.md",
+            "start": 1,
+            "end": 43,
+            "card_hit": false,
+            "bm25_rank": null,
+            "dense_rank": 17
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/scripts/test_mcp.sh",
+            "start": 1,
+            "end": 21,
+            "card_hit": false,
+            "bm25_rank": null,
+            "dense_rank": 18
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
+            "start": 1,
+            "end": 77,
+            "card_hit": false,
+            "bm25_rank": null,
+            "dense_rank": 19
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/public/agro/js/onboarding.js",
+            "start": 1,
+            "end": 8,
+            "card_hit": false,
+            "bm25_rank": null,
+            "dense_rank": 20
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/infra/playwright.config.ts",
+            "start": 1,
+            "end": 31,
+            "card_hit": false,
+            "bm25_rank": null,
+            "dense_rank": 21
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/public/agro/js/eval_runner.js",
+            "start": 1,
+            "end": 39,
+            "card_hit": false,
+            "bm25_rank": null,
             "dense_rank": 22
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-implementation-notes.md",
+            "path": "/Users/davidmontgomery/agro/run_token_test.sh",
             "start": 1,
-            "end": 31,
+            "end": 11,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 23
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/scripts/test_backend.py",
             "start": 1,
-            "end": 37,
+            "end": 20,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 24
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/server/tempCodeRunnerFile.py",
             "start": 1,
-            "end": 39,
+            "end": 1,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 25
@@ -231,199 +231,199 @@
           {
             "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
             "start": 1,
-            "end": 35,
+            "end": 39,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 26
           },
           {
-            "path": "/Users/davidmontgomery/agro/README.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/autoprofile_v2.js",
             "start": 1,
-            "end": 33,
+            "end": 32,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 27
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/eval_runner.js",
             "start": 1,
-            "end": 36,
+            "end": 24,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 28
           },
           {
-            "path": "/Users/davidmontgomery/agro/scripts/quick_token_test.py",
+            "path": "/Users/davidmontgomery/agro/test-results/visual-Reranker-buttons-are-readable-in-light-mode/error-context.md",
             "start": 1,
-            "end": 35,
+            "end": 42,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 29
           },
           {
-            "path": "/Users/davidmontgomery/agro/docs/LEARNING_RERANKER.md",
+            "path": "/Users/davidmontgomery/agro/test-results/visual-Reranker-buttons-are-readable-in-light-mode/error-context.md",
             "start": 1,
-            "end": 44,
+            "end": 36,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 30
           },
           {
-            "path": "/Users/davidmontgomery/agro/README.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/onboarding.js",
             "start": 1,
-            "end": 37,
+            "end": 6,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 31
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-implementation-notes.md",
+            "path": "/Users/davidmontgomery/agro/internal_docs.md/archive/IMPLEMENTATION_COMPLETE.md",
             "start": 1,
-            "end": 49,
+            "end": 2,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 32
           },
           {
-            "path": "/Users/davidmontgomery/agro/docs/LEARNING_RERANKER.md",
+            "path": "/Users/davidmontgomery/agro/scripts/test_token_savings.py",
             "start": 1,
-            "end": 35,
+            "end": 133,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 33
           },
           {
-            "path": "/Users/davidmontgomery/agro/indexer/index_repo.py",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/cards_builder.js",
             "start": 1,
-            "end": 205,
+            "end": 16,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 34
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-phase2.md",
+            "path": "/Users/davidmontgomery/agro/server/app.py",
             "start": 1,
-            "end": 38,
+            "end": 57,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 35
           },
           {
-            "path": "/Users/davidmontgomery/agro/docs/LEARNING_RERANKER.md",
+            "path": "/Users/davidmontgomery/agro/gui/app.js",
             "start": 1,
-            "end": 48,
+            "end": 32,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 36
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/test-results/visual-Reranker-buttons-are-readable-in-light-mode/error-context.md",
             "start": 1,
-            "end": 41,
+            "end": 30,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 37
           },
           {
-            "path": "/Users/davidmontgomery/agro/gui/app.js",
+            "path": "/Users/davidmontgomery/agro/gui/js/autoprofile_v2.js",
             "start": 1,
-            "end": 34,
+            "end": 25,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 38
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/CLAUDE.md",
             "start": 1,
-            "end": 39,
+            "end": 37,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 39
           },
           {
-            "path": "/Users/davidmontgomery/agro/docs/LEARNING_RERANKER.md",
+            "path": "/Users/davidmontgomery/agro/gui/js/golden_questions.js",
             "start": 1,
-            "end": 40,
+            "end": 152,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 40
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-phase2.md",
+            "path": "/Users/davidmontgomery/agro/eval_rag.py",
             "start": 1,
-            "end": 43,
+            "end": 23,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 41
           },
           {
-            "path": "/Users/davidmontgomery/agro/AGENTS.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/onboarding.js",
             "start": 1,
-            "end": 41,
+            "end": 12,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 42
           },
           {
-            "path": "/Users/davidmontgomery/agro/docs/LEARNING_RERANKER.md",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/mcp_rag.js",
             "start": 1,
-            "end": 40,
+            "end": 22,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 43
           },
           {
-            "path": "/Users/davidmontgomery/agro/retrieval/hybrid_search.py",
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
             "start": 1,
-            "end": 136,
+            "end": 24,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 44
           },
           {
-            "path": "/Users/davidmontgomery/agro/docs/CONTRIBUTING.md",
+            "path": "/Users/davidmontgomery/agro/internal_docs.md/update_to_codex_agents_sdk.md",
             "start": 1,
-            "end": 33,
+            "end": 12,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 45
           },
           {
-            "path": "/Users/davidmontgomery/agro/scripts/quick_token_test.py",
+            "path": "/Users/davidmontgomery/agro/public/agro/js/eval_runner.js",
             "start": 1,
-            "end": 26,
+            "end": 56,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 46
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-phase2.md",
+            "path": "/Users/davidmontgomery/agro/test_dashboard.py",
             "start": 1,
-            "end": 38,
+            "end": 30,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 47
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/reranker-phase2.md",
+            "path": "/Users/davidmontgomery/agro/gui/js/eval_runner.js",
             "start": 1,
-            "end": 34,
+            "end": 56,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 48
           },
           {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
+            "path": "/Users/davidmontgomery/agro/docs/MCP_README.md",
             "start": 1,
-            "end": 37,
+            "end": 54,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 49
           },
           {
-            "path": "/Users/davidmontgomery/agro/docs/CONTRIBUTING.md",
+            "path": "/Users/davidmontgomery/agro/test-results/visual-Reranker-buttons-are-readable-in-light-mode/error-context.md",
             "start": 1,
-            "end": 40,
+            "end": 32,
             "card_hit": false,
             "bm25_rank": null,
             "dense_rank": 50
@@ -432,7 +432,7 @@
       }
     },
     {
-      "ts": "2025-10-15T06:14:25.763676",
+      "ts": "2025-10-15T06:39:58.217017",
       "kind": "reranker.rank",
       "data": {
         "model": "BAAI/bge-reranker-v2-m3",
@@ -441,46 +441,46 @@
       }
     },
     {
-      "ts": "2025-10-15T06:14:25.870804",
+      "ts": "2025-10-15T06:39:58.325653",
       "kind": "reranker.rank",
       "data": {
         "model": "cohere:rerank-english-v3.0",
         "scores": [
           {
-            "path": "/Users/davidmontgomery/agro/CLAUDE.md",
+            "path": "/Users/davidmontgomery/agro/scripts/playwright.local.config.ts",
             "start": 1,
-            "end": 44,
+            "end": 16,
             "rerank_score": 1.0
           },
           {
-            "path": "/Users/davidmontgomery/agro/rerank.py",
+            "path": "/Users/davidmontgomery/agro/README.md",
             "start": 1,
-            "end": 2,
-            "rerank_score": 0.5653719846095803
+            "end": 39,
+            "rerank_score": 0.527284770264502
           },
           {
-            "path": "/Users/davidmontgomery/agro/scripts/benchmark_improvements.py",
+            "path": "/Users/davidmontgomery/agro/models/cross-encoder-agro/README.md",
             "start": 1,
-            "end": 33,
-            "rerank_score": 0.5566072028612165
-          },
-          {
-            "path": "/Users/davidmontgomery/agro/internal_docs.md/rag-improvement-runbook.md",
-            "start": 1,
-            "end": 42,
-            "rerank_score": 0.3766256815792362
+            "end": 3,
+            "rerank_score": 0.17176450520904438
           },
           {
             "path": "/Users/davidmontgomery/agro/server/app.py",
             "start": 1,
             "end": 42,
-            "rerank_score": 0.3766256815792362
+            "rerank_score": 0.11765211534441324
+          },
+          {
+            "path": "/Users/davidmontgomery/agro/public/agro/js/onboarding.js",
+            "start": 1,
+            "end": 10,
+            "rerank_score": 0.08848675265633696
           }
         ]
       }
     },
     {
-      "ts": "2025-10-15T06:14:26.000348",
+      "ts": "2025-10-15T06:39:58.448224",
       "kind": "freshness.status",
       "data": {
         "bm25_updated": "2025-10-15T08:19:31.248504Z",
@@ -492,11 +492,11 @@
       }
     },
     {
-      "ts": "2025-10-15T06:14:26.000771",
+      "ts": "2025-10-15T06:39:58.448816",
       "kind": "gating.outcome",
       "data": {
         "confidence_top1": 1.7999999999999998,
-        "confidence_avg5": 1.2,
+        "confidence_avg5": 1.276093911562961,
         "thresholds": {
           "top1": 0.62,
           "avg5": 0.55,
@@ -508,7 +508,7 @@
       }
     },
     {
-      "ts": "2025-10-15T06:14:26.001220",
+      "ts": "2025-10-15T06:39:58.449402",
       "kind": "packer.pack",
       "data": {
         "budget_tokens": 4096,
