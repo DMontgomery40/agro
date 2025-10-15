@@ -129,3 +129,4 @@ def get_synonym_variants(query: str, repo: str) -> List[str]:
     # Limit to 4 variants to avoid over-expansion
     return variants[:4]
 
+

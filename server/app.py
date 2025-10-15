@@ -12,6 +12,9 @@ from retrieval.hybrid_search import search_routed_multi
 from common.config_loader import load_repos, out_dir
 from server.index_stats import get_index_stats as _get_index_stats
 from typing import cast
+from server.feedback import router as feedback_router
+from server.telemetry import log_query_event
+from server.reranker import rerank_candidates
 try:
     # Optional import; used for MCP wrapper endpoints
     from server.mcp.server import MCPServer as _MCPServer
@@ -25,6 +28,9 @@ from pathlib import Path as _Path
 
 app = FastAPI(title="AGRO RAG + GUI")
 
+# Mount feedback router
+app.include_router(feedback_router)
+
 _graph = None
 def get_graph():
     global _graph
@@ -36,6 +42,7 @@ CFG = {"configurable": {"thread_id": "http"}}
 
 class Answer(BaseModel):
     answer: str
+    event_id: Optional[str] = None
 
 ROOT = repo_root()
 GUI_DIR = gui_dir()
@@ -197,6 +204,9 @@ def answer(
     If `repo` is provided, retrieval and the answer header will use that repo.
     Otherwise, a lightweight router selects the repo from the query content.
     """
+    import time
+    start_time = time.time()
+    
     g = get_graph()
     # start local trace if enabled
     tr: Optional[Trace] = None
@@ -207,13 +217,43 @@ def answer(
         tr = None
     state = {"question": q, "documents": [], "generation":"", "iteration":0, "confidence":0.0, "repo": (repo.strip() if repo else None)}
     res = g.invoke(state, CFG)
+    
+    # Log the query and retrieval
+    try:
+        latency_ms = int((time.time() - start_time) * 1000)
+        docs = res.get("documents", [])
+        retrieved_for_log = []
+        for d in docs[:10]:  # Log top 10
+            retrieved_for_log.append({
+                "doc_id": d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}",
+                "score": float(d.get("rerank_score", 0.0) or 0.0),
+                "text": (d.get("code", "") or "")[:500],  # Truncate for logging
+                "clicked": False,
+            })
+        # Estimate cost (simplified)
+        cost_usd = _estimate_query_cost(q, res["generation"], len(docs))
+        
+        # Try to capture query_rewritten from state
+        query_rewritten = res.get("query_rewritten") or res.get("rewritten_question")
+        
+        event_id = log_query_event(
+            query_raw=q,
+            query_rewritten=query_rewritten,
+            retrieved=retrieved_for_log,
+            answer_text=res["generation"],
+            latency_ms=latency_ms,
+            cost_usd=cost_usd,
+        )
+    except Exception:
+        event_id = None
+    
     # finalize trace
     try:
         if tr is not None:
             end_trace()
     except Exception:
         pass
-    return {"answer": res["generation"]}
+    return {"answer": res["generation"], "event_id": event_id}
 
 class ChatRequest(BaseModel):
     question: str
@@ -239,6 +279,9 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
     - confidence: Minimum confidence threshold (0.3-0.9)
     - system_prompt: Custom system prompt override
     """
+    import time
+    start_time = time.time()
+    
     # Save current env state
     old_env = {
         'GEN_MODEL': os.environ.get('GEN_MODEL'),
@@ -295,6 +338,39 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
 
         res = g.invoke(state, CFG)
 
+        # Log the query and retrieval
+        try:
+            latency_ms = int((time.time() - start_time) * 1000)
+            docs = res.get("documents", [])
+            retrieved_for_log = []
+            for d in docs[:10]:  # Log top 10
+                retrieved_for_log.append({
+                    "doc_id": d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}",
+                    "score": float(d.get("rerank_score", 0.0) or 0.0),
+                    "text": (d.get("code", "") or "")[:500],  # Truncate for logging
+                    "clicked": False,
+                })
+            # Estimate cost
+            cost_usd = _estimate_query_cost(req.question, res["generation"], len(docs))
+            
+            # Try to capture query_rewritten from state
+            query_rewritten = res.get("query_rewritten") or res.get("rewritten_question")
+            
+            event_id = log_query_event(
+                query_raw=req.question,
+                query_rewritten=query_rewritten,
+                retrieved=retrieved_for_log,
+                answer_text=res["generation"],
+                latency_ms=latency_ms,
+                cost_usd=cost_usd,
+            )
+        except Exception as e:
+            # Debug: log why it failed
+            import traceback
+            print(f"Failed to log query event: {e}")
+            traceback.print_exc()
+            event_id = None
+
         # Finalize trace
         try:
             if tr is not None:
@@ -305,6 +381,7 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
         return {
             "answer": res["generation"],
             "confidence": res.get("confidence", 0.0),
+            "event_id": event_id,
             "settings_applied": {
                 "model": req.model or old_env.get('GEN_MODEL'),
                 "temperature": req.temperature,
@@ -334,7 +411,57 @@ def search(
 
     Returns file paths, line ranges, and rerank scores for the most relevant code chunks.
     """
+    import time
+    start_time = time.time()
+    
     docs = search_routed_multi(q, repo_override=repo, m=4, final_k=top_k)
+    
+    # Apply reranker if enabled
+    if os.getenv("AGRO_RERANKER_ENABLED", "0") == "1":
+        # Transform docs to reranker format
+        retrieved_cands = []
+        for d in docs:
+            retrieved_cands.append({
+                "doc_id": d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}",
+                "score": float(d.get("rerank_score", 0.0) or 0.0),
+                "text": d.get("code", "") or "",
+                "clicked": False,
+            })
+        
+        if retrieved_cands and any(c.get("text") for c in retrieved_cands):
+            reranked = rerank_candidates(q, retrieved_cands)
+            # Map back to docs structure
+            doc_map = {(d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}"): d for d in docs}
+            docs = []
+            for rc in reranked:
+                if rc["doc_id"] in doc_map:
+                    d = doc_map[rc["doc_id"]]
+                    d["rerank_score"] = rc["rerank_score"]
+                    d["cross_encoder_score"] = rc.get("cross_encoder_score", 0.0)
+                    docs.append(d)
+    
+    latency_ms = int((time.time() - start_time) * 1000)
+    
+    # Log the search (no answer, just retrieval)
+    try:
+        retrieved_for_log = []
+        for d in docs:
+            retrieved_for_log.append({
+                "doc_id": d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}",
+                "score": float(d.get("rerank_score", 0.0) or 0.0),
+                "text": (d.get("code", "") or "")[:500],  # Truncate for logging
+                "clicked": False,
+            })
+        event_id = log_query_event(
+            query_raw=q,
+            query_rewritten=None,
+            retrieved=retrieved_for_log,
+            answer_text="",  # No generation for search endpoint
+            latency_ms=latency_ms,
+        )
+    except Exception:
+        event_id = None
+    
     results = [
         {
             "file_path": d.get("file_path", ""),
@@ -346,7 +473,7 @@ def search(
         }
         for d in docs
     ]
-    return {"results": results, "repo": repo, "count": len(results)}
+    return {"results": results, "repo": repo, "count": len(results), "event_id": event_id}
 
 # ---------------- MCP wrapper (HTTP) ----------------
 @app.get("/api/mcp/rag_search")
@@ -990,6 +1117,23 @@ def scan_hw() -> Dict[str, Any]:
     }
     tools = {"uvicorn": bool(shutil.which("uvicorn")), "docker": bool(shutil.which("docker"))}
     return {"info": info, "runtimes": runtimes, "tools": tools}
+
+def _estimate_query_cost(question: str, answer: str, num_docs: int) -> float:
+    """Quick cost estimation for a single query."""
+    try:
+        # Rough token counts
+        input_tokens = len(question.split()) * 1.3 + (num_docs * 100)  # question + retrieved context
+        output_tokens = len(answer.split()) * 1.3
+        
+        gen_model = os.getenv("GEN_MODEL", "")
+        if "gpt-4o-mini" in gen_model:
+            return (input_tokens / 1000 * 0.00015) + (output_tokens / 1000 * 0.0006)
+        elif "gpt-4" in gen_model:
+            return (input_tokens / 1000 * 0.01) + (output_tokens / 1000 * 0.03)
+        else:
+            return 0.0  # Local/unknown models
+    except:
+        return 0.0
 
 def _find_price(provider: str, model: Optional[str]) -> Optional[Dict[str, Any]]:
     """Generic price lookup (backwards-compat) — used for generation rows."""
@@ -1812,6 +1956,468 @@ def eval_results() -> Dict[str, Any]:
     if _EVAL_STATUS["results"] is None:
         return {"ok": False, "message": "No evaluation results available"}
     return _EVAL_STATUS["results"]
+
+# ---------------- Learning Reranker API ----------------
+_RERANKER_STATUS: Dict[str, Any] = {
+    "running": False,
+    "task": "",
+    "progress": 0,
+    "message": "",
+    "result": None
+}
+
+@app.post("/api/reranker/mine")
+def reranker_mine() -> Dict[str, Any]:
+    """Mine triplets from telemetry logs."""
+    global _RERANKER_STATUS
+    import threading
+    import subprocess
+    
+    if _RERANKER_STATUS["running"]:
+        return {"ok": False, "error": "A reranker task is already running"}
+    
+    def run_mine():
+        global _RERANKER_STATUS
+        _RERANKER_STATUS = {"running": True, "task": "mining", "progress": 0, "message": "Mining triplets...", "result": None}
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/mine_triplets.py"],
+                capture_output=True,
+                text=True,
+                cwd=repo_root(),
+                timeout=300
+            )
+            if result.returncode == 0:
+                # Parse output for count
+                output = result.stdout
+                _RERANKER_STATUS["message"] = output.strip() if output else "Mining complete"
+                _RERANKER_STATUS["result"] = {"ok": True, "output": output}
+            else:
+                _RERANKER_STATUS["message"] = f"Mining failed: {result.stderr[:200]}"
+                _RERANKER_STATUS["result"] = {"ok": False, "error": result.stderr}
+        except Exception as e:
+            _RERANKER_STATUS["message"] = f"Error: {str(e)}"
+            _RERANKER_STATUS["result"] = {"ok": False, "error": str(e)}
+        finally:
+            _RERANKER_STATUS["running"] = False
+            _RERANKER_STATUS["progress"] = 100
+    
+    thread = threading.Thread(target=run_mine, daemon=True)
+    thread.start()
+    return {"ok": True, "message": "Mining started"}
+
+@app.post("/api/reranker/train")
+def reranker_train(payload: Dict[str, Any] = {}) -> Dict[str, Any]:
+    """Train reranker model."""
+    global _RERANKER_STATUS
+    import threading
+    import subprocess
+    
+    if _RERANKER_STATUS["running"]:
+        return {"ok": False, "error": "A reranker task is already running"}
+    
+    epochs = int(payload.get("epochs", 2))
+    batch_size = int(payload.get("batch_size", 16))
+    
+    def run_train():
+        global _RERANKER_STATUS
+        _RERANKER_STATUS = {"running": True, "task": "training", "progress": 0, "message": f"Training model ({epochs} epochs)...", "result": None}
+        try:
+            # Stream output to capture epoch progress
+            import subprocess
+            proc = subprocess.Popen(
+                [sys.executable, "scripts/train_reranker.py", "--epochs", str(epochs), "--batch", str(batch_size)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=repo_root(),
+                bufsize=1
+            )
+            
+            output_lines = []
+            for line in proc.stdout:
+                output_lines.append(line)
+                # Update status with epoch progress
+                if "[EPOCH" in line:
+                    _RERANKER_STATUS["message"] = line.strip()
+                    # Parse epoch number for progress
+                    import re
+                    match = re.search(r'\[EPOCH (\d+)/(\d+)\]', line)
+                    if match:
+                        current, total = int(match.group(1)), int(match.group(2))
+                        _RERANKER_STATUS["progress"] = int((current / total) * 100)
+            
+            proc.wait(timeout=3600)
+            output = ''.join(output_lines)
+            
+            if proc.returncode == 0:
+                _RERANKER_STATUS["message"] = "Training complete!"
+                _RERANKER_STATUS["result"] = {"ok": True, "output": output}
+            else:
+                stderr = proc.stderr.read() if proc.stderr else ""
+                _RERANKER_STATUS["message"] = f"Training failed: {stderr[:200]}"
+                _RERANKER_STATUS["result"] = {"ok": False, "error": stderr}
+        except Exception as e:
+            _RERANKER_STATUS["message"] = f"Error: {str(e)}"
+            _RERANKER_STATUS["result"] = {"ok": False, "error": str(e)}
+        finally:
+            _RERANKER_STATUS["running"] = False
+            _RERANKER_STATUS["progress"] = 100
+    
+    thread = threading.Thread(target=run_train, daemon=True)
+    thread.start()
+    return {"ok": True, "message": "Training started"}
+
+@app.post("/api/reranker/evaluate")
+def reranker_evaluate() -> Dict[str, Any]:
+    """Evaluate reranker performance."""
+    global _RERANKER_STATUS
+    import threading
+    import subprocess
+    
+    if _RERANKER_STATUS["running"]:
+        return {"ok": False, "error": "A reranker task is already running"}
+    
+    def run_eval():
+        global _RERANKER_STATUS
+        _RERANKER_STATUS = {"running": True, "task": "evaluating", "progress": 0, "message": "Evaluating model...", "result": None}
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/eval_reranker.py"],
+                capture_output=True,
+                text=True,
+                cwd=repo_root(),
+                timeout=300
+            )
+            if result.returncode == 0:
+                output = result.stdout
+                _RERANKER_STATUS["message"] = "Evaluation complete!"
+                _RERANKER_STATUS["result"] = {"ok": True, "output": output}
+            else:
+                _RERANKER_STATUS["message"] = f"Evaluation failed: {result.stderr[:200]}"
+                _RERANKER_STATUS["result"] = {"ok": False, "error": result.stderr}
+        except Exception as e:
+            _RERANKER_STATUS["message"] = f"Error: {str(e)}"
+            _RERANKER_STATUS["result"] = {"ok": False, "error": str(e)}
+        finally:
+            _RERANKER_STATUS["running"] = False
+            _RERANKER_STATUS["progress"] = 100
+    
+    thread = threading.Thread(target=run_eval, daemon=True)
+    thread.start()
+    return {"ok": True, "message": "Evaluation started"}
+
+@app.get("/api/reranker/status")
+def reranker_status() -> Dict[str, Any]:
+    """Get current reranker task status."""
+    return _RERANKER_STATUS
+
+@app.get("/api/reranker/logs/count")
+def reranker_logs_count() -> Dict[str, Any]:
+    """Count total queries in log file."""
+    log_path = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+    count = 0
+    if log_path.exists():
+        with log_path.open("r") as f:
+            for line in f:
+                if line.strip() and '"type":"query"' in line:
+                    count += 1
+    return {"count": count}
+
+@app.get("/api/reranker/triplets/count")
+def reranker_triplets_count() -> Dict[str, Any]:
+    """Count training triplets."""
+    triplets_path = Path("data/training/triplets.jsonl")
+    count = 0
+    if triplets_path.exists():
+        with triplets_path.open("r") as f:
+            for line in f:
+                if line.strip():
+                    count += 1
+    return {"count": count}
+
+@app.get("/api/reranker/logs")
+def reranker_logs() -> Dict[str, Any]:
+    """Get recent log entries."""
+    log_path = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+    logs = []
+    if log_path.exists():
+        with log_path.open("r") as f:
+            for line in f:
+                try:
+                    logs.append(json.loads(line))
+                except:
+                    pass
+    return {"logs": logs[-100:], "count": len(logs)}
+
+@app.get("/api/reranker/logs/download")
+def reranker_logs_download():
+    """Download complete log file."""
+    log_path = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+    if not log_path.exists():
+        raise HTTPException(status_code=404, detail="Log file not found")
+    return FileResponse(str(log_path), filename="queries.jsonl")
+
+@app.post("/api/reranker/logs/clear")
+def reranker_logs_clear() -> Dict[str, Any]:
+    """Clear all logs."""
+    log_path = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+    try:
+        if log_path.exists():
+            log_path.unlink()
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.post("/api/reranker/cron/setup")
+def reranker_cron_setup(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Setup nightly training cron job."""
+    import subprocess
+    time_str = payload.get("time", "02:15")
+    hour, minute = time_str.split(":")
+    
+    cron_line = f'{minute} {hour} * * * cd {repo_root()} && . .venv/bin/activate && python scripts/mine_triplets.py && python scripts/train_reranker.py --epochs 1 && python scripts/eval_reranker.py >> data/logs/nightly_reranker.log 2>&1'
+    
+    try:
+        # Get current crontab
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+        current_cron = result.stdout if result.returncode == 0 else ""
+        
+        # Remove old reranker jobs if any
+        lines = [l for l in current_cron.splitlines() if 'mine_triplets.py' not in l and 'train_reranker.py' not in l]
+        lines.append(cron_line)
+        
+        # Set new crontab
+        new_cron = "\n".join(lines) + "\n"
+        proc = subprocess.Popen(["crontab", "-"], stdin=subprocess.PIPE, text=True)
+        proc.communicate(input=new_cron)
+        
+        return {"ok": True, "time": time_str}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.post("/api/reranker/cron/remove")
+def reranker_cron_remove() -> Dict[str, Any]:
+    """Remove nightly training cron job."""
+    import subprocess
+    try:
+        result = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+        current_cron = result.stdout if result.returncode == 0 else ""
+        
+        lines = [l for l in current_cron.splitlines() if 'mine_triplets.py' not in l and 'train_reranker.py' not in l]
+        new_cron = "\n".join(lines) + "\n" if lines else ""
+        
+        proc = subprocess.Popen(["crontab", "-"], stdin=subprocess.PIPE, text=True)
+        proc.communicate(input=new_cron)
+        
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.post("/api/reranker/baseline/save")
+def reranker_baseline_save() -> Dict[str, Any]:
+    """Save current evaluation as baseline."""
+    if not _RERANKER_STATUS.get("result"):
+        return {"ok": False, "error": "No evaluation results to save"}
+    
+    baseline_path = Path("data/evals/reranker_baseline.json")
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(baseline_path, _RERANKER_STATUS["result"])
+    
+    # Also backup current model
+    import shutil
+    model_path = Path(os.getenv("AGRO_RERANKER_MODEL_PATH", "models/cross-encoder-agro"))
+    if model_path.exists():
+        backup_path = model_path.parent / (model_path.name + ".baseline")
+        if backup_path.exists():
+            shutil.rmtree(backup_path)
+        shutil.copytree(model_path, backup_path)
+    
+    return {"ok": True, "path": str(baseline_path)}
+
+@app.get("/api/reranker/baseline/compare")
+def reranker_baseline_compare() -> Dict[str, Any]:
+    """Compare current results with baseline."""
+    baseline_path = Path("data/evals/reranker_baseline.json")
+    if not baseline_path.exists():
+        return {"ok": False, "error": "No baseline found"}
+    
+    if not _RERANKER_STATUS.get("result"):
+        return {"ok": False, "error": "No current evaluation results"}
+    
+    baseline = _read_json(baseline_path, {})
+    current = _RERANKER_STATUS["result"]
+    
+    # Parse metrics from output
+    def parse_metrics(output):
+        if not output: return {}
+        import re
+        mrr = 0.0
+        hit1 = 0.0
+        match_mrr = re.search(r'MRR@all:\s*([\d\.]+)', output)
+        match_hit1 = re.search(r'Hit@1:\s*([\d\.]+)', output)
+        if match_mrr:
+            mrr = float(match_mrr.group(1))
+        if match_hit1:
+            hit1 = float(match_hit1.group(1))
+        return {"mrr": mrr, "hit1": hit1}
+    
+    base_m = parse_metrics(baseline.get("output", ""))
+    curr_m = parse_metrics(current.get("output", ""))
+    
+    return {
+        "ok": True,
+        "baseline": base_m,
+        "current": curr_m,
+        "delta": {
+            "mrr": curr_m.get("mrr", 0) - base_m.get("mrr", 0),
+            "hit1": curr_m.get("hit1", 0) - base_m.get("hit1", 0)
+        }
+    }
+
+@app.post("/api/reranker/rollback")
+def reranker_rollback() -> Dict[str, Any]:
+    """Rollback to baseline model."""
+    import shutil
+    model_path = Path(os.getenv("AGRO_RERANKER_MODEL_PATH", "models/cross-encoder-agro"))
+    backup_path = model_path.parent / (model_path.name + ".backup")
+    
+    if not backup_path.exists():
+        return {"ok": False, "error": "No backup model found"}
+    
+    try:
+        # Backup current to .old
+        if model_path.exists():
+            old_path = model_path.parent / (model_path.name + ".old")
+            if old_path.exists():
+                shutil.rmtree(old_path)
+            shutil.move(str(model_path), str(old_path))
+        
+        # Copy backup to active
+        shutil.copytree(backup_path, model_path)
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.post("/api/reranker/smoketest")
+def reranker_smoketest(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Run end-to-end smoke test."""
+    import time
+    query = payload.get("query", "").strip()
+    if not query:
+        return {"ok": False, "error": "Query required"}
+    
+    start = time.time()
+    try:
+        # Run search
+        docs = search_routed_multi(query, m=2, final_k=5)
+        
+        # Check if reranker is enabled
+        reranked = os.getenv("AGRO_RERANKER_ENABLED", "0") == "1"
+        
+        # Log it
+        retrieved_for_log = []
+        for d in docs:
+            retrieved_for_log.append({
+                "doc_id": d.get("file_path", "") + f":{d.get('start_line', 0)}-{d.get('end_line', 0)}",
+                "score": float(d.get("rerank_score", 0.0) or 0.0),
+                "text": (d.get("code", "") or "")[:300],
+                "clicked": False,
+            })
+        
+        event_id = log_query_event(
+            query_raw=query,
+            query_rewritten=None,
+            retrieved=retrieved_for_log,
+            answer_text="[Smoke test - no generation]",
+            latency_ms=int((time.time() - start) * 1000)
+        )
+        
+        return {
+            "ok": True,
+            "logged": True,
+            "results_count": len(docs),
+            "reranked": reranked,
+            "event_id": event_id
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.get("/api/reranker/costs")
+def reranker_costs() -> Dict[str, Any]:
+    """Get cost statistics from logs."""
+    import datetime
+    log_path = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+    
+    if not log_path.exists():
+        return {"total_24h": 0.0, "avg_per_query": 0.0, "queries_24h": 0}
+    
+    now = datetime.datetime.now(datetime.timezone.utc)
+    day_ago = now - datetime.timedelta(hours=24)
+    
+    total_cost = 0.0
+    count = 0
+    
+    with log_path.open("r") as f:
+        for line in f:
+            try:
+                evt = json.loads(line)
+                if evt.get("type") != "query":
+                    continue
+                # Parse timestamp
+                ts_str = evt.get("ts", "")
+                ts = datetime.datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                if ts >= day_ago:
+                    total_cost += evt.get("cost_usd", 0.0) or 0.0
+                    count += 1
+            except:
+                pass
+    
+    return {
+        "total_24h": round(total_cost, 4),
+        "avg_per_query": round(total_cost / max(1, count), 6),
+        "queries_24h": count
+    }
+
+@app.get("/api/reranker/nohits")
+def reranker_nohits() -> Dict[str, Any]:
+    """Get queries that had no hits."""
+    log_path = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+    
+    if not log_path.exists():
+        return {"queries": [], "count": 0}
+    
+    nohits = []
+    with log_path.open("r") as f:
+        for line in f:
+            try:
+                evt = json.loads(line)
+                if evt.get("type") != "query":
+                    continue
+                # Check if any retrieval results
+                retrieval = evt.get("retrieval", [])
+                if not retrieval or len(retrieval) == 0:
+                    nohits.append({
+                        "query": evt.get("query_raw", ""),
+                        "ts": evt.get("ts", "")
+                    })
+            except:
+                pass
+    
+    return {"queries": nohits[-50:], "count": len(nohits)}
+
+@app.post("/api/reranker/click")
+def reranker_click(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Record a document click."""
+    event_id = payload.get("event_id")
+    doc_id = payload.get("doc_id")
+    
+    if not event_id or not doc_id:
+        raise HTTPException(status_code=400, detail="event_id and doc_id required")
+    
+    from server.telemetry import log_feedback_event
+    log_feedback_event(event_id, {"signal": "click", "doc_id": doc_id})
+    return {"ok": True}
 
 @app.post("/api/eval/baseline/save")
 def eval_baseline_save() -> Dict[str, Any]:

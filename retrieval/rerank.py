@@ -15,7 +15,7 @@ _HF_PIPE = None
 _RERANKER = None
 
 DEFAULT_MODEL = os.getenv('RERANKER_MODEL', 'BAAI/bge-reranker-v2-m3')
-RERANK_BACKEND = (os.getenv('RERANK_BACKEND', 'local') or 'local').lower()
+# Note: Backend/model can change at runtime via GUI. Read env at call-time in rerank_results.
 COHERE_MODEL = os.getenv('COHERE_RERANK_MODEL', 'rerank-3.5')
 
 def _sigmoid(x: float) -> float:
@@ -62,11 +62,14 @@ def get_reranker() -> Reranker:
 def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: Any = None) -> List[Dict]:
     if not results:
         return []
-    if RERANK_BACKEND in ('none', 'off', 'disabled'):
+    # Read backend dynamically to respect GUI updates without server restart
+    backend = (os.getenv('RERANK_BACKEND', 'local') or 'local').lower()
+    if backend in ('none', 'off', 'disabled'):
         for i, r in enumerate(results):
             r['rerank_score'] = float(1.0 - (i * 0.01))
         return results[:top_k]
-    model_name = DEFAULT_MODEL
+    # Model names read dynamically with import-time defaults as fallback
+    model_name = os.getenv('RERANKER_MODEL', DEFAULT_MODEL)
     # --- tracing: record input set size
     try:
         if trace is not None and hasattr(trace, 'add'):
@@ -77,7 +80,7 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: Any 
             })
     except Exception:
         pass
-    if RERANK_BACKEND == 'cohere':
+    if backend == 'cohere':
         try:
             import cohere
             api_key = os.getenv('COHERE_API_KEY')
@@ -87,9 +90,14 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: Any 
             docs = []
             for r in results:
                 file_ctx = r.get('file_path', '')
-                code_snip = (r.get('code') or r.get('text') or '')[:700]
+                # default snippet: 700 for cohere, configurable via env
+                try:
+                    snip_len = int(os.getenv('RERANK_INPUT_SNIPPET_CHARS', '700') or '700')
+                except Exception:
+                    snip_len = 700
+                code_snip = (r.get('code') or r.get('text') or '')[:snip_len]
                 docs.append(f"{file_ctx}\n\n{code_snip}")
-            rr = client.rerank(model=COHERE_MODEL, query=query, documents=docs, top_n=len(docs))
+            rr = client.rerank(model=os.getenv('COHERE_RERANK_MODEL', COHERE_MODEL), query=query, documents=docs, top_n=len(docs))
             scores = [getattr(x, 'relevance_score', 0.0) for x in rr.results]
             max_s = max(scores) if scores else 1.0
             for item in rr.results:
@@ -120,7 +128,11 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: Any 
     if pipe is not None:
         pairs = []
         for r in results:
-            code_snip = (r.get('code') or r.get('text') or '')[:700]
+            try:
+                snip_len = int(os.getenv('RERANK_INPUT_SNIPPET_CHARS', '600') or '600')
+            except Exception:
+                snip_len = 600
+            code_snip = (r.get('code') or r.get('text') or '')[:snip_len]
             pairs.append({'text': query, 'text_pair': code_snip})
         try:
             out = pipe(pairs, truncation=True)  # type: ignore[misc]

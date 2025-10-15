@@ -15,6 +15,7 @@ import os
 from typing import Dict, Any, List
 import urllib.request, urllib.error, urllib.parse
 import json as _json
+import requests
 
 # Import canonical modules (no sys.path hacks)
 from server.langgraph_app import build_graph
@@ -42,24 +43,42 @@ class MCPServer:
         print(f"LOG: {msg}", file=sys.stderr)
 
     def handle_rag_answer(self, repo: str, question: str) -> Dict[str, Any]:
-        if not self.graph:
-            self._init_graph()
-        if not self.graph:
-            return {"error": "Graph not initialized", "answer": "", "citations": [], "repo": repo or "unknown"}
-
         try:
-            allowed = set(list_repos())
-            if repo not in allowed:
-                return {"error": f"invalid repo '{repo}', allowed={sorted(allowed)}", "answer": "", "citations": [], "repo": repo or "unknown"}
-            cfg = {"configurable": {"thread_id": f"mcp-{repo or 'default'}"}}
-            state = {"question": question, "documents": [], "generation": "", "iteration": 0, "confidence": 0.0, "repo": repo}
-            result = self.graph.invoke(state, cfg)
-            docs = result.get("documents", [])[:5]
-            citations = [f"{d['file_path']}:{d['start_line']}-{d['end_line']}" for d in docs]
-            return {"answer": result.get("generation", ""), "citations": citations, "repo": result.get("repo", repo or "unknown"), "confidence": float(result.get("confidence", 0.0) or 0.0)}
+            # Use API to get event_id for feedback
+            response = requests.post('http://127.0.0.1:8012/api/chat', json={
+                'question': question,
+                'repo': repo
+            })
+            if response.status_code == 200:
+                result = response.json()
+                docs = result.get('documents', [])[:5]
+                citations = [f"{d['file_path']}:{d['start_line']}-{d['end_line']}" for d in docs]
+                return {
+                    "answer": result.get('answer', ''),
+                    "citations": citations,
+                    "repo": result.get('repo', repo or "unknown"),
+                    "confidence": float(result.get('confidence', 0.0) or 0.0),
+                    "event_id": result.get('event_id')
+                }
+            else:
+                # Fallback to direct graph call
+                if not self.graph:
+                    self._init_graph()
+                if not self.graph:
+                    return {"error": "Graph not initialized", "answer": "", "citations": [], "repo": repo or "unknown"}
+                
+                allowed = set(list_repos())
+                if repo not in allowed:
+                    return {"error": f"invalid repo '{repo}', allowed={sorted(allowed)}", "answer": "", "citations": [], "repo": repo or "unknown"}
+                cfg = {"configurable": {"thread_id": f"mcp-{repo or 'default'}"}}
+                state = {"question": question, "documents": [], "generation": "", "iteration": 0, "confidence": 0.0, "repo": repo}
+                result = self.graph.invoke(state, cfg)
+                docs = result.get("documents", [])[:5]
+                citations = [f"{d['file_path']}:{d['start_line']}-{d['end_line']}" for d in docs]
+                return {"answer": result.get("generation", ""), "citations": citations, "repo": result.get("repo", repo or "unknown"), "confidence": float(result.get("confidence", 0.0) or 0.0), "event_id": None}
         except Exception as e:
             self._error(f"rag.answer error: {e}")
-            return {"error": str(e), "answer": "", "citations": [], "repo": repo or "unknown"}
+            return {"error": str(e), "answer": "", "citations": [], "repo": repo or "unknown", "event_id": None}
 
     def handle_rag_search(self, repo: str, question: str, top_k: int = 10) -> Dict[str, Any]:
         try:
@@ -79,6 +98,29 @@ class MCPServer:
         except Exception as e:
             self._error(f"rag.search error: {e}")
             return {"error": str(e), "results": [], "repo": repo or "unknown", "count": 0}
+
+    def handle_rag_feedback(self, event_id: str, rating: int, note: str = None) -> Dict[str, Any]:
+        """Submit feedback for a query."""
+        try:
+            if not event_id:
+                return {"error": "Event ID is required", "success": False}
+                
+            if rating < 1 or rating > 5:
+                return {"error": "Rating must be between 1 and 5", "success": False}
+                
+            signal = f"star{rating}"
+            payload = {"event_id": event_id, "signal": signal}
+            if note:
+                payload["note"] = note
+                
+            response = requests.post('http://127.0.0.1:8012/api/feedback', json=payload)
+            if response.status_code == 200:
+                return {"success": True, "message": f"Feedback submitted: {rating}/5 stars"}
+            else:
+                return {"error": f"Failed to submit feedback: {response.text}", "success": False}
+        except Exception as e:
+            self._error(f"rag.feedback error: {e}")
+            return {"error": str(e), "success": False}
 
     # --- Netlify helpers ---
     def _netlify_api(self, path: str, method: str = "GET", data: dict | None = None) -> dict:
@@ -198,6 +240,19 @@ class MCPServer:
                     }
                 },
                 {
+                    "name": "rag_feedback",
+                    "description": "Submit feedback rating (1-5 stars) for a previous query to improve search quality",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "event_id": {"type": "string", "description": "Event ID from previous rag_answer call"},
+                            "rating": {"type": "integer", "minimum": 1, "maximum": 5, "description": "Rating from 1 (poor) to 5 (excellent)"},
+                            "note": {"type": "string", "description": "Optional feedback note"}
+                        },
+                        "required": ["event_id", "rating"]
+                    }
+                },
+                {
                     "name": "netlify_deploy",
                     "description": "Trigger a Netlify build for project.net, project.dev, or both (uses NETLIFY_API_KEY)",
                     "inputSchema": {
@@ -232,6 +287,13 @@ class MCPServer:
                 return {"jsonrpc": "2.0", "id": req_id, "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}}
             elif tool_name in ("rag.search", "rag_search"):
                 result = self.handle_rag_search(repo=args.get("repo"), question=args.get("question", ""), top_k=args.get("top_k", 10))
+                return {"jsonrpc": "2.0", "id": req_id, "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}}
+            elif tool_name in ("rag.feedback", "rag_feedback"):
+                result = self.handle_rag_feedback(
+                    event_id=args.get("event_id"),
+                    rating=args.get("rating"),
+                    note=args.get("note")
+                )
                 return {"jsonrpc": "2.0", "id": req_id, "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}}
             elif tool_name in ("netlify.deploy", "netlify_deploy"):
                 domain = args.get("domain", "both")

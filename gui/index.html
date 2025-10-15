@@ -1741,6 +1741,7 @@
                 <button data-tab="chat">💬 Chat</button>
                 <button data-tab="config">⚙️ Configuration</button>
                 <button data-tab="data">🗄️ Data & Indexing</button>
+                <button data-tab="reranker">🧠 Learning Reranker</button>
                 <button data-tab="devtools">🛠️ Developer Tools</button>
                 <button data-tab="analytics">📈 Analytics</button>
                 <button data-tab="settings">⚙️ Settings</button>
@@ -2663,11 +2664,221 @@
                 <div id="storage-calculator-container"></div>
             </div>
 
+            <!-- Tab: Learning Reranker (Dedicated Tab) -->
+            <div id="tab-reranker" class="tab-content">
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
+                    <h2 style="color: var(--link);">🧠 Learning Reranker System</h2>
+                    <p class="small">Self-improving retrieval through user feedback. Trains a cross-encoder that learns from thumbs-up/down and clicks to rank better results higher - without touching your chat model.</p>
+                </div>
+
+                <!-- Status Overview -->
+                <div class="settings-section">
+                    <h3>📊 System Status</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Reranker Status</label>
+                            <div id="reranker-enabled-status" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px;">...</div>
+                        </div>
+                        <div class="input-group">
+                            <label>Logged Queries</label>
+                            <div id="reranker-query-count" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px;">...</div>
+                        </div>
+                        <div class="input-group">
+                            <label>Training Triplets</label>
+                            <div id="reranker-triplet-count" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px;">...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Training Workflow -->
+                <div class="settings-section" style="border-left: 3px solid var(--accent);">
+                    <h3>🎓 Training Workflow</h3>
+                    <p class="small">Click buttons below in order. Each step shows progress and results.</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0;">
+                        <div style="background: var(--chip-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+                            <h4 style="margin: 0 0 8px 0; color: var(--link);">1. Mine Triplets</h4>
+                            <p style="font-size: 11px; color: var(--fg-muted); margin-bottom: 12px;">Extract training data from logs</p>
+                            <button id="reranker-mine-btn" style="width: 100%; background: var(--link); color: var(--fg); border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Mine Triplets</button>
+                            <div id="reranker-mine-result" style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);"></div>
+                        </div>
+                        
+                        <div style="background: var(--chip-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+                            <h4 style="margin: 0 0 8px 0; color: var(--accent);">2. Train Model</h4>
+                            <p style="font-size: 11px; color: var(--fg-muted); margin-bottom: 12px;">Fine-tune cross-encoder (5-15 min)</p>
+                            <button id="reranker-train-btn" style="width: 100%; background: var(--accent); color: var(--accent-contrast); border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Train Model</button>
+                            <div id="reranker-train-result" style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);"></div>
+                        </div>
+                        
+                        <div style="background: var(--chip-bg); border: 1px solid var(--line); border-radius: 6px; padding: 16px;">
+                            <h4 style="margin: 0 0 8px 0; color: var(--warn);">3. Evaluate</h4>
+                            <p style="font-size: 11px; color: var(--fg-muted); margin-bottom: 12px;">Measure MRR and Hit@K metrics</p>
+                            <button id="reranker-eval-btn" style="width: 100%; background: var(--warn); color: var(--fg); border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Evaluate</button>
+                            <div id="reranker-eval-result" style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 16px; padding: 12px; background: var(--card-bg); border-radius: 6px; border-left: 3px solid var(--link);">
+                        <div style="font-size: 12px; color: var(--fg-muted); margin-bottom: 4px;">Current Task:</div>
+                        <div id="reranker-status" style="font-size: 14px; font-family: 'SF Mono', monospace; color: var(--fg-muted);">Ready</div>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="settings-section">
+                    <h3>⚙️ Reranker Configuration</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Enable Learning Reranker</label>
+                            <select name="AGRO_RERANKER_ENABLED">
+                                <option value="0">OFF</option>
+                                <option value="1">ON</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Model Path</label>
+                            <input type="text" name="AGRO_RERANKER_MODEL_PATH" placeholder="models/cross-encoder-agro" value="models/cross-encoder-agro">
+                        </div>
+                        <div class="input-group">
+                            <label>Telemetry Log Path</label>
+                            <input type="text" name="AGRO_LOG_PATH" placeholder="data/logs/queries.jsonl" value="data/logs/queries.jsonl">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Blend Alpha (CE Weight)</label>
+                            <input type="number" name="AGRO_RERANKER_ALPHA" value="0.7" min="0.0" max="1.0" step="0.05">
+                        </div>
+                        <div class="input-group">
+                            <label>Max Sequence Length</label>
+                            <input type="number" name="AGRO_RERANKER_MAXLEN" value="512" min="128" max="1024" step="64">
+                        </div>
+                        <div class="input-group">
+                            <label>Batch Size (Inference)</label>
+                            <input type="number" name="AGRO_RERANKER_BATCH" value="16" min="1" max="64" step="4">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Training Epochs</label>
+                            <input type="number" id="reranker-epochs" value="2" min="1" max="10">
+                        </div>
+                        <div class="input-group">
+                            <label>Training Batch Size</label>
+                            <input type="number" id="reranker-batch" value="16" min="1" max="64" step="4">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Evaluation Results -->
+                <div class="settings-section" style="border-left: 3px solid var(--warn);">
+                    <h3>📊 Evaluation Metrics</h3>
+                    <div id="reranker-metrics-display" style="background: var(--card-bg); border-radius: 6px; padding: 16px; min-height: 120px;">
+                        <div style="color: var(--fg-muted); text-align: center; padding: 20px;">No evaluation results yet. Click "Evaluate" above.</div>
+                    </div>
+                    
+                    <div class="input-row" style="margin-top: 16px;">
+                        <div class="input-group">
+                            <button id="reranker-save-baseline" style="background: var(--link); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Save as Baseline</button>
+                        </div>
+                        <div class="input-group">
+                            <button id="reranker-compare-baseline" style="background: var(--warn); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">Compare vs Baseline</button>
+                        </div>
+                        <div class="input-group">
+                            <button id="reranker-rollback" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Rollback Model</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Log Viewer -->
+                <div class="settings-section">
+                    <h3>📝 Query Logs</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <button id="reranker-view-logs" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">View Logs</button>
+                        </div>
+                        <div class="input-group">
+                            <button id="reranker-download-logs" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Download Logs</button>
+                        </div>
+                        <div class="input-group">
+                            <button id="reranker-clear-logs" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Clear Logs</button>
+                        </div>
+                    </div>
+                    <div id="reranker-logs-viewer" style="margin-top: 16px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; max-height: 400px; overflow-y: auto; display: none; font-family: 'SF Mono', monospace; font-size: 11px;"></div>
+                </div>
+
+                <!-- Automation -->
+                <div class="settings-section" style="border-left: 3px solid var(--warn);">
+                    <h3>🔄 Automation</h3>
+                    <p class="small">Set up nightly training to automatically improve the reranker.</p>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Nightly Training Time</label>
+                            <input type="time" id="reranker-cron-time" value="02:15">
+                        </div>
+                        <div class="input-group">
+                            <label>&nbsp;</label>
+                            <button id="reranker-setup-cron" style="background: var(--link); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Setup Nightly Job</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 8px;">
+                        <button id="reranker-remove-cron" style="background: var(--err); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 600;">Remove Nightly Job</button>
+                    </div>
+                    
+                    <div id="reranker-cron-status" style="margin-top: 12px; padding: 8px; background: var(--card-bg); border-radius: 4px; font-size: 12px; color: var(--fg-muted);"></div>
+                </div>
+
+                <!-- Smoke Test -->
+                <div class="settings-section" style="border-left: 3px solid var(--accent);">
+                    <h3>🧪 Smoke Test</h3>
+                    <p class="small">Verify end-to-end functionality: query → retrieve → rerank → log → feedback.</p>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Test Query</label>
+                            <input type="text" id="reranker-test-query" placeholder="Where is OAuth validated?" value="Where is OAuth validated?">
+                        </div>
+                        <div class="input-group">
+                            <label>&nbsp;</label>
+                            <button id="reranker-smoke-test" style="background: var(--accent); color: var(--accent-contrast); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%;">Run Smoke Test</button>
+                        </div>
+                    </div>
+                    <div id="reranker-smoke-result" style="margin-top: 16px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; display: none; font-family: 'SF Mono', monospace; font-size: 11px;"></div>
+                </div>
+
+                <!-- Cost Tracking -->
+                <div class="settings-section" style="border-left: 3px solid var(--warn);">
+                    <h3>💰 Cost Tracking</h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Total Cost (Last 24h)</label>
+                            <div id="reranker-cost-24h" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px; color: var(--accent);">$0.00</div>
+                        </div>
+                        <div class="input-group">
+                            <label>Avg Cost per Query</label>
+                            <div id="reranker-cost-avg" style="padding: 8px; background: var(--card-bg); border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 13px; color: var(--accent);">$0.00</div>
+                        </div>
+                    </div>
+                    <button id="reranker-cost-details" style="background: var(--fg-muted); color: var(--fg); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; margin-top: 8px; font-weight: 600;">View Cost Breakdown</button>
+                </div>
+
+                <!-- No-Hit Tracking -->
+                <div class="settings-section" style="border-left: 3px solid var(--err);">
+                    <h3>⚠️ No-Hit Queries</h3>
+                    <p class="small">Queries that returned no relevant results. Consider reindexing or adding these terms to your corpus.</p>
+                    <div id="reranker-nohits-list" style="background: var(--card-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px; max-height: 200px; overflow-y: auto; font-family: 'SF Mono', monospace; font-size: 11px;">
+                        <div style="color: var(--fg-muted); text-align: center; padding: 20px;">No no-hit queries tracked yet.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tab: Developer Tools - Editor -->
             <div id="tab-devtools-editor" class="tab-content">
                 <div class="subtab-bar">
                     <button class="subtab-btn active" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
+                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -2980,6 +3191,67 @@
                         </div>
                     </div>
                     
+                </div>
+
+                <div class="settings-section" style="margin-top:16px; border-left: 3px solid #ff6b9d;">
+                    <h3>
+                        <span class="accent-pink">●</span> Reranking
+                        <span class="tooltip-wrap">
+                            <span class="help-icon">?</span>
+                            <div class="tooltip-bubble">
+                                <span class="tt-title">Cross‑Encoder Reranking</span>
+                                Configure reranking backend and models. Set to "none" for offline/BM25‑only operation.
+                                <div class="tt-badges">
+                                    <span class="tt-badge info">Quality Boost</span>
+                                    <span class="tt-badge warn">May require downloads</span>
+                                </div>
+                            </div>
+                        </span>
+                    </h3>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Rerank Backend (RERANK_BACKEND)</label>
+                            <select name="RERANK_BACKEND">
+                                <option value="none">none</option>
+                                <option value="local">local</option>
+                                <option value="hf">hf</option>
+                                <option value="cohere">cohere</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Local/HF Model (RERANKER_MODEL)</label>
+                            <input type="text" name="RERANKER_MODEL" placeholder="BAAI/bge-reranker-v2-m3">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Cohere Model (COHERE_RERANK_MODEL)</label>
+                            <select name="COHERE_RERANK_MODEL">
+                                <option value="">(select model)</option>
+                                <option value="rerank-3.5">rerank-3.5</option>
+                                <option value="rerank-english-v3.0">rerank-english-v3.0</option>
+                                <option value="rerank-multilingual-v3.0">rerank-multilingual-v3.0</option>
+                                <option value="rerank-english-lite-v3.0">rerank-english-lite-v3.0</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Cohere API Key (COHERE_API_KEY)</label>
+                            <input type="password" name="COHERE_API_KEY" placeholder="ck_...">
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>HF Trust Remote Code (TRANSFORMERS_TRUST_REMOTE_CODE)</label>
+                            <select name="TRANSFORMERS_TRUST_REMOTE_CODE">
+                                <option value="1">1</option>
+                                <option value="0">0</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Input Snippet Chars (RERANK_INPUT_SNIPPET_CHARS)</label>
+                            <input type="number" name="RERANK_INPUT_SNIPPET_CHARS" value="700" min="200" max="2000" step="50">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Advanced RAG Tuning -->
@@ -3444,6 +3716,7 @@
                 <div class="subtab-bar">
                     <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn active" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
+                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -3608,10 +3881,112 @@
             </div>
 
             <!-- Tab: Developer Tools - Debug -->
+            <!-- Tab: Developer Tools - Reranker -->
+            <div id="tab-devtools-reranker" class="tab-content">
+                <div class="subtab-bar">
+                    <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
+                    <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
+                    <button class="subtab-btn active" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
+                    <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
+                    <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
+                </div>
+                
+                <div class="settings-section" style="border-left: 3px solid #9b5eff;">
+                    <h3>🧠 Learning Reranker Training</h3>
+                    <p class="small">Train a cross-encoder reranker that learns from user feedback (thumbs up/down) to improve retrieval quality over time. All settings and controls in one place!</p>
+                    
+                    <div style="background: #0f0f0f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 16px; margin: 16px 0;">
+                        <h4 style="margin: 0 0 12px 0; color: #00ff88;">Training Workflow</h4>
+                        <ol style="margin: 0; padding-left: 20px; color: #999;">
+                            <li>Use the chat (💬 Chat tab) - feedback buttons appear on answers automatically</li>
+                            <li>Accumulate ~50+ queries with feedback</li>
+                            <li>Mine training triplets from logs → 
+                                <button id="reranker-mine-btn" style="background: #5b9dff; color: #fff; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 8px;">Mine Triplets</button>
+                            </li>
+                            <li>Train the reranker model (5-15 min on CPU) → 
+                                <button id="reranker-train-btn" style="background: #00ff88; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Train Model</button>
+                            </li>
+                            <li>Evaluate performance → 
+                                <button id="reranker-eval-btn" style="background: #ff9b5e; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; margin-left: 8px;">Evaluate</button>
+                            </li>
+                            <li>Enable reranker below and click "Apply All Changes"</li>
+                        </ol>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 12px 0;">⚙️ Reranker Settings</h4>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Enable Learning Reranker</label>
+                            <select name="AGRO_RERANKER_ENABLED">
+                                <option value="0">OFF</option>
+                                <option value="1">ON</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Model Path</label>
+                            <input type="text" name="AGRO_RERANKER_MODEL_PATH" placeholder="models/cross-encoder-agro" value="models/cross-encoder-agro">
+                        </div>
+                    </div>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Blend Alpha (CE Weight)</label>
+                            <input type="number" name="AGRO_RERANKER_ALPHA" value="0.7" min="0.0" max="1.0" step="0.05">
+                        </div>
+                        <div class="input-group">
+                            <label>Max Sequence Length</label>
+                            <input type="number" name="AGRO_RERANKER_MAXLEN" value="512" min="128" max="1024" step="64">
+                        </div>
+                        <div class="input-group">
+                            <label>Batch Size (Inference)</label>
+                            <input type="number" name="AGRO_RERANKER_BATCH" value="16" min="1" max="64" step="4">
+                        </div>
+                    </div>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Telemetry Log Path</label>
+                            <input type="text" name="AGRO_LOG_PATH" placeholder="data/logs/queries.jsonl" value="data/logs/queries.jsonl">
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 20px 0 12px 0;">🎓 Training Parameters</h4>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Training Epochs</label>
+                            <input type="number" id="reranker-epochs" value="2" min="1" max="10" style="width: 100px;">
+                        </div>
+                        <div class="input-group">
+                            <label>Training Batch Size</label>
+                            <input type="number" id="reranker-batch" value="16" min="1" max="64" step="4" style="width: 100px;">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 16px; padding: 12px; background: #0a0a0a; border-radius: 6px; border-left: 3px solid #9b5eff;">
+                        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Status:</div>
+                        <div id="reranker-status" style="font-size: 14px; font-family: 'SF Mono', monospace; color: #666;">Ready</div>
+                    </div>
+                    
+                    <div style="margin-top: 16px; background: #0f1f0f; border: 1px solid #2a4a2a; border-radius: 6px; padding: 12px;">
+                        <div style="font-size: 12px; color: #00ff88; margin-bottom: 8px;">✓ How It Works:</div>
+                        <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #999;">
+                            <li>Logs all queries → <code style="background: #0a0a0a; padding: 2px 6px; border-radius: 3px; color: #00ff88;">data/logs/queries.jsonl</code></li>
+                            <li>Mines positive (thumbs up, clicked) vs negative (not clicked) pairs</li>
+                            <li>Trains cross-encoder to rank good results higher</li>
+                            <li>No chat model fine-tuning - only reranker learns!</li>
+                            <li>Privacy-safe: Everything runs locally</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <div id="tab-devtools-debug" class="tab-content">
                 <div class="subtab-bar">
                     <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
+                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn active" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -3703,6 +4078,7 @@
                 <div class="subtab-bar">
                     <button class="subtab-btn" data-subtab="devtools-editor" data-parent="devtools">Editor</button>
                     <button class="subtab-btn" data-subtab="devtools-testing" data-parent="devtools">Testing</button>
+                    <button class="subtab-btn" data-subtab="devtools-reranker" data-parent="devtools">🧠 Reranker</button>
                     <button class="subtab-btn" data-subtab="devtools-debug" data-parent="devtools">Debug</button>
                     <button class="subtab-btn active" data-subtab="devtools-integrations" data-parent="devtools">Integrations</button>
                 </div>
@@ -4114,6 +4490,7 @@
     <script src="/gui/js/golden_questions.js"></script>
     <script src="/gui/js/eval_runner.js"></script>
     <script src="/gui/js/chat.js"></script>
+    <script src="/gui/js/reranker.js"></script>
 
     <!-- Main app coordination (must load LAST) -->
     <script src="/gui/app.js"></script>

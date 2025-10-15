@@ -760,5 +760,221 @@
       "sophisticated patterns",
       "most complex"
     ]
+  },
+  {
+    "_comment": "=== SCRYPTED PLUGIN DEVELOPMENT MISTAKES PREVENTION ===",
+    "_comment2": "These questions catch common plugin development errors and ensure proper architecture"
+  },
+  {
+    "q": "What is the proper way to add a search bar or chat interface to the  management console?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "HttpRequestHandler",
+      "management console",
+      "UI integration",
+      "frontend component"
+    ]
+  },
+  {
+    "q": "How do you implement real-time chat functionality in a  plugin instead of using Settings?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "HttpRequestHandler",
+      "real-time",
+      "chat functionality",
+      "WebSocket",
+      "not Settings"
+    ]
+  },
+  {
+    "q": "What interfaces should you implement for a plugin that provides interactive UI components?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "HttpRequestHandler",
+      "UI components",
+      "interactive",
+      "interface",
+      "not DeviceProvider alone"
+    ]
+  },
+  {
+    "q": "How do you create a plugin manifest with proper metadata and dependencies?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook/package.json",
+      "manifest",
+      "metadata",
+      "dependencies",
+      "plugin registration"
+    ]
+  },
+  {
+    "q": "What is the difference between using Settings interface vs HttpRequestHandler for user interaction?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "Settings interface",
+      "HttpRequestHandler",
+      "user interaction",
+      "when to use each"
+    ]
+  },
+  {
+    "q": "How do you add custom UI elements to the  management console from a plugin?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "management console",
+      "custom UI",
+      "frontend integration",
+      "UI elements"
+    ]
+  },
+  {
+    "q": "What is the proper error handling pattern for  plugins with external API calls?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "error handling",
+      "external API",
+      "fetch",
+      "try catch",
+      "graceful degradation"
+    ]
+  },
+  {
+    "q": "How do you implement proper loading states and user feedback in  plugins?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "loading states",
+      "user feedback",
+      "async operations",
+      "UI feedback"
+    ]
+  },
+  {
+    "q": "What is the difference between DeviceProvider and HttpRequestHandler for plugin functionality?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "DeviceProvider",
+      "HttpRequestHandler",
+      "interface differences",
+      "when to use each"
+    ]
+  },
+  {
+    "q": "How do you configure plugin settings for external API endpoints like AGRO?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "Settings interface",
+      "external API",
+      "endpoint configuration",
+      "API keys"
+    ]
+  },
+  {
+    "q": "What is the proper way to handle async operations in  plugins without blocking?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "async operations",
+      "non-blocking",
+      "Promise handling",
+      "async await"
+    ]
+  },
+  {
+    "q": "How do you implement proper logging and debugging in  plugins?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "logging",
+      "debugging",
+      "console.log",
+      "error tracking"
+    ]
+  },
+  {
+    "q": "What is the correct way to structure a  plugin for production deployment?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "production deployment",
+      "plugin structure",
+      "build process",
+      "npm scripts"
+    ]
+  },
+  {
+    "q": "How do you implement proper input validation and sanitization in  plugins?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "input validation",
+      "sanitization",
+      "security",
+      "user input"
+    ]
+  },
+  {
+    "q": "What is the proper way to handle plugin configuration changes and updates?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "configuration changes",
+      "plugin updates",
+      "settings management",
+      "putSetting"
+    ]
+  },
+  {
+    "q": "How do you implement proper TypeScript types and interfaces for  plugins?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "TypeScript",
+      "types",
+      "interfaces",
+      "type safety"
+    ]
+  },
+  {
+    "q": "What is the difference between a basic plugin scaffold and a production-ready plugin?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "plugin scaffold",
+      "production ready",
+      "error handling",
+      "proper architecture"
+    ]
+  },
+  {
+    "q": "How do you implement proper plugin lifecycle management in ?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "plugin lifecycle",
+      "initialization",
+      "cleanup",
+      "resource management"
+    ]
+  },
+  {
+    "q": "What is the proper way to handle plugin dependencies and external libraries?",
+    "repo": "",
+    "expect_paths": [
+      "plugins/webhook",
+      "dependencies",
+      "external libraries",
+      "npm packages",
+      "bundling"
+    ]
   }
 ]

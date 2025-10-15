@@ -176,7 +176,23 @@ async function sendMessage() {
             answerText = `[Confidence: ${(data.confidence * 100).toFixed(1)}%]\n\n${answerText}`;
         }
 
-        addMessage('assistant', answerText);
+        const msgId = addMessage('assistant', answerText);
+        
+        // Store event_id globally for click tracking
+        if (data.event_id) {
+            window.lastChatEventId = data.event_id;
+        }
+        
+        // Add feedback buttons if event_id is present and addFeedbackButtons is available
+        if (data.event_id && typeof addFeedbackButtons === 'function') {
+            const msgEl = document.getElementById(msgId);
+            if (msgEl) {
+                const contentDiv = msgEl.querySelector('[style*="line-height"]');
+                if (contentDiv) {
+                    addFeedbackButtons(contentDiv.parentElement, data.event_id);
+                }
+            }
+        }
 
     } catch (error) {
         console.error('Chat error:', error);
@@ -262,13 +278,18 @@ function formatAssistantMessage(content) {
     let formatted = escapeHtml(content);
 
     // Extract and link file paths (e.g., server/app.py:123-145 or just server/app.py)
+    // Store event_id if available for click tracking
+    const currentEventId = window.lastChatEventId || null;
+    
     formatted = formatted.replace(
         /([a-zA-Z0-9_\-\/\.]+\.(py|js|ts|tsx|jsx|rb|go|rs|java|cs|yml|yaml|json|md|txt))(?::(\d+)(?:-(\d+))?)?/g,
         (match, filePath, ext, startLine, endLine) => {
             const lineRange = startLine ? `:${startLine}${endLine ? `-${endLine}` : ''}` : '';
             const displayText = `${filePath}${lineRange}`;
-            // Use vscode:// URL scheme if available, otherwise just show as styled text
-            return `<a href="vscode://file/${filePath}${startLine ? ':' + startLine : ''}" style="color: #5b9dff; text-decoration: none; border-bottom: 1px solid #5b9dff; font-family: 'SF Mono', monospace; font-size: 13px;" title="Open in editor">${displayText}</a>`;
+            const docId = `${filePath}${lineRange}`;
+            // Track clicks if event_id is available
+            const clickHandler = currentEventId ? `onclick="trackFileClick('${currentEventId}', '${docId}')"` : '';
+            return `<a href="vscode://file/${filePath}${startLine ? ':' + startLine : ''}" ${clickHandler} style="color: #5b9dff; text-decoration: none; border-bottom: 1px solid #5b9dff; font-family: 'SF Mono', monospace; font-size: 13px; cursor: pointer;" title="Open in editor">${displayText}</a>`;
         }
     );
 

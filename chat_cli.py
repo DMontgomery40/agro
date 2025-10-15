@@ -17,6 +17,7 @@ Commands:
 """
 import os
 import sys
+import requests
 from pathlib import Path
 try:
     from dotenv import load_dotenv
@@ -73,22 +74,31 @@ class ChatCLI:
         return generation
 
     def ask(self, question: str) -> dict:
-        """Ask a question and get answer."""
+        """Ask a question and get answer via API to capture event_id."""
         try:
-            state = {
-                "question": question,
-                "documents": [],
-                "generation": "",
-                "iteration": 0,
-                "confidence": 0.0,
-                "repo": self.repo
-            }
-
-            result = self.graph.invoke(state, self._get_config())
-            return result
+            # Use API to get event_id for feedback
+            response = requests.post('http://127.0.0.1:8012/api/chat', json={
+                'question': question,
+                'repo': self.repo
+            })
+            if response.status_code == 200:
+                return response.json()
+            else:
+                # Fallback to direct graph call
+                state = {
+                    "question": question,
+                    "documents": [],
+                    "generation": "",
+                    "iteration": 0,
+                    "confidence": 0.0,
+                    "repo": self.repo
+                }
+                result = self.graph.invoke(state, self._get_config())
+                result['event_id'] = None  # No event_id for direct calls
+                return result
         except Exception as e:
             console.print(f"[red]Error:[/red] {e}")
-            return {"generation": f"Error: {e}", "documents": [], "confidence": 0.0}
+            return {"generation": f"Error: {e}", "documents": [], "confidence": 0.0, "event_id": None}
 
     def switch_repo(self, new_repo: str):
         """Switch to a different repository."""
@@ -99,6 +109,35 @@ class ChatCLI:
 
         self.repo = new_repo
         console.print(f"[green]✓[/green] Switched to repo: [bold]{new_repo}[/bold]")
+
+    def submit_feedback(self, event_id: str, rating: int, note: str = None):
+        """Submit feedback for a query."""
+        if not event_id:
+            console.print("[red]No event ID available for feedback[/red]")
+            return False
+            
+        if rating < 1 or rating > 5:
+            console.print("[red]Rating must be between 1 and 5[/red]")
+            return False
+            
+        try:
+            signal = f"star{rating}"
+            payload = {"event_id": event_id, "signal": signal}
+            if note:
+                payload["note"] = note
+                
+            response = requests.post('http://127.0.0.1:8012/api/feedback', json=payload)
+            if response.status_code == 200:
+                console.print(f"[green]✓[/green] Feedback submitted: {rating}/5 stars")
+                if note:
+                    console.print(f"[dim]Note: {note}[/dim]")
+                return True
+            else:
+                console.print(f"[red]Failed to submit feedback: {response.text}[/red]")
+                return False
+        except Exception as e:
+            console.print(f"[red]Error submitting feedback: {e}[/red]")
+            return False
 
     def show_help(self):
         """Show available commands."""
@@ -215,6 +254,34 @@ Type your question or use `/help` for commands.
                         end = doc.get('end_line', 0)
                         score = doc.get('rerank_score', 0.0)
                         console.print(f"  [dim]{i}.[/dim] {fp}:{start}-{end} [dim](score: {score:.3f})[/dim]")
+
+                # Collect feedback
+                event_id = result.get('event_id')
+                if event_id:
+                    console.print("\n[dim]Rate this answer (1-5 stars) to help improve search quality:[/dim]")
+                    try:
+                        rating_input = Prompt.ask(
+                            "[bold cyan]Rating[/bold cyan] (1-5, or Enter to skip)",
+                            default="",
+                            show_default=False
+                        )
+                        
+                        if rating_input.strip():
+                            rating = int(rating_input.strip())
+                            if 1 <= rating <= 5:
+                                note_input = Prompt.ask(
+                                    "[bold cyan]Optional note[/bold cyan] (or Enter to skip)",
+                                    default="",
+                                    show_default=False
+                                )
+                                note = note_input.strip() if note_input.strip() else None
+                                self.submit_feedback(event_id, rating, note)
+                            else:
+                                console.print("[red]Rating must be between 1 and 5[/red]")
+                        else:
+                            console.print("[dim]Skipped feedback[/dim]")
+                    except (ValueError, KeyboardInterrupt):
+                        console.print("[dim]Skipped feedback[/dim]")
 
             except KeyboardInterrupt:
                 console.print("\n[yellow]Use /exit to quit[/yellow]")

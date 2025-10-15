@@ -69,18 +69,18 @@
       "layer_bonuses": {
         "server": {
           "integration": 0.25,
-          "server": 0.20,
+          "server": 0.2,
           "sdk": 0.15,
           "ui": 0.05,
           "docs": 0.08,
           "infra": 0.03
         },
         "integration": {
-          "integration": 0.30,
+          "integration": 0.3,
           "server": 0.18,
           "sdk": 0.12,
           "ui": 0.05,
-          "docs": 0.10,
+          "docs": 0.1,
           "infra": 0.03
         },
         "ui": {
@@ -88,19 +88,19 @@
           "integration": 0.12,
           "server": 0.08,
           "sdk": 0.06,
-          "docs": 0.10,
+          "docs": 0.1,
           "infra": 0.02
         },
         "sdk": {
           "sdk": 0.28,
-          "integration": 0.20,
+          "integration": 0.2,
           "server": 0.15,
           "ui": 0.06,
           "docs": 0.12,
           "infra": 0.03
         },
         "infra": {
-          "infra": 0.20,
+          "infra": 0.2,
           "server": 0.12,
           "integration": 0.08,
           "sdk": 0.05,

@@ -1865,12 +1865,13 @@
             SKIP_DENSE: 'If 1, skip building dense vectors/Qdrant (sparse-only).',
             ENRICH_CODE_CHUNKS: 'If true, store per-chunk summaries/keywords before embedding.',
 
-            // Reranking
-            RERANK_BACKEND: 'Cross-encoder reranking backend: local, hf, cohere, or none.',
-            RERANKER_MODEL: 'Local/HF cross-encoder model (e.g., BAAI/bge-reranker-v2-m3).',
-            COHERE_API_KEY: 'API key for Cohere reranking.',
-            COHERE_RERANK_MODEL: 'Cohere reranker model (e.g., rerank-3.5).',
-            TRANSFORMERS_TRUST_REMOTE_CODE: 'Allow HF models that require remote code.',
+            // Reranking (verbose tips)
+            RERANK_BACKEND: 'Choose the reranking backend that orders retrieved chunks by semantic relevance.\n• cohere — hosted reranker; highest quality. Requires COHERE_API_KEY.\n• local — local cross-encoder via rerankers lib (e.g., BGE). Requires one-time model download.\n• hf — Hugging Face pipeline (e.g., Jina reranker). Set TRANSFORMERS_TRUST_REMOTE_CODE=1 if required.\n• none — disable reranking (BM25/vector fusion only).\nTip: Start with cohere for quality; fall back to none when fully offline.',
+            RERANKER_MODEL: 'Local/HF cross-encoder name used when RERANK_BACKEND=local or hf.\nExamples: BAAI/bge-reranker-v2-m3, jinaai/jina-reranker-v3.\nNote: First use may download model files. Keep TRANSFORMERS_TRUST_REMOTE_CODE=1 for Jina variants.',
+            COHERE_API_KEY: 'Cohere API key for reranking when RERANK_BACKEND=cohere.\nStored locally in .env and used only on your machine.',
+            COHERE_RERANK_MODEL: 'Cohere reranker to use when RERANK_BACKEND=cohere.\nCommon: rerank-3.5 (general), rerank-english-v3.0, rerank-multilingual-v3.0, rerank-english-lite-v3.0.\nPick from the dropdown or type a custom value.',
+            TRANSFORMERS_TRUST_REMOTE_CODE: 'Advanced: Allow Hugging Face models that need remote code execution (True/False).\nRequired for some Jina/MXBAI rerankers. Set to 0 to harden if only using Cohere.',
+            RERANK_INPUT_SNIPPET_CHARS: 'Max code/text characters sent to the reranker per candidate.\nCohere typical: 700. HF/local typical: 600.\nIncrease for more context (potentially higher latency); decrease for speed.',
 
             // Retrieval
             MQ_REWRITES: 'Multi-query expansion count (more rewrites → better recall, more cost).',
