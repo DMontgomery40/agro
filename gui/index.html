@@ -4291,6 +4291,10 @@
                             <label><input type="checkbox" name="EDITOR_ENABLED" value="1"> Enable Embedded Editor</label>
                             <p class="small">Start OpenVSCode Server container on up.sh</p>
                         </div>
+                        <div class="input-group">
+                            <label><input type="checkbox" name="EDITOR_EMBED_ENABLED" value="1"> Enable Editor Embed (iframe)</label>
+                            <p class="small">Show the editor inline in the GUI (hides automatically in CI)</p>
+                        </div>
                     </div>
                     <div class="input-row">
                         <div class="input-group">
@@ -4865,6 +4869,56 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                         </div>
                     </div>
                 </div>
+
+                <div class="settings-section" style="margin-top:16px;">
+                    <h3>Commit Metadata (Agent/Session Signing)</h3>
+                    <p class="small">Append a Chat Session trailer to every commit and optionally set git user info. This helps trace changes to a local chat session ID.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Agent Name</label>
+                            <input type="text" id="git-agent-name" placeholder="Codex Agent" />
+                        </div>
+                        <div class="input-group">
+                            <label>Agent Email</label>
+                            <input type="email" id="git-agent-email" placeholder="agent@example.com" />
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Chat Session ID</label>
+                            <input type="text" id="git-chat-session" placeholder="paste your local chat session id" />
+                        </div>
+                        <div class="input-group">
+                            <label>Trailer Key</label>
+                            <input type="text" id="git-trailer-key" value="Chat-Session" />
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label><input type="checkbox" id="git-set-user" /> Set git user.name/email</label>
+                        </div>
+                        <div class="input-group">
+                            <label><input type="checkbox" id="git-append-trailer" checked /> Append session trailer via hook</label>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label><input type="checkbox" id="git-enable-template" /> Use commit template</label>
+                        </div>
+                        <div class="input-group">
+                            <label><input type="checkbox" id="git-install-hook" checked /> Install/refresh prepare-commit-msg hook</label>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button class="small-button" id="btn-save-commit-meta" style="background: var(--accent); color: var(--accent-contrast);">💾 Save Commit Metadata</button>
+                        <div id="git-commit-meta-status" class="mono" style="font-size:12px; color: var(--fg-muted);">—</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Tab: Analytics - Performance -->
@@ -5184,37 +5238,76 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
             <div id="tab-metrics" class="tab-content">
                 <div class="settings-section">
                     <h3>Grafana Metrics Dashboard</h3>
-                    <p class="small">Real-time observability powered by Prometheus + Grafana</p>
-                    <div style="margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card-bg); padding: 12px;">
-                        <div style="font-size:14px;font-weight:700;color:var(--fg);margin-bottom:8px;">Demo Mode</div>
-                        <p class="small" style="color: var(--fg-muted); line-height:1.6;">
-                            Sorry — the live embedded Grafana dashboard isn't available in this demo.
-                            But imagine the following panels streaming live:
-                        </p>
-                        <ul style="margin:8px 0 12px 18px; line-height:1.6; color: var(--fg);">
-                            <li>LangSmith tracing: runs, spans, tokens, error drill‑downs</li>
-                            <li>RAG query volume (1m/5m/1h)</li>
-                            <li>Top routes and latency percentiles (P50/P95/P99)</li>
-                            <li>Answer/context token usage</li>
-                            <li>No‑hit queries and routing fallbacks</li>
-                            <li>BM25 vs vector hit ratios</li>
-                            <li>Reranker confidence and win‑rate</li>
-                            <li>Indexing progress and chunk counts per repo</li>
-                            <li>Cards builder throughput and stage timings</li>
-                            <li>Cost per request (24h / 30d)</li>
-                            <li>Provider health checks and error rates</li>
-                            <li>Qdrant collections: points, IO, latency</li>
-                            <li>Redis cache hit/miss and memory</li>
-                            <li>Server CPU / memory utilization</li>
-                            <li>Canary results and SLO budget burn</li>
-                        </ul>
-                        <div class="small" style="color: var(--fg-muted); margin:6px 0 10px;">And because it's a demo…</div>
-                        <div style="border:1px solid var(--line); border-radius:6px; padding:10px; background: var(--panel);">
-                            <div style="font-weight:700; color: var(--link); margin-bottom:6px;">Here’s that T‑Rex game Google shows when it’s down</div>
-                            <canvas id="dino-canvas" width="600" height="140" style="width:100%; max-width:600px; height:160px; background: var(--card-bg); border:1px solid var(--line); border-radius:4px;"></canvas>
-                            <div class="small" style="color: var(--fg-muted); margin-top:6px;">Press Space or ↑ to jump. Avoid the cacti.</div>
+                    <p class="small">Configure and embed your live Grafana dashboard powered by Prometheus.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>
+                                <input type="checkbox" name="GRAFANA_EMBED_ENABLED" checked>
+                                Enable Embedded Grafana
+                            </label>
                         </div>
-                        <script src="/gui/js/dino.js"></script>
+                        <div class="input-group">
+                            <label>Grafana Base URL</label>
+                            <input type="text" name="GRAFANA_BASE_URL" value="http://127.0.0.1:3000" placeholder="http://127.0.0.1:3000">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Dashboard UID</label>
+                            <input type="text" name="GRAFANA_DASHBOARD_UID" value="agro-overview" placeholder="agro-overview">
+                        </div>
+                        <div class="input-group">
+                            <label>Dashboard Slug</label>
+                            <input type="text" name="GRAFANA_DASHBOARD_SLUG" value="agro-overview" placeholder="agro-overview">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Org ID</label>
+                            <input type="number" name="GRAFANA_ORG_ID" value="1" min="1">
+                        </div>
+                        <div class="input-group">
+                            <label>Refresh Interval</label>
+                            <input type="text" name="GRAFANA_REFRESH" value="10s" placeholder="10s">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Kiosk Mode</label>
+                            <select name="GRAFANA_KIOSK">
+                                <option value="">None</option>
+                                <option value="tv" selected>tv</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Auth Mode</label>
+                            <select name="GRAFANA_AUTH_MODE">
+                                <option value="anonymous" selected>Anonymous</option>
+                                <option value="token">Service Account Token</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Auth Token (optional)</label>
+                            <input type="text" name="GRAFANA_AUTH_TOKEN" placeholder="Token for auth_token=...">
+                        </div>
+                        <div class="input-group">
+                            <label>&nbsp;</label>
+                            <div style="display:flex; gap:8px;">
+                                <button id="grafana-preview" style="background: var(--link); color: var(--on-link); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Preview</button>
+                                <button id="grafana-open" style="background: var(--bg-elev1); color: var(--fg); border: 1px solid var(--line); padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;">Open Grafana</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="grafana-embed" style="margin-top: 16px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card-bg); display:none;">
+                        <iframe id="grafana-iframe" style="width:100%; height:600px; border:0; background: var(--bg);"></iframe>
                     </div>
                 </div>
             </div>
@@ -5428,8 +5521,10 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
     <!-- Feature modules -->
     <script src="/gui/js/tabs.js"></script>
     <script src="/gui/js/config.js"></script>
+    <script src="/gui/js/grafana.js"></script>
     <script src="/gui/js/health.js"></script>
     <script src="/gui/js/git-hooks.js"></script>
+    <script src="/gui/js/git-commit-meta.js"></script>
     <script src="/gui/js/keywords.js"></script>
     <script src="/gui/js/autotune.js"></script>
     <script src="/gui/js/search.js"></script>

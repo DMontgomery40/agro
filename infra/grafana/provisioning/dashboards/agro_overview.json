@@ -1,5 +1,6 @@
 {
   "uid": "agro-overview",
+  "slug": "agro-overview",
   "title": "AGRO Overview",
   "timezone": "browser",
   "schemaVersion": 38,
@@ -177,7 +178,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(agro_cost_usd_total{provider=~\"$provider\",model=~\"$model\"}[5m])) * 60",
+          "expr": "sum(rate(agro_cost_usd_total[5m])) * 60",
           "refId": "A"
         }
       ],
@@ -295,7 +296,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (role) (rate(agro_tokens_total{provider=~\"$provider\",model=~\"$model\"}[5m])) * 60",
+          "expr": "sum by (role) (rate(agro_tokens_total[5m])) * 60",
           "refId": "A"
         }
       ],
@@ -371,7 +372,7 @@
       },
       "targets": [
         {
-          "expr": "(sum(rate(agro_cost_usd_total{provider=~\"$provider\",model=~\"$model\"}[5m])))/(sum(rate(agro_requests_total{provider=~\"$provider\",model=~\"$model\"}[5m])) )",
+          "expr": "(sum(rate(agro_cost_usd_total[5m])))/(sum(rate(agro_requests_total[5m])))",
           "refId": "A"
         }
       ],
