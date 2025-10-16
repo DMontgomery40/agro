@@ -206,12 +206,12 @@
     },
     {
       "id": 4,
-      "type": "timeseries",
-      "title": "Requests/sec by route",
+      "type": "table",
+      "title": "🔵 API Routes - Top by throughput",
       "gridPos": {
         "x": 0,
         "y": 8,
-        "w": 8,
+        "w": 12,
         "h": 10
       },
       "datasource": {
@@ -220,52 +220,95 @@
       },
       "targets": [
         {
-          "expr": "sum by (route) (rate(agro_requests_total{provider=~\"$provider\",model=~\"$model\",route=~\"$route\"}[5m]))",
+          "expr": "topk(10, sum by (route) (rate(agro_requests_total{provider=~\"$provider\",model=~\"$model\",route=~\"/api.*\"}[5m])))",
+          "format": "table",
+          "instant": true,
           "refId": "A"
         }
       ],
       "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "showLegend": true,
-          "calcs": ["mean", "max"],
-          "values": ["mean", "max"]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "showHeader": true,
+        "sortBy": []
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "req/s",
           "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
+            "width": 300,
+            "align": "auto",
+            "displayMode": "auto"
           }
         },
         "overrides": [
           {
             "matcher": {
-              "id": "byValue",
-              "options": {
-                "op": "lt",
-                "reducer": "max",
-                "value": 0.001
-              }
+              "id": "byName",
+              "options": "route"
             },
             "properties": [
               {
-                "id": "custom.hideFrom",
-                "value": {
-                  "viz": true,
-                  "legend": true,
-                  "tooltip": false
-                }
+                "id": "custom.width",
+                "value": 400
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
+      },
+      "pluginVersion": "10.0.0"
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "🟡 Infrastructure Routes - Top by throughput",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (route) (rate(agro_requests_total{provider=~\"$provider\",model=~\"$model\",route!~\"/api.*\"}[5m])))",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": []
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "req/s",
+          "custom": {
+            "width": 300,
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 400
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
               }
             ]
           }
@@ -278,8 +321,8 @@
       "type": "timeseries",
       "title": "Errors/sec by type",
       "gridPos": {
-        "x": 8,
-        "y": 8,
+        "x": 0,
+        "y": 18,
         "w": 8,
         "h": 10
       },
@@ -316,8 +359,8 @@
       "type": "timeseries",
       "title": "Tokens/min by role",
       "gridPos": {
-        "x": 16,
-        "y": 8,
+        "x": 8,
+        "y": 18,
         "w": 8,
         "h": 10
       },
@@ -354,7 +397,7 @@
       "type": "timeseries",
       "title": "P95 latency by stage (s)",
       "gridPos": {
-        "x": 0,
+        "x": 16,
         "y": 18,
         "w": 8,
         "h": 10
@@ -392,8 +435,8 @@
       "type": "stat",
       "title": "Cost per request (USD)",
       "gridPos": {
-        "x": 8,
-        "y": 18,
+        "x": 16,
+        "y": 28,
         "w": 8,
         "h": 10
       },
@@ -434,8 +477,8 @@
       "type": "bargauge",
       "title": "Top 5 models by cost (5m)",
       "gridPos": {
-        "x": 16,
-        "y": 18,
+        "x": 0,
+        "y": 38,
         "w": 8,
         "h": 10
       },
@@ -466,8 +509,8 @@
       "type": "gauge",
       "title": "MRR (avg, 5m)",
       "gridPos": {
-        "x": 0,
-        "y": 28,
+        "x": 8,
+        "y": 38,
         "w": 8,
         "h": 10
       },
@@ -522,8 +565,8 @@
       "type": "bargauge",
       "title": "Hits@K (avg, 5m)",
       "gridPos": {
-        "x": 8,
-        "y": 28,
+        "x": 16,
+        "y": 38,
         "w": 8,
         "h": 10
       },
@@ -554,8 +597,8 @@
       "type": "timeseries",
       "title": "Canary pass ratio by model",
       "gridPos": {
-        "x": 16,
-        "y": 28,
+        "x": 0,
+        "y": 48,
         "w": 8,
         "h": 10
       },
@@ -593,7 +636,7 @@
       "title": "Reranker margin (abs) histogram",
       "gridPos": {
         "x": 0,
-        "y": 38,
+        "y": 58,
         "w": 12,
         "h": 12
       },
@@ -626,7 +669,7 @@
       "title": "Reranker winner (count, 5m)",
       "gridPos": {
         "x": 12,
-        "y": 38,
+        "y": 58,
         "w": 12,
         "h": 12
       },
