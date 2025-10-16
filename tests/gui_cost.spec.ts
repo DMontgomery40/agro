@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('GUI cost panel', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/gui/');
-    await page.getByRole('button', { name: 'Tools' }).click();
+    // Cost panel lives in the right sidepanel; no tab switch required.
   });
 
   test('embeddings and reranks affect totals', async ({ page }) => {
@@ -36,4 +36,3 @@ test.describe('GUI cost panel', () => {
     await expect(incDaily).toBeGreaterThan(baseDaily);
   });
 });
-

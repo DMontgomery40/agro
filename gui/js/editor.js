@@ -5,6 +5,18 @@
   const api = (window.CoreUtils && window.CoreUtils.api) ? window.CoreUtils.api : (p=>p);
   let editorHealthInterval = null;
 
+  function _env(name, dflt){
+    try { return (window.CoreUtils?.state?.config?.env?.[name]) ?? dflt; } catch { return dflt; }
+  }
+  function _embedEnabled(){
+    const ci = String(_env('CI','')).toLowerCase();
+    if (ci === '1' || ci === 'true' || ci === 'yes') return false; // CI guard
+    const fld = document.querySelector('[name="EDITOR_EMBED_ENABLED"]');
+    if (fld && fld.type === 'checkbox') return fld.checked;
+    const envVal = String(_env('EDITOR_EMBED_ENABLED','1'));
+    return envVal === '1' || envVal.toLowerCase() === 'true';
+  }
+
   async function checkEditorHealth() {
     try {
       const resp = await fetch(api('/health/editor'));
@@ -14,17 +26,26 @@
       const banner = document.getElementById('editor-status-banner');
       const bannerMsg = document.getElementById('editor-status-message');
       const iframe = document.getElementById('editor-iframe');
+      const wrap = document.getElementById('editor-iframe-container');
 
-      if (!badge || !badgeText || !banner || !bannerMsg || !iframe) return;
+      if (!badge || !badgeText || !banner || !bannerMsg || !iframe || !wrap) return;
+
+      const canEmbed = _embedEnabled();
 
       if (data.ok) {
         badge.style.background = 'var(--accent)';
         badge.style.color = 'var(--accent-contrast)';
         badgeText.textContent = '● Healthy';
         banner.style.display = 'none';
-        if (!iframe.src) {
-          // Prefer same-origin proxy to avoid frame-blocking headers
-          iframe.src = '/editor/';
+        if (canEmbed) {
+          wrap.style.display = 'block';
+          if (!iframe.src) {
+            // Prefer same-origin proxy to avoid frame-blocking headers
+            iframe.src = '/editor/';
+          }
+        } else {
+          wrap.style.display = 'none';
+          iframe.src = '';
         }
       } else {
         const isDisabled = !data.enabled;
@@ -36,6 +57,7 @@
         bannerMsg.textContent = isDisabled
           ? `Editor is disabled. Enable it in the Misc tab and restart.`
           : `Error: ${reason}. Check logs or try restarting.`;
+        wrap.style.display = 'none';
         iframe.src = '';
       }
     } catch (error) {
@@ -109,6 +131,7 @@
   }
 
   function initEditorHealthCheck() {
+    // In CI or when embed is disabled, we still update the badge but avoid loading the iframe repeatedly
     if (!editorHealthInterval) {
       checkEditorHealth();
       editorHealthInterval = setInterval(checkEditorHealth, 10000);
@@ -140,4 +163,3 @@
 
   window.Editor = { checkEditorHealth, openEditorWindow, copyEditorUrl, restartEditor, initEditorHealthCheck, stopEditorHealthCheck, bindControls };
 })();
-

@@ -29,6 +29,7 @@ import os, json, sys
 from typing import Any, Dict
 from collections import Counter, defaultdict
 from pathlib import Path as _Path
+import subprocess
 
 app = FastAPI(title="AGRO RAG + GUI")
 
@@ -2036,6 +2037,156 @@ def git_hooks_install() -> Dict[str, Any]:
         return {"ok": True, "message": "Installed git hooks. Enable with: export AUTO_INDEX=1"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# ---------------- Git commit metadata (agent/session signing) ----------------
+def _git_dir() -> Path:
+    return repo_root() / ".git"
+
+def _commit_meta_path() -> Path:
+    return _git_dir() / "agent_commit_meta.json"
+
+def _git_message_template_path() -> Path:
+    return _git_dir() / ".gitmessage.agro"
+
+def _prepare_commit_msg_hook_path() -> Path:
+    return _git_dir() / "hooks" / "prepare-commit-msg"
+
+def _read_json(p: Path, default: Any) -> Any:
+    try:
+        return json.loads(p.read_text())
+    except Exception:
+        return default
+
+@app.get("/api/git/commit-meta")
+def git_commit_meta_get() -> Dict[str, Any]:
+    """Return current commit metadata settings and git user config."""
+    meta = _read_json(_commit_meta_path(), {
+        "agent_name": "",
+        "agent_email": "",
+        "chat_session_id": "",
+        "trailer_key": "Chat-Session",
+        "append_trailer": True,
+        "set_git_user": False,
+        "enable_template": False,
+        "install_hook": True,
+    })
+    # Read current git config
+    def _git_cfg(key: str) -> Optional[str]:
+        try:
+            out = subprocess.check_output(["git", "config", "--get", key], cwd=str(repo_root()))
+            return out.decode().strip()
+        except Exception:
+            return None
+    return {
+        "meta": meta,
+        "git_user": {
+            "name": _git_cfg("user.name") or "",
+            "email": _git_cfg("user.email") or "",
+        },
+        "template_path": str(_git_message_template_path()),
+        "hook_path": str(_prepare_commit_msg_hook_path()),
+    }
+
+@app.post("/api/git/commit-meta")
+def git_commit_meta_set(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Persist commit metadata settings and optionally configure git.
+
+    Body keys:
+    - agent_name, agent_email, chat_session_id, trailer_key
+    - append_trailer (bool), set_git_user (bool), enable_template (bool), install_hook (bool)
+    """
+    root = repo_root()
+    gd = _git_dir()
+    gd.mkdir(parents=True, exist_ok=True)
+    meta = {
+        "agent_name": str(payload.get("agent_name", "")),
+        "agent_email": str(payload.get("agent_email", "")),
+        "chat_session_id": str(payload.get("chat_session_id", "")),
+        "trailer_key": str(payload.get("trailer_key", "Chat-Session")) or "Chat-Session",
+        "append_trailer": bool(payload.get("append_trailer", True)),
+        "set_git_user": bool(payload.get("set_git_user", False)),
+        "enable_template": bool(payload.get("enable_template", False)),
+        "install_hook": bool(payload.get("install_hook", True)),
+    }
+    try:
+        _commit_meta_path().write_text(json.dumps(meta, indent=2))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to write meta: {e}")
+
+    # Optionally set git user.name/email
+    if meta["set_git_user"]:
+        try:
+            if meta["agent_name"]:
+                subprocess.check_call(["git", "config", "user.name", meta["agent_name"]], cwd=str(root))
+            if meta["agent_email"]:
+                subprocess.check_call(["git", "config", "user.email", meta["agent_email"]], cwd=str(root))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to set git user: {e}")
+
+    # Optionally write a commit message template and configure it
+    if meta["enable_template"]:
+        try:
+            tmpl = _git_message_template_path()
+            content = (
+                "# Commit message\n\n"
+                "# Describe your change above.\n"
+            )
+            if meta["chat_session_id"]:
+                content += f"\n{meta['trailer_key']}: {meta['chat_session_id']}\n"
+            tmpl.write_text(content)
+            subprocess.check_call(["git", "config", "commit.template", str(tmpl)], cwd=str(root))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to set template: {e}")
+
+    # Optionally install/refresh prepare-commit-msg hook to append trailer
+    if meta["install_hook"] and meta["append_trailer"]:
+        try:
+            hooks_dir = gd / "hooks"
+            hooks_dir.mkdir(parents=True, exist_ok=True)
+            hook = _prepare_commit_msg_hook_path()
+            hook_code = f"""#!/usr/bin/env bash
+set -e
+MSGFILE="$1"
+
+# Load meta
+META="{_commit_meta_path()}"
+if [ -f "$META" ]; then
+  SESSION_ID=$(python - <<'PY'
+import json,sys
+try:
+  j=json.load(open(sys.argv[1]))
+  print(j.get('chat_session_id',''))
+except Exception:
+  print('')
+PY
+"$META")
+  TRAILER_KEY=$(python - <<'PY'
+import json,sys
+try:
+  j=json.load(open(sys.argv[1]))
+  print(j.get('trailer_key','Chat-Session'))
+except Exception:
+  print('Chat-Session')
+PY
+"$META")
+else
+  SESSION_ID=""
+  TRAILER_KEY="Chat-Session"
+fi
+
+[ -z "$SESSION_ID" ] && exit 0
+
+# Append trailer if missing
+if ! grep -q "^$TRAILER_KEY: " "$MSGFILE"; then
+  printf "\n$TRAILER_KEY: %s\n" "$SESSION_ID" >> "$MSGFILE"
+fi
+"""
+            hook.write_text(hook_code)
+            os.chmod(hook, 0o755)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to install hook: {e}")
+
+    return {"ok": True, "meta": meta}
 
 # ---------------- Golden Questions Management ----------------
 def _golden_path() -> Path:

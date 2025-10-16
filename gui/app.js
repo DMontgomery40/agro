@@ -1336,6 +1336,9 @@
 
     // ---------------- LangSmith (Preview) ----------------
     const bindLangSmithViewer = window.LangSmith?.bind || (()=>{});
+    // ---------------- Commit Metadata ----------------
+    const loadCommitMeta = window.CommitMeta?.load || (async ()=>{});
+    const saveCommitMeta = window.CommitMeta?.save || (async ()=>{});
 
     // ---------------- Autotune ----------------
     // Delegated to Autotune module (gui/js/autotune.js)
@@ -1361,6 +1364,7 @@
         bindTabs();
         bindSubtabs();
         bindActions();
+        bindGlobalSearch();
         bindGlobalSearchLive();
         bindResizableSidepanel();
         bindCollapsibleSections();
@@ -1368,13 +1372,15 @@
         bindMcpRagSearch();
         bindLangSmithViewer();
         const hookBtn = document.getElementById('btn-install-hooks'); if (hookBtn) hookBtn.addEventListener('click', installHooks);
+        const saveMetaBtn = document.getElementById('btn-save-commit-meta'); if (saveMetaBtn) saveMetaBtn.addEventListener('click', saveCommitMeta);
         const genKwBtn = document.getElementById('btn-generate-keywords'); if (genKwBtn) genKwBtn.addEventListener('click', createKeywords);
 
         await Promise.all([
             loadPrices(),
             loadConfig(),
             loadProfiles(),
-            loadKeywords()
+            loadKeywords(),
+            loadCommitMeta()
         ]);
 
         await checkHealth();
