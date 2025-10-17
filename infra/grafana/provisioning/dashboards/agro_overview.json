@@ -86,7 +86,7 @@
         "x": 0,
         "y": 0,
         "w": 8,
-        "h": 8
+        "h": 4
       },
       "datasource": {
         "type": "prometheus",
@@ -128,7 +128,7 @@
         "x": 8,
         "y": 0,
         "w": 8,
-        "h": 8
+        "h": 4
       },
       "datasource": {
         "type": "prometheus",
@@ -170,7 +170,7 @@
         "x": 16,
         "y": 0,
         "w": 8,
-        "h": 8
+        "h": 4
       },
       "datasource": {
         "type": "prometheus",
@@ -210,7 +210,7 @@
       "title": "🔵 API Routes - Top by throughput",
       "gridPos": {
         "x": 0,
-        "y": 8,
+        "y": 4,
         "w": 12,
         "h": 10
       },
@@ -266,7 +266,7 @@
       "title": "🟡 Infrastructure Routes - Top by throughput",
       "gridPos": {
         "x": 12,
-        "y": 8,
+        "y": 4,
         "w": 12,
         "h": 10
       },
@@ -322,9 +322,9 @@
       "title": "Errors/sec by type",
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 14,
         "w": 8,
-        "h": 10
+        "h": 6
       },
       "datasource": {
         "type": "prometheus",
@@ -360,9 +360,9 @@
       "title": "Tokens/min by role",
       "gridPos": {
         "x": 8,
-        "y": 18,
+        "y": 14,
         "w": 8,
-        "h": 10
+        "h": 6
       },
       "datasource": {
         "type": "prometheus",
@@ -398,9 +398,9 @@
       "title": "P95 latency by stage (s)",
       "gridPos": {
         "x": 16,
-        "y": 18,
+        "y": 14,
         "w": 8,
-        "h": 10
+        "h": 6
       },
       "datasource": {
         "type": "prometheus",
@@ -436,9 +436,9 @@
       "title": "Cost per request (USD)",
       "gridPos": {
         "x": 16,
-        "y": 28,
+        "y": 20,
         "w": 8,
-        "h": 10
+        "h": 5
       },
       "datasource": {
         "type": "prometheus",
@@ -478,9 +478,9 @@
       "title": "Top 5 models by cost (5m)",
       "gridPos": {
         "x": 0,
-        "y": 38,
+        "y": 20,
         "w": 8,
-        "h": 10
+        "h": 5
       },
       "datasource": {
         "type": "prometheus",
@@ -510,9 +510,9 @@
       "title": "MRR (avg, 5m)",
       "gridPos": {
         "x": 8,
-        "y": 38,
+        "y": 20,
         "w": 8,
-        "h": 10
+        "h": 5
       },
       "datasource": {
         "type": "prometheus",
@@ -566,9 +566,9 @@
       "title": "Hits@K (avg, 5m)",
       "gridPos": {
         "x": 16,
-        "y": 38,
+        "y": 20,
         "w": 8,
-        "h": 10
+        "h": 5
       },
       "datasource": {
         "type": "prometheus",
@@ -598,9 +598,9 @@
       "title": "Canary pass ratio by model",
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 25,
         "w": 8,
-        "h": 10
+        "h": 5
       },
       "datasource": {
         "type": "prometheus",
@@ -636,9 +636,9 @@
       "title": "Reranker margin (abs) histogram",
       "gridPos": {
         "x": 0,
-        "y": 58,
+        "y": 30,
         "w": 12,
-        "h": 12
+        "h": 10
       },
       "datasource": {
         "type": "prometheus",
@@ -669,9 +669,9 @@
       "title": "Reranker winner (count, 5m)",
       "gridPos": {
         "x": 12,
-        "y": 58,
+        "y": 30,
         "w": 12,
-        "h": 12
+        "h": 10
       },
       "datasource": {
         "type": "prometheus",
