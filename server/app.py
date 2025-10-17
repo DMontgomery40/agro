@@ -13,8 +13,10 @@ from server.index_stats import get_index_stats as _get_index_stats
 from typing import cast
 from server.feedback import router as feedback_router
 from server.reranker_info import router as reranker_info_router
+from server.alerts import router as alerts_router, monitoring_router
 from server.telemetry import log_query_event
 from server.reranker import rerank_candidates
+from server.frequency_limiter import FrequencyAnomalyMiddleware, get_frequency_stats
 from server.metrics import (
     init_metrics_fastapi, stage, record_tokens, record_cost,
     set_retrieval_quality, record_canary, ERRORS_TOTAL
@@ -36,9 +38,14 @@ app = FastAPI(title="AGRO RAG + GUI")
 # Initialize Prometheus metrics middleware and /metrics endpoint
 init_metrics_fastapi(app)
 
-# Mount feedback router
+# Add frequency anomaly detection middleware (catches orphaned loops, bots)
+app.add_middleware(FrequencyAnomalyMiddleware)
+
+# Mount routers
 app.include_router(feedback_router)
 app.include_router(reranker_info_router)
+app.include_router(alerts_router)
+app.include_router(monitoring_router)
 
 _graph = None
 def get_graph():

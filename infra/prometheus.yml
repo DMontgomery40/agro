@@ -2,6 +2,16 @@ global:
   scrape_interval: 5s
   evaluation_interval: 5s
 
+# Alert rules: Catches cost spikes, token burns, API anomalies, errors
+rule_files:
+  - "prometheus-alert-rules.yml"
+
+# AlertManager handles alert routing and notifications
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
 scrape_configs:
   # Scrape AGRO FastAPI server metrics
   - job_name: "agro"

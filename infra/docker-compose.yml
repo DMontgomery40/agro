@@ -25,17 +25,35 @@ services:
     # volumes:
     #   - ../data/redis:/data
 
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: agro-alertmanager
+    restart: unless-stopped
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   prometheus:
     image: prom/prometheus:latest
     container_name: agro-prometheus
     restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-alert-rules.yml:/etc/prometheus/prometheus-alert-rules.yml:ro
       - prom_data:/prometheus
     ports:
       - "9090:9090"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - alertmanager
 
   grafana:
     image: grafana/grafana:latest
@@ -66,4 +84,5 @@ services:
 
 volumes:
   prom_data:
+  alertmanager_data:
   grafana_data:
