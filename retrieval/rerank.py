@@ -97,13 +97,17 @@ def rerank_results(query: str, results: List[Dict], top_k: int = 10, trace: Any 
                     snip_len = 700
                 code_snip = (r.get('code') or r.get('text') or '')[:snip_len]
                 docs.append(f"{file_ctx}\n\n{code_snip}")
-            rr = client.rerank(model=os.getenv('COHERE_RERANK_MODEL', COHERE_MODEL), query=query, documents=docs, top_n=len(docs))
+            # Limit reranking to top 50 documents (configurable via env) to reduce token usage
+            max_rerank = int(os.getenv('COHERE_RERANK_TOP_N', '50') or '50')
+            rerank_top_n = min(len(docs), max_rerank)
+            rr = client.rerank(model=os.getenv('COHERE_RERANK_MODEL', COHERE_MODEL), query=query, documents=docs, top_n=rerank_top_n)
             scores = [getattr(x, 'relevance_score', 0.0) for x in rr.results]
             max_s = max(scores) if scores else 1.0
             for item in rr.results:
                 idx = int(getattr(item, 'index', 0))
                 score = float(getattr(item, 'relevance_score', 0.0))
-                results[idx]['rerank_score'] = (score / max_s) if max_s else 0.0
+                if idx < len(results):
+                    results[idx]['rerank_score'] = (score / max_s) if max_s else 0.0
             results.sort(key=lambda x: x.get('rerank_score', 0.0), reverse=True)
             top = results[:top_k]
             try:
