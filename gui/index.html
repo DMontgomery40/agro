@@ -3081,7 +3081,71 @@
                     <button class="subtab-btn" data-subtab="analytics-tracing" data-parent="analytics">Tracing</button>
                     <button class="subtab-btn" data-subtab="analytics-usage" data-parent="analytics">Usage</button>
                 </div>
+
+                <!-- Alert Thresholds for Cost & Token Burn -->
+                <div class="settings-section" style="border-left: 3px solid var(--warn);">
+                    <h3>⚠️ Cost & Token Burn Alerts</h3>
+                    <p class="small">Set thresholds to receive alerts when costs or token consumption spike or sustain high rates.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Cost Spike Alert (USD/hour)</label>
+                            <input type="number" id="alert_cost_burn_spike_usd_per_hour" min="0.01" max="100" step="0.01" placeholder="0.10">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when hourly burn exceeds this amount</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Token Spike (tokens/min)</label>
+                            <input type="number" id="alert_token_burn_spike_per_minute" min="100" max="100000" step="100" placeholder="5000">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert on sudden spike above this rate</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Token Burn Sustained (tokens/min)</label>
+                            <input type="number" id="alert_token_burn_sustained_per_minute" min="100" max="100000" step="100" placeholder="2000">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert if sustained for 15+ minutes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Alerts -->
+                <div class="settings-section" style="border-left: 3px solid var(--accent);">
+                    <h3>💰 Budget Alerts</h3>
+                    <p class="small">Set monthly budget limits and warning thresholds.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Monthly Budget (USD)</label>
+                            <input type="number" id="alert_monthly_budget_usd" min="1" max="10000" step="1" placeholder="500">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Hard limit for monthly spending</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Budget Warning Level (USD)</label>
+                            <input type="number" id="alert_budget_warning_usd" min="1" max="10000" step="1" placeholder="400">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when spending exceeds this</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Budget Critical Level (USD)</label>
+                            <input type="number" id="alert_budget_critical_usd" min="1" max="10000" step="1" placeholder="450">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Critical alert when spending exceeds this</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Calculator -->
                 <div id="storage-calculator-container"></div>
+
+                <!-- Save Alert Thresholds -->
+                <div class="settings-section">
+                    <div class="input-row">
+                        <button class="small-button" id="btn-save-alert-thresholds" style="background: var(--accent); color: var(--accent-contrast); font-weight: 600; width: 100%;">💾 Save Alert Thresholds</button>
+                    </div>
+                    <div id="alert-save-status" style="font-size: 12px; color: var(--fg-muted); margin-top: 8px;"></div>
+                </div>
             </div>
 
             <!-- Tab: Learning Reranker (Dedicated Tab) -->
@@ -4929,9 +4993,37 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                     <button class="subtab-btn" data-subtab="analytics-tracing" data-parent="analytics">Tracing</button>
                     <button class="subtab-btn" data-subtab="analytics-usage" data-parent="analytics">Usage</button>
                 </div>
-                <div class="settings-section">
-                    <h3>Performance Metrics</h3>
-                    <p class="small">Retrieval quality, latency stats (coming soon)</p>
+
+                <!-- Performance & Reliability Alerts -->
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
+                    <h3>📊 Performance & Reliability Alerts</h3>
+                    <p class="small">Set thresholds for error rates, latency, and timeout incidents.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Error Rate Threshold (%)</label>
+                            <input type="number" id="alert_error_rate_threshold_percent" min="0.1" max="50" step="0.1" placeholder="5.0">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when error rate exceeds this percentage</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Request Latency P99 (seconds)</label>
+                            <input type="number" id="alert_request_latency_p99_seconds" min="0.1" max="60" step="0.1" placeholder="5.0">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when 99th percentile latency exceeds this</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Timeout Errors (per 5 min)</label>
+                            <input type="number" id="alert_timeout_errors_per_5min" min="1" max="1000" step="1" placeholder="10">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when timeout count exceeds this</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Rate Limit Errors (per 5 min)</label>
+                            <input type="number" id="alert_rate_limit_errors_per_5min" min="1" max="1000" step="1" placeholder="5">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when rate limit hits exceed this</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -4986,9 +5078,32 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                     <button class="subtab-btn" data-subtab="analytics-tracing" data-parent="analytics">Tracing</button>
                     <button class="subtab-btn active" data-subtab="analytics-usage" data-parent="analytics">Usage</button>
                 </div>
-                <div class="settings-section">
-                    <h3>Usage Statistics</h3>
-                    <p class="small">Request counts, token usage over time (coming soon)</p>
+
+                <!-- API Anomaly Alerts -->
+                <div class="settings-section" style="border-left: 3px solid var(--accent);">
+                    <h3>🌐 API Anomaly Alerts</h3>
+                    <p class="small">Detect unusual API calling patterns that might indicate issues or loops.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Endpoint Call Frequency (calls/min)</label>
+                            <input type="number" id="alert_endpoint_call_frequency_per_minute" min="1" max="1000" step="1" placeholder="10">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when a single endpoint gets called this frequently</p>
+                        </div>
+                        <div class="input-group">
+                            <label>Sustained Frequency Duration (minutes)</label>
+                            <input type="number" id="alert_endpoint_frequency_sustained_minutes" min="1" max="60" step="1" placeholder="2">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Duration threshold for sustained frequency alert</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Cohere Rerank Calls (calls/min)</label>
+                            <input type="number" id="alert_cohere_rerank_calls_per_minute" min="1" max="1000" step="1" placeholder="30">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">Alert when Cohere reranking calls spike</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -5029,6 +5144,65 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="settings-section" style="border-left: 3px solid var(--link);">
+                    <h3><span style="color: var(--link);">●</span> Alert Notifications (Slack/Discord)</h3>
+                    <p class="small">Configure webhook URLs for alert notifications. Leave blank to disable notifications for that platform.</p>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Slack Webhook URL</label>
+                            <input type="password" id="webhook_slack_url" placeholder="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">🔒 Password field for security - not saved in browser</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Discord Webhook URL</label>
+                            <input type="password" id="webhook_discord_url" placeholder="https://discordapp.com/api/webhooks/000000000000000000/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
+                            <p class="small" style="color: var(--fg-muted); margin-top: 4px;">🔒 Password field for security - not saved in browser</p>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>Notification Settings</label>
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+                                <label style="display: flex; align-items: center; gap: 8px; font-weight: 400; margin: 0;">
+                                    <input type="checkbox" id="webhook_enabled" checked>
+                                    <span>Enable notifications</span>
+                                </label>
+                                <div>
+                                    <label>Notify on severity:</label>
+                                    <div style="display: flex; gap: 12px; margin-top: 6px;">
+                                        <label style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" id="webhook_sev_critical" checked>
+                                            🔴 Critical
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" id="webhook_sev_warning" checked>
+                                            ⚠️ Warning
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 6px;">
+                                            <input type="checkbox" id="webhook_sev_info">
+                                            ℹ️ Info
+                                        </label>
+                                    </div>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 8px; font-weight: 400; margin: 0;">
+                                    <input type="checkbox" id="webhook_include_resolved" checked>
+                                    <span>Include resolved alerts</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <button class="small-button" id="btn-save-webhooks" style="background: var(--accent); color: var(--accent-contrast); font-weight: 600; width: 100%;">💾 Save Webhook Configuration</button>
+                    </div>
+                    <div id="webhook-save-status" style="font-size: 12px; color: var(--fg-muted); margin-top: 8px;"></div>
                 </div>
             </div>
 
@@ -5557,6 +5731,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | python -m se
     <script src="/gui/js/chat.js"></script>
     <script src="/gui/js/reranker.js"></script>
     <script src="/gui/js/trace.js"></script>
+    <script src="/gui/js/alerts.js"></script>
 
     <!-- Main app coordination (must load LAST) -->
     <script src="/gui/app.js"></script>
