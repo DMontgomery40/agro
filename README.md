@@ -96,6 +96,8 @@ conf_avg5: 0.52
 ## Dashboard
 ![Dashboard](assets/dashboard.png)
 
+![Grafana Metrics](assets/grafana-metrics.png)
+
 ## Documentation
 - Start here: [Docs Index](docs/README_INDEX.md)
 - **Complete API Reference**: [API_REFERENCE.md](docs/API_REFERENCE.md) ← All endpoints with examples
