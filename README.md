@@ -1,8 +1,7 @@
-![AGRO Banner](assets/agro-hero-banner.png)
-
 # AGRO is a local‑first RAG engine for codebases.
 
-#### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, a built-in Self-Learning Transformer model (it's literally always getting better and faster), Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Grafana Telemetry, Multiple Transports, Chat Interface, and Modular-everything. 
+
+#### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, a built-in Self-Learning Transformer model (it's literally always getting better and faster), Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Grafana Telemetry, Multiple Transports, Chat Interface, and Modular-everything.
 And it even has a VSCode instance embedded in the GUI (you don't have to turn it on just wanted to see if I could do it ; )
 
 ### (Really) Quick Start
@@ -12,12 +11,12 @@ cd agro
 Make dev
 
 # Starts: Infra, MCP, API, UV, and GUI
-# GUI at http://127.0.0.1:8012/ 
+
+
+# GUI at http://127.0.0.1:8012/
 ```
 
-
 ## **Fully-local model support, or any SOTA API Model, mix, match, and set profiles based on task**
-
 <table>
 <tr>
 <td width="50%" valign="top">
@@ -58,7 +57,6 @@ conf_avg5: 0.52
 </table>
 
 ## And crucially, the ability to estimate the impact of that 'refactor' profile, *before* you run it
-
 <div align="center">
   <a href="assets/cost_est.png" target="_blank">
     <img src="assets/cost_est.png" alt="Cost Estimation" width="48%" />
@@ -70,10 +68,9 @@ conf_avg5: 0.52
 
 <br>
 
-
-
-
 ## MCP servers and API endpoints
+
+
 ### (Python and Node.js) supporting HTTP, SSE, STDIO, and WebSocket transports
   - ***Per-transport configuration:*** choose different models and search backends for each mode
 
@@ -81,18 +78,12 @@ conf_avg5: 0.52
   <img src="assets/onboarding_carosel/mcp_transport_changing_model_per_transport.png" alt="Configure Models Per Transport" />
 </a>
 
-### Robust API with optional OAuth 2.0 
-
-
-
+### Robust API with optional OAuth 2.0
 **Full Documentation:**
 - **Interactive API Docs:** http://127.0.0.1:8012/docs (Swagger UI)
 - **Complete API Reference:** [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
 
-
-
 ## Highlights
-
 - **Custom-Trained Search Transformer** — A full transformer-based language model that lives inside AGRO, continuously learning from your usage patterns (clicks, feedback) 
   and training specifically on YOUR codebase. Complete ML pipeline: 
   `mine triplets → train → evaluate → promote - repeat` 
@@ -102,11 +93,9 @@ conf_avg5: 0.52
 - More in docs on how to set rules of CC/Codex so that they take full advantage of it
 
 ## Dashboard
-
 ![Dashboard](assets/dashboard.png)
 
 ## Documentation
-
 - Start here: [Docs Index](docs/README_INDEX.md)
 - **Complete API Reference**: [API_REFERENCE.md](docs/API_REFERENCE.md) ← All endpoints with examples
 - **Learning Reranker**: [LEARNING_RERANKER.md](docs/LEARNING_RERANKER.md) ← Improve search with feedback
@@ -127,9 +116,7 @@ Notes for integrators
 - Indexer entry is indexer/index_repo.py:1-28.
 - HTTP MCP server is in server/mcp/http.py:1-23.
 
-
 ## Architecture
-
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │  AI Agents (Codex/Claude)   CLI Chat (local)                 CLI Chat (stream) │
@@ -165,7 +152,6 @@ Notes for integrators
 ```
 
 ### Key Components
-
 | Component | Purpose | File |
 |-----------|---------|------|
 | **MCP Server (stdio)** | Tool server for local agents | `server/mcp/server.py` |
@@ -189,13 +175,14 @@ Notes for integrators
 
 ## Setup from Scratch
 
-### Phase 1: Infrastructure
 
+### Phase 1: Infrastructure
 Note: This repo already includes `infra/docker-compose.yml` with relative volumes.
 Prefer using `bash scripts/up.sh` or `cd infra && docker compose up -d` rather than
 hand-writing a compose file.
 
 ```bash
+
 # Create directory structure
 mkdir -p /path/to/agro/{infra,data/qdrant,data/redis}
 
@@ -237,7 +224,6 @@ docker exec rag-redis redis-cli ping       # Should return PONG
 ```
 
 ### Phase 2: Python Environment
-
 ```bash
 cd /path/to/agro
 
@@ -257,13 +243,13 @@ python -c "import langgraph, qdrant_client, bm25s, sentence_transformers; print(
 ```
 
 ### Phase 3: Environment Variables
-
 Note: Prefer setting these in the GUI (Misc tab → Apply All Changes). Only use a manual `.env` when scripting or debugging.
 
 Create `.env` file:
 
 ```bash
 cat > .env <<'EOF'
+
 # Infrastructure
 QDRANT_URL=http://127.0.0.1:6333
 REDIS_URL=redis://127.0.0.1:6379/0
@@ -282,8 +268,13 @@ OLLAMA_URL=http://127.0.0.1:11434/api
 GEN_MODEL=qwen3-coder:30b       # or qwen2.5-coder:7b for lower RAM
 
 # Optional: OpenAI for generation (alternative to Ollama)
+
+
 # OPENAI_API_KEY=sk-proj-...
+
+
 # GEN_MODEL=gpt-4o-mini
+
 
 # Optional: Embeddings provider
 EMBEDDING_TYPE=openai           # openai | local | voyage | gemini
@@ -305,7 +296,6 @@ chmod 600 .env  # Protect secrets
 ```
 
 ### Phase 4: Configure RAG Ignore
-
 **This step is critical** - it prevents indexing noise, vendor code, and build artifacts.
 
 The system has three layers of filtering:
@@ -316,7 +306,6 @@ Automatically excludes common directories and file types:
 - File extensions: Only indexes code files (`.py`, `.js`, `.ts`, `.rb`, `.go`, etc.)
 
 #### 2. Project-Specific Excludes (`data/exclude_globs.txt`)
-
 Edit this file to add glob patterns for your repos:
 
 ```bash
@@ -331,6 +320,7 @@ echo "**/migrations/**" >> data/exclude_globs.txt
 
 **Common patterns to exclude:**
 ```bash
+
 # Virtual environments (CRITICAL - prevents indexing Python dependencies)
 **/.venv/**
 **/venv/**
@@ -392,7 +382,6 @@ echo "**/migrations/**" >> data/exclude_globs.txt
 ```
 
 #### 3. Auto-Generate Keywords (Optional)
-
 <a href="assets/onboarding_carosel/auto-generate-keywords.png" target="_blank">
   <img src="assets/onboarding_carosel/auto-generate-keywords.png" alt="Auto-Generate Keywords" />
 </a>
@@ -409,15 +398,24 @@ python analyze_keywords.py /path/to/your/agro
 python analyze_keywords_v2.py /path/to/your/agro
 
 # Output shows:
+
+
 # - Most common file types
+
+
 # - Directory structure
+
+
 # - Suggested keywords for hybrid_search.py
+
+
 # - Recommended path boosts
 ```
 
 **After configuring exclude patterns:**
 
 ```bash
+
 # Re-index affected repos
 REPO=agro python indexer/index_repo.py
 REPO=agro python indexer/index_repo.py
@@ -427,26 +425,42 @@ curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
 ```
 
 ### Phase 5: Index Repositories
-
 ```bash
 . .venv/bin/activate
 
 # Index first repo (replace with your repo name)
 REPO=agro python index_repo.py
+
 # This will:
+
+
 #   - Scan /path/to/your/agro (configured in index_repo.py)
+
+
 #   - Chunk code files (Python, JS, TS, Ruby, Go, etc.)
+
+
 #   - Build BM25 index
+
+
 #   - Generate embeddings (OpenAI text-embedding-3-large by default)
+
+
 #   - Upsert to Qdrant collection: code_chunks_agro
+
+
 #   - Save chunks to: out/agro/chunks.jsonl
+
 
 # Index second repo
 REPO=agro python index_repo.py
+
 # Same process, separate collection: code_chunks_agro
+
 
 # Verify collections exist
 curl -s http://127.0.0.1:6333/collections | jq '.result.collections[].name'
+
 # Should show: code_chunks_agro, code_chunks_agro
 ```
 
@@ -464,25 +478,21 @@ REPOS = {
 ---
 
 ## CLI Chat Interface
-
 **Recommended for interactive use** - Terminal chat with conversation memory and rich formatting.
 
 ### Quick Start
-
 ```bash
 
 cd agro/scripts
 ./up.sh
 
 # installs requirement.txt, creates venv, and starts tui
-
 cd agro && python3 cli_chat.py 
 
 # if you've already got venv up and pulled requirements.txt, this works as well
 ```
 
 ### Features
-
 - **Conversation Memory**: Redis-backed, persists across sessions
 - **Rich Terminal UI**: Markdown rendering, color-coded confidence scores
 - **Citation Display**: Shows file paths and rerank scores
@@ -490,7 +500,6 @@ cd agro && python3 cli_chat.py
 - **Multiple Sessions**: Use different `THREAD_ID` values for parallel conversations, or to 
 
 ### Commands
-
 | Command | Description |
 |---------|-------------|
 | `your question` | Ask directly |
@@ -509,11 +518,9 @@ See **[docs/CLI_CHAT.md](docs/CLI_CHAT.md)** for detailed usage.
 ---
 
 ## MCP Integration
-
 The MCP (Model Context Protocol) server exposes RAG tools that AI agents can call directly.
 
 ### Server Modes
-
 The system supports **three MCP modes**:
 
 #### 1. **stdio Mode** (Default - for local agents)
@@ -534,7 +541,6 @@ The system supports **three MCP modes**:
 See **[docs/REMOTE_MCP.md](docs/REMOTE_MCP.md)** for HTTP/HTTPS setup.
 
 ### Tools Available
-
 The MCP server exposes 4 tools:
 
 #### 1. `rag_answer(repo, question)`
@@ -615,17 +621,14 @@ HTTP GET for allowlisted documentation domains
 ```
 
 ### Connecting to Claude Code
-
 Claude Code supports MCP servers natively via JSON configuration.
 
 #### Step 1: Locate Config File
-
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 #### Step 2: Add Server Config
-
 Edit the config file (create if it doesn't exist):
 
 ```json
@@ -653,7 +656,6 @@ Edit the config file (create if it doesn't exist):
 - Restart Claude Code after editing
 
 #### Step 3: Test in Claude Code
-
 1. Open Claude Code
 2. Start a new conversation
 3. Look for MCP tools indicator
@@ -665,12 +667,11 @@ Edit the config file (create if it doesn't exist):
 Claude Code will call the tool and display results.
 
 ### Connecting to Codex
-
 Codex CLI has built-in MCP support via `codex mcp` commands.
 
 #### Step 1: Install Codex CLI
-
 ```bash
+
 # Via Homebrew (macOS)
 brew install openai/tap/codex
 
@@ -682,7 +683,6 @@ codex --version
 ```
 
 #### Step 2: Register MCP Server
-
 ```bash
 codex mcp add rag-service -- \
   /path/to/agro/.venv/bin/python \
@@ -692,16 +692,19 @@ codex mcp add rag-service -- \
 This adds the server to `~/.codex/config.toml`.
 
 #### Step 3: Verify Registration
-
 ```bash
 codex mcp list
+
 # Should show:
+
+
 # Name         Command                                    Args
+
+
 # rag-service  /path/to/.venv/bin/python                  /path/to/mcp_server.py
 ```
 
 #### Step 4: Test in Codex
-
 ```bash
 codex
 ```
@@ -714,7 +717,6 @@ User: Use rag_answer to explain how authentication works in agro
 ```
 
 ### MCP Example Usage
-
 **Example 1: Debug retrieval**
 ```
 User: Use rag.search to see what code comes up for "webhook handling" in agro,
@@ -737,8 +739,8 @@ User: Use web_get to fetch https://platform.openai.com/docs/models
 ```
 
 ### MCP Server Management
-
 ```bash
+
 # List all MCP servers
 codex mcp list
 
@@ -757,8 +759,8 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 
 ## Evaluation & Testing
 
-### In GUI 
 
+### In GUI
 <a href="assets/evals.png" target="_blank">
   <img src="assets/evals.png" alt="Evaluation Interface" />
 </a>
@@ -775,7 +777,6 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 - **Refresh Cards** - Reloads existing cards from disk
 
 ### Quick Eval Run
-
 ```bash
 . .venv/bin/activate
 
@@ -783,17 +784,30 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 python eval_loop.py
 
 # Output:
+
+
 # ===========================
+
+
 # EVAL RESULTS
+
+
 # ===========================
+
+
 # Total questions: 10
+
+
 # Top-1 accuracy:  70.0% (7/10)
+
+
 # Top-5 accuracy:  90.0% (9/10)
+
+
 # Duration:        12.4s
 ```
 
 ### Creating Golden Tests
-
 <a href="assets/onboarding_carosel/golden-tests-gui.png" target="_blank">
   <img src="assets/onboarding_carosel/golden-tests-gui.png" alt="Golden Tests GUI" />
 </a>
@@ -819,15 +833,15 @@ Golden tests are in `golden.json`:
 
 ### Advanced Eval Features
 
-#### Save Baseline
 
+#### Save Baseline
 ```bash
 python eval_loop.py --baseline
+
 # ✓ Baseline saved to eval_baseline.json
 ```
 
 #### Compare vs Baseline (Regression Detection)
-
 ```bash
 python eval_loop.py --compare
 
@@ -835,16 +849,16 @@ python eval_loop.py --compare
 ```
 
 #### Watch Mode (Continuous Eval)
-
 ```bash
 python eval_loop.py --watch
 
 # Auto-runs eval when files change
+
+
 # Useful during active development
 ```
 
 #### JSON Output (for CI/CD)
-
 ```bash
 python eval_loop.py --json > results.json
 ```
@@ -853,9 +867,10 @@ python eval_loop.py --json > results.json
 
 ## Daily Workflows
 
-### Morning Startup
 
+### Morning Startup
 ```bash
+
 # Use the helper script (starts infra + MCP)
 cd /path/to/agro
 bash scripts/up.sh
@@ -871,7 +886,6 @@ python chat_cli.py
 ```
 
 ### After Code Changes (Re-index)
-
 ```bash
 . .venv/bin/activate
 
@@ -889,10 +903,10 @@ python eval_loop.py --compare
 - Daily/nightly via cron (optional)
 
 ### Cross-Branch Indexing (Shared)
-
 Use a single shared index that works across branches to avoid stale/missing results:
 
 ```bash
+
 # One-time build (BM25-only; fast; no APIs)
 . .venv/bin/activate
 REPO=agro OUT_DIR_BASE=./out.noindex-shared EMBEDDING_TYPE=local SKIP_DENSE=1 \
@@ -911,8 +925,8 @@ GUI path (accessibility):
 - Click “Apply All Changes” to persist to `.env` and `repos.json`.
 
 ### Debugging a Bad Answer
-
 ```bash
+
 # 1. Use rag_search to see what was retrieved
 python -c "
 from retrieval.hybrid_search import search_routed_multi
@@ -932,10 +946,11 @@ cat data/exclude_globs.txt
 
 ## Troubleshooting
 
-### Infrastructure Issues
 
+### Infrastructure Issues
 **Qdrant connection refused:**
 ```bash
+
 # Check status
 docker ps | grep qdrant
 
@@ -948,6 +963,7 @@ curl -s http://127.0.0.1:6333/collections
 
 **Redis connection fails:**
 ```bash
+
 # Test
 docker exec rag-redis redis-cli ping  # Should return PONG
 
@@ -957,6 +973,7 @@ docker restart rag-redis
 
 **Collections missing:**
 ```bash
+
 # List collections
 curl -s http://127.0.0.1:6333/collections | jq
 
@@ -965,7 +982,6 @@ REPO=agro python index_repo.py
 ```
 
 ### Indexing Issues
-
 **Files not being indexed:**
 1. Check `data/exclude_globs.txt` patterns:
    ```bash
@@ -989,9 +1005,9 @@ REPO=agro python index_repo.py
 - Consider using local embeddings (see Model Selection)
 
 ### MCP Issues
-
 **Codex doesn't see tools:**
 ```bash
+
 # Check registration
 codex mcp list
 
@@ -1013,6 +1029,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | \
 
 **"Graph not initialized" error:**
 ```bash
+
 # Test Redis connection
 docker exec rag-redis redis-cli ping
 
@@ -1044,7 +1061,6 @@ python -c "from server.langgraph_app import build_graph; build_graph(); print('�
    ```
 
 ### Retrieval Quality Issues
-
 **Low accuracy / wrong results:**
 
 1. **Check index freshness:**
@@ -1073,7 +1089,6 @@ python -c "from server.langgraph_app import build_graph; build_graph(); print('�
 ---
 
 ## Model Selection
-
 The RAG service defaults to:
 - **Generation (Apple Silicon)**: MLX with Qwen3-Coder-30B-A3B-Instruct-4bit (`ENRICH_BACKEND=mlx`)
   - **Why MLX**: Uses Metal GPU acceleration optimized for Apple Silicon unified memory architecture
@@ -1083,7 +1098,6 @@ The RAG service defaults to:
 - **Reranking**: Local cross-encoder (set `RERANK_BACKEND=cohere` + `COHERE_API_KEY` to use Cohere rerank-3.5)
 
 ### Quick Alternatives
-
 | Goal | Embedding | Generation | Cost |
 |------|-----------|------------|------|
 | **Apple Silicon (M1-M4)** | nomic-embed-text | MLX + Qwen3-30B-A3B-4bit | Free |
@@ -1093,9 +1107,9 @@ The RAG service defaults to:
 | **Privacy First** | BGE-M3 (local) | DeepSeek-Coder | Free |
 
 ### Self-Hosted Setup
-
 **For Mac (M1/M2/M3/M4) - RECOMMENDED:**
 ```bash
+
 # Install MLX (Metal-optimized for Apple Silicon GPU)
 pip install mlx mlx-lm
 
@@ -1107,7 +1121,11 @@ echo "ENRICH_BACKEND=mlx" >> .env
 echo "GEN_MODEL=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit" >> .env
 
 # Alternative: Ollama (also GPU-based, similar performance)
+
+
 # brew install ollama
+
+
 # ollama pull qwen3-coder:30b  # 32GB+ RAM required
 ```
 
@@ -1116,7 +1134,6 @@ echo "GEN_MODEL=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit" >> .env
 - Models: Qwen2.5-Coder 32B, DeepSeek-Coder V2
 
 ### Detailed Guides
-
 See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 - Current pricing (as of Oct 2025)
 - Hardware requirements
@@ -1131,13 +1148,11 @@ See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 ---
 
 ## Advanced Configuration
-
 <a href="assets/onboarding_carosel/advanced_config.png" target="_blank">
   <img src="assets/onboarding_carosel/advanced_config.png" alt="Advanced Configuration" />
 </a>
 
 ### Environment Variables Reference
-
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | — | For OpenAI embeddings/generation |
@@ -1153,7 +1168,6 @@ See **[docs/MODEL_RECOMMENDATIONS.md](docs/MODEL_RECOMMENDATIONS.md)** for:
 | `NETLIFY_API_KEY` | — | For netlify_deploy tool |
 
 ### Tuning Retrieval
-
 Edit `hybrid_search.py` to adjust:
 - Layer bonuses (boost specific file types)
 - Path bonuses (boost specific directories)
@@ -1164,7 +1178,6 @@ Edit `langgraph_app.py` to adjust:
 - Multi-query rewrite count
 
 ### Adding New Languages
-
 Edit `ast_chunker.py`:
 
 ```python
@@ -1188,8 +1201,8 @@ Then re-index.
 
 ## File Reference
 
-### Core Files
 
+### Core Files
 | File | Purpose |
 |------|---------|
 | `mcp_server.py` | **MCP stdio server for local agents** |
@@ -1202,7 +1215,6 @@ Then re-index.
 | `eval_loop.py` | Eval harness with regression tracking |
 
 ### Configuration
-
 | File | Purpose |
 |------|---------|
 | `.env` | Environment variables (API keys, URLs) |
@@ -1211,7 +1223,6 @@ Then re-index.
 | `common/filtering.py` | Built-in directory/extension filters |
 
 ### Scripts
-
 | File | Purpose |
 |------|---------|
 | `scripts/up.sh` | **Start infra + MCP (recommended)** |
@@ -1223,8 +1234,8 @@ Then re-index.
 ---
 
 ## Quick Command Reference
-
 ```bash
+
 # === Infrastructure ===
 bash scripts/up.sh                      # Start everything (recommended)
 bash scripts/status.sh                  # Check status
@@ -1263,7 +1274,6 @@ python analyze_keywords_v2.py /path/to/agro
 ---
 
 ## Claude Code Alone vs Claude Code + RAG
-
 **RAG saves 91% tokens = 11x more queries before hitting your Claude rate limits.**
 
 **Tested:** Oct 8, 2025 | **Claude:** Sonnet 4.5 on $200/mo Pro
@@ -1289,7 +1299,6 @@ python analyze_keywords_v2.py /path/to/agro
 ---
 
 ## Additional Documentation
-
 📂 **See [docs/README_INDEX.md](docs/README_INDEX.md) for complete documentation index**
 
 - **[Learning Reranker System](docs/LEARNING_RERANKER.md)** - Improve search quality with user feedback and training
@@ -1308,7 +1317,6 @@ python analyze_keywords_v2.py /path/to/agro
 ---
 
 ## Support & References
-
 - **MCP Specification:** https://modelcontextprotocol.io/
 - **Codex CLI:** https://github.com/openai/codex
 - **LangGraph:** https://python.langchain.com/docs/langgraph
@@ -1316,7 +1324,6 @@ python analyze_keywords_v2.py /path/to/agro
 - **MTEB Leaderboard:** https://huggingface.co/spaces/mteb/leaderboard
 
 ## RAG for Code — Comparative Matrix
-
 *Legend:* ✅ = present/native · 🟨 = partial / configurable / undocumented · ❌ = absent
 
 | Feature ↓ · Tool → | **AGRO (rag-service)** | **Sourcegraph Cody** | **GitHub Copilot Ent.** | **Cursor** | **Codeium / Windsurf** | **Tabnine** | **Continue.dev (OSS)** | **LlamaIndex – Code (OSS)** | **Claude Code** | **JetBrains AI Assistant** |
@@ -1341,3 +1348,12 @@ python analyze_keywords_v2.py /path/to/agro
 | **Auth / SSO** | 🟨 | ✅ | ✅ | 🟨 | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ |
 | **Eval harness present** | ✅ | 🟨 | 🟨 | ❌ | 🟨 | 🟨 | 🟨 | ✅ | ❌ | ❌ |
 | **Active maintenance (≤12 mo)** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+#### It provides a rich GUI (also a decent TUI), easy setup with an Onboarding Wizard, Evals w/ Regression Analysis, Multi-Query, Hybrid-Search, Local Hydration, Traceability (Langsmith and OpenAI Agents SDK), Multiple Transports, Chat Interface, and Modular-everything.
+And it even has a VSCode instance embedded in the GUI (you don't have to turn it on just wanted to see if I could do it ; )
+
+# 3. If missing, check if .ragignore is excluding it
+cat data/exclude_globs.txt
+```
+
+---
