@@ -29,6 +29,9 @@ def log_query_event(
     ground_truth_refs: Optional[List[str]] = None,
     latency_ms: Optional[int] = None,
     cost_usd: Optional[float] = None,
+    route: Optional[str] = None,
+    client_ip: Optional[str] = None,
+    user_agent: Optional[str] = None,
 ) -> str:
     """Log a query event and return event_id for later feedback correlation.
     
@@ -56,6 +59,9 @@ def log_query_event(
         "ground_truth_refs": ground_truth_refs or [],
         "latency_ms": latency_ms,
         "cost_usd": cost_usd,
+        "route": route or "",
+        "client_ip": client_ip or "",
+        "user_agent": user_agent or "",
     }
     with LOG_PATH.open("a", encoding="utf-8") as f:
         f.write(json.dumps(evt, ensure_ascii=False) + "\n")
@@ -76,5 +82,4 @@ def log_feedback_event(event_id: str, feedback: Dict[str, Any]) -> None:
     }
     with LOG_PATH.open("a", encoding="utf-8") as f:
         f.write(json.dumps(evt, ensure_ascii=False) + "\n")
-
 

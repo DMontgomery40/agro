@@ -33,6 +33,7 @@ def main():
     with OUT.open("w", encoding="utf-8") as out:
         # First pass: collect feedback by event_id
         thumbs = {}
+        clicks = {}
         for evt in iter_events():
             if evt.get("type") == "feedback":
                 fb = evt.get("feedback", {})
@@ -43,6 +44,13 @@ def main():
                     # Convert star ratings to thumbs: star3+ = thumbsup, star1-2 = thumbsdown
                     rating = int(signal.replace("star", ""))
                     thumbs.setdefault(evt["event_id"], "thumbsup" if rating >= 3 else "thumbsdown")
+                elif signal == "click":
+                    did = fb.get("doc_id")
+                    if did:
+                        clicks.setdefault(evt["event_id"], [])
+                        # keep first 3 clicks per event (order matters)
+                        if len(clicks[evt["event_id"]]) < 3:
+                            clicks[evt["event_id"]].append(str(did))
 
         # Second pass: mine triplets from queries
         for evt in iter_events():
@@ -53,9 +61,21 @@ def main():
             if not retrieval:
                 continue
 
-            # Positive: clicked item; else intersect with ground truth; else skip
-            clicked = [r for r in retrieval if r.get("clicked")]
-            pos = clicked[0] if clicked else None
+            # Positive selection priority:
+            # 1) Explicit click signal matched by doc_id
+            pos = None
+            ev_id = evt.get("event_id")
+            if ev_id and ev_id in clicks:
+                # try to match first clicked doc_id with retrieval list
+                wanted = set(clicks[ev_id])
+                for r in retrieval:
+                    if str(r.get("doc_id","")) in wanted:
+                        pos = r
+                        break
+            # 2) Retrieved already marked as clicked (legacy)
+            if not pos:
+                clicked = [r for r in retrieval if r.get("clicked")]
+                pos = clicked[0] if clicked else None
             
             if not pos and evt.get("ground_truth_refs"):
                 gt = set(evt["ground_truth_refs"])
@@ -66,7 +86,7 @@ def main():
             
             if not pos:
                 # Weak heuristic if thumbs up: take top-1 as positive
-                if thumbs.get(evt["event_id"]) == "thumbsup":
+                if thumbs.get(ev_id) == "thumbsup":
                     pos = retrieval[0]
 
             if not pos or not pos.get("text"):
@@ -95,5 +115,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
 

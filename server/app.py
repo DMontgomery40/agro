@@ -17,6 +17,7 @@ from server.alerts import router as alerts_router, monitoring_router
 from server.telemetry import log_query_event
 from server.reranker import rerank_candidates
 from server.frequency_limiter import FrequencyAnomalyMiddleware, get_frequency_stats
+from server.api_interceptor import setup_interceptor
 from server.metrics import (
     init_metrics_fastapi, stage, record_tokens, record_cost,
     set_retrieval_quality, record_canary, ERRORS_TOTAL
@@ -34,6 +35,9 @@ from pathlib import Path as _Path
 import subprocess
 
 app = FastAPI(title="AGRO RAG + GUI")
+
+# Initialize API request interceptor (must be early, before any imports that use requests)
+setup_interceptor()
 
 # Initialize Prometheus metrics middleware and /metrics endpoint
 init_metrics_fastapi(app)
@@ -218,7 +222,8 @@ def api_langsmith_runs(
 @app.get("/answer", response_model=Answer)
 def answer(
     q: str = Query(..., description="Question"),
-    repo: Optional[str] = Query(None, description="Repository override: agro|agro")
+    repo: Optional[str] = Query(None, description="Repository override: agro|agro"),
+    request: Request = None,
 ):
     """Answer a question using strict per-repo routing.
 
@@ -264,6 +269,9 @@ def answer(
             answer_text=res["generation"],
             latency_ms=latency_ms,
             cost_usd=cost_usd,
+            route="/answer",
+            client_ip=(getattr(getattr(request, 'client', None), 'host', None) if request else None),
+            user_agent=(request.headers.get('user-agent') if request else None),
         )
     except Exception:
         event_id = None
@@ -288,7 +296,7 @@ class ChatRequest(BaseModel):
     system_prompt: Optional[str] = None
 
 @app.post("/api/chat")
-def chat(req: ChatRequest) -> Dict[str, Any]:
+def chat(req: ChatRequest, request: Request) -> Dict[str, Any]:
     """Chat endpoint with full settings control.
 
     Accepts all chat settings and applies them to the RAG pipeline:
@@ -408,6 +416,9 @@ def chat(req: ChatRequest) -> Dict[str, Any]:
                 answer_text=res["generation"],
                 latency_ms=latency_ms,
                 cost_usd=cost_usd,
+                route="/api/chat",
+                client_ip=(getattr(getattr(request, 'client', None), 'host', None) if request else None),
+                user_agent=(request.headers.get('user-agent') if request else None),
             )
         except Exception as e:
             # Debug: log why it failed
@@ -498,7 +509,8 @@ def search(
     q: str = Query(..., description="Question"),
     repo: Optional[str] = Query(None, description="Repository override: agro|agro"),
     top_k: int = Query(10, description="Number of results to return"),
-    response: Response = None
+    response: Response = None,
+    request: Request = None,
 ):
     """Search for relevant code locations without generation.
 
@@ -554,6 +566,9 @@ def search(
             retrieved=retrieved_for_log,
             answer_text="",  # No generation for search endpoint
             latency_ms=latency_ms,
+            route="/search",
+            client_ip=(getattr(getattr(request, 'client', None), 'host', None) if request else None),
+            user_agent=(request.headers.get('user-agent') if request else None),
         )
     except Exception:
         event_id = None
@@ -2797,7 +2812,7 @@ def reranker_rollback() -> Dict[str, Any]:
         return {"ok": False, "error": str(e)}
 
 @app.post("/api/reranker/smoketest")
-def reranker_smoketest(payload: Dict[str, Any]) -> Dict[str, Any]:
+def reranker_smoketest(payload: Dict[str, Any], request: Request) -> Dict[str, Any]:
     """Run end-to-end smoke test."""
     import time
     query = payload.get("query", "").strip()
@@ -2827,7 +2842,10 @@ def reranker_smoketest(payload: Dict[str, Any]) -> Dict[str, Any]:
             query_rewritten=None,
             retrieved=retrieved_for_log,
             answer_text="[Smoke test - no generation]",
-            latency_ms=int((time.time() - start) * 1000)
+            latency_ms=int((time.time() - start) * 1000),
+            route="/api/reranker/smoketest",
+            client_ip=(getattr(getattr(request, 'client', None), 'host', None) if request else None),
+            user_agent=(request.headers.get('user-agent') if request else None),
         )
         
         return {

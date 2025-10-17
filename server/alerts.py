@@ -3,10 +3,16 @@
 
 import logging
 import json
-from typing import Any, Dict, List
+import os
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Request
+
+try:
+    import requests  # type: ignore
+except Exception:  # fallback stub to avoid crashes if requests not present
+    requests = None  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +55,138 @@ def _get_alert_summary(status: str, alerts: List[Dict]) -> str:
         parts.append(f"📊 {len(info)} INFO")
 
     return " | ".join(parts)
+
+
+def _get_webhook_config():
+    """Load webhook config from file."""
+    try:
+        from server.webhook_config import load_webhooks
+        return load_webhooks()
+    except Exception:
+        from server.webhook_config import WebhookConfig
+        return WebhookConfig()
+
+
+def _notify_severities() -> List[str]:
+    cfg = _get_webhook_config()
+    s = (cfg.alert_notify_severities or "critical,warning").strip()
+    if not s:
+        return ["critical"]
+    return [x.strip().lower() for x in s.split(",") if x.strip()]
+
+
+def _notify_enabled() -> bool:
+    cfg = _get_webhook_config()
+    return cfg.alert_notify_enabled
+
+
+def _include_resolved() -> bool:
+    cfg = _get_webhook_config()
+    return cfg.alert_include_resolved
+
+
+def _timeout_seconds() -> float:
+    cfg = _get_webhook_config()
+    return cfg.alert_webhook_timeout_seconds
+
+
+def _title_prefix() -> str:
+    return os.getenv("ALERT_TITLE_PREFIX", "AGRO").strip() or "AGRO"
+
+
+def _generic_webhook_urls() -> List[str]:
+    s = os.getenv("ALERT_WEBHOOK_URLS", "").strip()
+    if not s:
+        return []
+    return [x.strip() for x in s.split(",") if x.strip()]
+
+
+def _generic_webhook_headers() -> Dict[str, str]:
+    raw = (os.getenv("ALERT_WEBHOOK_HEADERS", "") or "").strip()
+    if not raw:
+        return {}
+    try:
+        obj = json.loads(raw)
+        if isinstance(obj, dict):
+            return {str(k): str(v) for k, v in obj.items()}
+    except Exception:
+        pass
+    return {}
+
+
+def _format_alert_text(status: str, alerts: List[Dict[str, Any]]) -> str:
+    # Build a concise multiline message suitable for chat/webhooks
+    if not alerts:
+        return f"[{status.upper()}] No alerts"
+    lines = []
+    for a in alerts:
+        labels = a.get("labels", {}) or {}
+        annotations = a.get("annotations", {}) or {}
+        sev = labels.get("severity", "unknown").upper()
+        name = labels.get("alertname", "Alert")
+        summ = annotations.get("summary") or annotations.get("description") or ""
+        starts = a.get("startsAt", "")
+        src = labels.get("job") or labels.get("service") or labels.get("instance") or ""
+        lines.append(f"[{sev}] {name} — {summ} {('('+src+')') if src else ''} @ {starts}")
+    return "\n".join(lines[:10])  # cap to 10 lines
+
+
+def _dispatch_notifications(status: str, alerts: List[Dict[str, Any]]):
+    # Gate by config
+    if not _notify_enabled():
+        return
+    if status == "resolved" and not _include_resolved():
+        return
+    if not alerts:
+        return
+
+    allowed = set(_notify_severities())
+    selected: List[Dict[str, Any]] = []
+    for a in alerts:
+        sev = str(a.get("labels", {}).get("severity", "")).lower()
+        if sev in allowed:
+            selected.append(a)
+    if not selected:
+        return
+
+    title = f"{_title_prefix()} Alerts ({status})"
+    text = _format_alert_text(status, selected)
+    cfg = _get_webhook_config()
+
+    # Slack
+    slack_url = cfg.slack_webhook_url.strip() if cfg.slack_webhook_url else ""
+    if slack_url and requests is not None:
+        try:
+            payload = {"text": f"*{title}*\n{text}"}
+            requests.post(slack_url, json=payload, timeout=_timeout_seconds())
+        except Exception as e:
+            logger.error(f"Slack notify failed: {e}")
+
+    # Discord
+    discord_url = cfg.discord_webhook_url.strip() if cfg.discord_webhook_url else ""
+    if discord_url and requests is not None:
+        try:
+            payload = {"content": f"**{title}**\n{text}"}
+            requests.post(discord_url, json=payload, timeout=_timeout_seconds())
+        except Exception as e:
+            logger.error(f"Discord notify failed: {e}")
+
+    # Generic webhooks
+    headers = _generic_webhook_headers()
+    for url in _generic_webhook_urls():
+        if requests is None:
+            break
+        try:
+            payload = {
+                "title": title,
+                "status": status,
+                "count": len(selected),
+                "lines": text.split("\n"),
+                "alerts": selected,
+            }
+            requests.post(url, json=payload, headers=headers or None, timeout=_timeout_seconds())
+        except Exception as e:
+            logger.error(f"Webhook notify failed ({url}): {e}")
 
 
 @router.post("/alertmanager")
@@ -107,13 +245,19 @@ async def alertmanager_webhook(request: Request) -> Dict[str, str]:
         summary = _get_alert_summary(status, alerts)
         logger.info(f"AlertManager webhook: {summary}")
 
+        # Outbound notifications (Slack/Discord/custom webhooks)
+        try:
+            _dispatch_notifications(status, alerts)
+        except Exception as e:
+            logger.error(f"Notification dispatch failed: {e}")
+
         # TODO: In production, integrate with notification services here:
         # - Slack: send_slack_notification(alerts)
         # - Email: send_email_notification(alerts)
         # - PagerDuty: trigger_pagerduty_incident(alerts)
         # - SMS: send_sms_alert(alerts)
 
-        return {"status": "ok", "alerts_received": len(alerts)}
+        return {"status": "ok", "alerts_received": str(len(alerts))}
 
     except Exception as e:
         logger.error(f"Error processing AlertManager webhook: {e}", exc_info=True)
@@ -153,3 +297,212 @@ async def get_frequency_monitoring() -> Dict[str, Any]:
     from server.frequency_limiter import get_frequency_stats
     return get_frequency_stats()
 
+
+@monitoring_router.get("/top-queries")
+async def get_top_queries(limit: int = 20) -> Dict[str, Any]:
+    """Return top queries and basic attribution from logs to spot spam like 'test'."""
+    log_path = Path(os.getenv("AGRO_LOG_PATH", "data/logs/queries.jsonl"))
+    counts: Dict[str, int] = {}
+    by_query_route: Dict[str, Dict[str, int]] = {}
+    by_query_ip: Dict[str, Dict[str, int]] = {}
+    total = 0
+    if log_path.exists():
+        with log_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    evt = json.loads(line)
+                except Exception:
+                    continue
+                if evt.get("type") != "query":
+                    continue
+                q = (evt.get("query_raw") or "").strip()
+                if not q:
+                    continue
+                total += 1
+                counts[q] = counts.get(q, 0) + 1
+                r = evt.get("route") or ""
+                ip = evt.get("client_ip") or ""
+                if q not in by_query_route:
+                    by_query_route[q] = {}
+                if q not in by_query_ip:
+                    by_query_ip[q] = {}
+                if r:
+                    by_query_route[q][r] = by_query_route[q].get(r, 0) + 1
+                if ip:
+                    by_query_ip[q][ip] = by_query_ip[q].get(ip, 0) + 1
+
+    top = sorted(counts.items(), key=lambda kv: kv[1], reverse=True)[:max(1, limit)]
+    out = []
+    for q, c in top:
+        out.append({
+            "query": q,
+            "count": c,
+            "routes": sorted((by_query_route.get(q) or {}).items(), key=lambda kv: kv[1], reverse=True)[:5],
+            "ips": sorted((by_query_ip.get(q) or {}).items(), key=lambda kv: kv[1], reverse=True)[:5],
+        })
+    return {"total_queries": total, "top": out}
+
+
+@monitoring_router.get("/notify/config")
+async def get_notify_config() -> Dict[str, Any]:
+    """Return current notification settings (sanitized)."""
+    webhook_cfg = _get_webhook_config()
+    cfg = {
+        "enabled": _notify_enabled(),
+        "severities": _notify_severities(),
+        "include_resolved": _include_resolved(),
+        "slack": bool(webhook_cfg.slack_webhook_url),
+        "discord": bool(webhook_cfg.discord_webhook_url),
+        "timeout": _timeout_seconds(),
+        "title_prefix": _title_prefix(),
+    }
+    return cfg
+
+
+class TestNotifyPayload(Dict[str, Any]):
+    pass
+
+
+@monitoring_router.post("/notify/test")
+async def post_notify_test(request: Request) -> Dict[str, Any]:
+    """Send a test notification using current settings.
+
+    Body JSON: { "severity": "critical|warning|info", "message": "..." }
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+    severity = str((data or {}).get("severity", "critical")).lower()
+    message = str((data or {}).get("message", "Test notification from AGRO")).strip()
+    now = datetime.utcnow().isoformat() + "Z"
+    fake_alert = {
+        "status": "firing",
+        "labels": {"alertname": "TestAlert", "severity": severity, "service": "agro"},
+        "annotations": {"summary": message, "description": message},
+        "startsAt": now,
+        "endsAt": "0001-01-01T00:00:00Z",
+    }
+    _dispatch_notifications("firing", [fake_alert])
+    return {"ok": True, "sent": True, "severity": severity}
+
+
+@monitoring_router.get("/alert-thresholds")
+async def get_alert_thresholds() -> Dict[str, Any]:
+    """Get all configurable alert thresholds."""
+    from server.alert_config import get_thresholds
+    return get_thresholds()
+
+
+@monitoring_router.post("/alert-thresholds")
+async def update_alert_thresholds(request: Request) -> Dict[str, Any]:
+    """Update alert thresholds.
+
+    Body JSON: { "threshold_name": value, ... }
+    Example: { "cost_burn_spike_usd_per_hour": 0.15, "token_burn_spike_per_minute": 6000 }
+    """
+    from server.alert_config import update_multiple_thresholds
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):
+            return {"status": "error", "message": "Body must be a JSON object"}
+
+        results = update_multiple_thresholds(data)
+        updated = sum(1 for v in results.values() if v)
+        failed = sum(1 for v in results.values() if not v)
+
+        return {
+            "status": "ok",
+            "updated": updated,
+            "failed": failed,
+            "details": results
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@monitoring_router.get("/api-calls/stats")
+async def get_api_call_stats(minutes: int = 5) -> Dict[str, Any]:
+    """Get statistics on all outbound API calls (universal tracking).
+
+    Tracks ALL external API calls (Cohere, OpenAI, Ollama, Qdrant, Slack, Discord, etc.)
+    Returns call counts, rates, costs, and errors by provider.
+    """
+    try:
+        from server.api_tracker import get_stats
+        return get_stats(minutes=minutes)
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@monitoring_router.get("/api-calls/anomalies")
+async def get_api_anomalies() -> Dict[str, Any]:
+    """Check for API call anomalies (spikes, errors, etc.).
+
+    Compares current call patterns against configured thresholds.
+    Returns list of detected anomalies with severity levels.
+    """
+    try:
+        from server.api_tracker import check_anomalies
+        from server.alert_config import get_thresholds
+
+        thresholds = get_thresholds()
+        anomalies = check_anomalies(thresholds)
+
+        return {
+            "status": "ok",
+            "total_anomalies": len(anomalies),
+            "anomalies": anomalies
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@monitoring_router.get("/webhooks/config")
+async def get_webhooks_config() -> Dict[str, Any]:
+    """Get current webhook configuration (Slack, Discord URLs, settings)."""
+    try:
+        from server.webhook_config import get_webhooks
+        config = get_webhooks()
+        # Mask sensitive URLs in response
+        config_copy = config.copy()
+        if config_copy.get("slack_webhook_url"):
+            config_copy["slack_webhook_url"] = "***" + config_copy["slack_webhook_url"][-10:]
+        if config_copy.get("discord_webhook_url"):
+            config_copy["discord_webhook_url"] = "***" + config_copy["discord_webhook_url"][-10:]
+        return config_copy
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+@monitoring_router.post("/webhooks/config")
+async def update_webhooks_config(request: Request) -> Dict[str, Any]:
+    """Update webhook configuration (Slack, Discord URLs, settings).
+
+    Body JSON: {
+        "slack_webhook_url": "https://hooks.slack.com/services/...",
+        "discord_webhook_url": "https://discordapp.com/api/webhooks/...",
+        "alert_notify_enabled": true,
+        "alert_notify_severities": "critical,warning",
+        "alert_include_resolved": true,
+        "alert_webhook_timeout_seconds": 5.0
+    }
+    """
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):
+            return {"status": "error", "message": "Body must be a JSON object"}
+
+        from server.webhook_config import update_webhooks
+        results = update_webhooks(data)
+        updated = sum(1 for v in results.values() if v)
+        failed = sum(1 for v in results.values() if not v)
+
+        return {
+            "status": "ok",
+            "updated": updated,
+            "failed": failed,
+            "details": results
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

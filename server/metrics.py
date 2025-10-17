@@ -86,6 +86,32 @@ ERRORS_TOTAL = Counter(
     labelnames=("type",),  # timeout | rate_limit | validation | provider | network | unknown
 )
 
+# ---- Outbound API calls (universal tracking) ----
+API_CALLS_TOTAL = Counter(
+    "agro_api_calls_total",
+    "Total outbound API calls by provider",
+    labelnames=("provider", "method", "status_code"),  # provider: cohere|openai|qdrant|etc
+)
+
+API_CALL_DURATION = Histogram(
+    "agro_api_call_duration_seconds",
+    "Outbound API call duration in seconds",
+    labelnames=("provider",),
+    buckets=LATENCY_BUCKETS,
+)
+
+API_CALL_COST_USD = Counter(
+    "agro_api_call_cost_usd",
+    "USD cost of outbound API calls by provider",
+    labelnames=("provider",),
+)
+
+API_CALL_TOKENS = Counter(
+    "agro_api_call_tokens",
+    "Tokens consumed by outbound LLM API calls by provider",
+    labelnames=("provider",),
+)
+
 def _classify_error(exc: BaseException) -> str:
     n = exc.__class__.__name__.lower()
     msg = str(exc).lower()
@@ -142,6 +168,17 @@ def record_canary(provider: str, model: str, passed: bool, margin: Optional[floa
         if winner not in ("reranker", "baseline", "tie"):
             winner = "unknown"
         RERANKER_WINNER_TOTAL.labels(winner=winner).inc()
+
+def record_api_call(provider: str, status_code: int = 200, duration_seconds: float = 0.0,
+                    cost_usd: float = 0.0, tokens: int = 0, method: str = "POST"):
+    """Record metrics for an outbound API call."""
+    API_CALLS_TOTAL.labels(provider=provider, method=method, status_code=str(status_code)).inc()
+    if duration_seconds > 0:
+        API_CALL_DURATION.labels(provider=provider).observe(duration_seconds)
+    if cost_usd > 0:
+        API_CALL_COST_USD.labels(provider=provider).inc(cost_usd)
+    if tokens > 0:
+        API_CALL_TOKENS.labels(provider=provider).inc(tokens)
 
 # ---------- FastAPI integration ----------
 # This middleware measures end-to-end request time and increments agro_requests_total.

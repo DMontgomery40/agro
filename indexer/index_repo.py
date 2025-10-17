@@ -15,7 +15,10 @@ import uuid
 from openai import OpenAI
 from retrieval.embed_cache import EmbeddingCache
 import tiktoken
-from sentence_transformers import SentenceTransformer
+# Lazy import heavy models only when needed (avoid memory spikes on BM25-only runs)
+def _load_st_model(model_name: str):
+    from sentence_transformers import SentenceTransformer  # type: ignore
+    return SentenceTransformer(model_name)
 import fnmatch
 import pathlib
 import common.qdrant_utils as qdrant_recreate_fallback  # make recreate_collection 404-safe
@@ -188,7 +191,7 @@ def embed_texts(client: OpenAI, texts: List[str], batch: int = 64) -> List[List[
     return embs
 
 def embed_texts_local(texts: List[str], model_name: str = 'BAAI/bge-small-en-v1.5', batch: int = 128) -> List[List[float]]:
-    model = SentenceTransformer(model_name)
+    model = _load_st_model(model_name)
     out = []
     for i in range(0, len(texts), batch):
         sub = texts[i:i+batch]
@@ -206,7 +209,7 @@ def _renorm_truncate(vecs: List[List[float]], dim: int) -> List[List[float]]:
     return out
 
 def embed_texts_mxbai(texts: List[str], dim: int = 512, batch: int = 128) -> List[List[float]]:
-    model = SentenceTransformer('mixedbread-ai/mxbai-embed-large-v1')
+    model = _load_st_model('mixedbread-ai/mxbai-embed-large-v1')
     out: List[List[float]] = []
     for i in range(0, len(texts), batch):
         sub = texts[i:i+batch]
