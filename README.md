@@ -1,3 +1,4 @@
+![AGRO Banner](assets/agro-banner.svg)
 # AGRO is a local‑first RAG engine for codebases.
 
 
